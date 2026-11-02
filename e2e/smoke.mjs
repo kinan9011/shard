@@ -63,7 +63,6 @@ async function startSession() {
       port: 4444,
       logLevel: "warn",
       connectionRetryCount: 0,
-      connectionRetryTimeout: 30000,
       capabilities: {
         browserName: "webview2",
         "wdio:enforceWebDriverClassic": true,
@@ -78,8 +77,7 @@ async function startSession() {
     hostname: "127.0.0.1",
     port: 4444,
     logLevel: "warn",
-      connectionRetryCount: 0,
-      connectionRetryTimeout: 30000,
+    connectionRetryCount: 0,
     capabilities: {
       browserName: "wry",
       "wdio:enforceWebDriverClassic": true,
