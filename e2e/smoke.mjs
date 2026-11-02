@@ -262,17 +262,6 @@ try {
     );
   });
 
-  await step("saves a QR code PNG through the save_file command", async () => {
-    await openTool("QR Generator");
-    await (await browser.$("#qr-text")).setValue("https://example.com");
-    // Other open tools, such as the Mermaid Renderer, stay mounted in hidden panels with their own Save PNG button.
-    await (await browser.$("section.tool-panel:not([hidden])").$("button*=Save PNG")).click();
-    const png = await waitForSavedFile(/^qr-code-\d+\.png$/);
-    if (!png.subarray(0, 4).equals(PNG_SIGNATURE)) {
-      throw new Error("The saved QR code is not a PNG file.");
-    }
-  });
-
   await step("compresses and saves an image", async () => {
     const samplePath = path.join(saveDir, "..", `sample-${Date.now()}.png`);
     fs.writeFileSync(samplePath, SAMPLE_PNG);

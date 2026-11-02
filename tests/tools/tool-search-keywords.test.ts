@@ -14,7 +14,6 @@ describe("searchTools keywords", () => {
     expect(ids("properties")[0]).toBe("yaml-json");
     expect(ids("diff")[0]).toBe("diff-merge");
     expect(ids("diff")).toContain("text-compare");
-    expect(ids("nanoid")[0]).toBe("random-string");
   });
 
   it("still ranks an exact name above a keyword match", () => {

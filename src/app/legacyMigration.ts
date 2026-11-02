@@ -28,6 +28,12 @@ export const PORTED_TOOLS: readonly PortedTool[] = [
   { oldId: "api-formatter", pluginId: "api-formatter", name: "API Formatter" },
   { oldId: "string-inspector", pluginId: "string-inspector", name: "String Inspector" },
   { oldId: "line-tools", pluginId: "line-tools", name: "Line Tools" },
+  { oldId: "password-generator", pluginId: "password-generator", name: "Password Generator" },
+  { oldId: "lorem-generator", pluginId: "lorem-generator", name: "Lorem Ipsum" },
+  { oldId: "qr-generator", pluginId: "qr-generator", name: "QR Generator" },
+  { oldId: "bcrypt-generator", pluginId: "bcrypt-generator", name: "Bcrypt Generator" },
+  { oldId: "random-string", pluginId: "random-string", name: "Random String" },
+  { oldId: "key-generator", pluginId: "key-generator", name: "Key Pair Generator" },
 ];
 
 /** The plugin ids of the ported tools. A stored pin or recent entry with one of these is kept while the plugin is not installed. */

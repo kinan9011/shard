@@ -109,6 +109,21 @@ describe("parseQrPayload", () => {
     expect(parseQrPayload("https://exa mple.com").kind).toBe("text");
   });
 
+  it("reads back the payloads the QR Generator plugin writes", () => {
+    expect(parseWifiPayload('WIFI:T:WEP;S:a\\;b\\,c\\:d\\"e\\\\f;P:\\;\\;\\\\;H:true;;')).toEqual([
+      { label: "Network name", value: 'a;b,c:d"e\\f' },
+      { label: "Security", value: "WEP" },
+      { label: "Password", value: ";;\\" },
+      { label: "Hidden network", value: "Yes" },
+    ]);
+    expect(parseMailtoPayload("mailto:a@example.com?subject=Q%26A%20%3D%20fun&body=x%2By")).toEqual([
+      { label: "To", value: "a@example.com" },
+      { label: "Subject", value: "Q&A = fun" },
+      { label: "Body", value: "x+y" },
+    ]);
+    expect(parseQrPayload("SMSTO:5550100:Hi").kind).toBe("sms");
+  });
+
   it("recognizes phone numbers, SMS, and plain text", () => {
     expect(parseQrPayload("tel:+1-555-0100")).toMatchObject({ kind: "phone", fields: [{ label: "Number", value: "+1-555-0100" }] });
     expect(parseQrPayload("tel:+1-555-0100").href).toBeUndefined();

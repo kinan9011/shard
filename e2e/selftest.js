@@ -160,16 +160,6 @@
       await waitFor(() => text(toolContent()).includes('"b": ['), "formatted JSON");
     });
 
-    await step("saves a QR code PNG through the save_file command", async () => {
-      await openTool("QR Generator");
-      setValue(document.querySelector("#qr-text"), "https://example.com");
-      (await waitFor(() => buttons("Save PNG")[0], "download button")).click();
-      await waitFor(async () => {
-        const files = await invoke("e2e_saved_files");
-        return files.some(([name, header]) => /^qr-code-\d+\.png$/.test(name) && header === PNG_HEADER);
-      }, "saved QR code PNG");
-    });
-
     await step("compresses and saves an image", async () => {
       await openTool("Image Converter");
       const bytes = Uint8Array.from(atob(SAMPLE_PNG), (char) => char.charCodeAt(0));
