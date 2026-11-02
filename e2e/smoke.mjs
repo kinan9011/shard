@@ -186,6 +186,8 @@ try {
       localStorage.setItem("shard-first-run-done", "true");
       localStorage.setItem("shard-plugins-intro-seen", "true");
       localStorage.removeItem("shard-first-run-started");
+      // A profile that already dismissed What's New for this version would never show the dialog again.
+      localStorage.removeItem("shard-whats-new-seen-version");
     });
     await browser.refresh();
     await recordErrors();
@@ -357,7 +359,10 @@ try {
       await click("#plugins-tab-installed");
       await click('button[aria-label="Actions for Hello Plugin"]');
       await click('[role="menuitem"]=Uninstall');
-      await click('[role="alertdialog"] button=Uninstall');
+      // Chained lookup: "css button=text" is not a valid WebDriver selector, so find the dialog first.
+      const confirm = await browser.$('[role="alertdialog"]').$("button=Uninstall");
+      await confirm.waitForClickable({ timeout: 10000 });
+      await confirm.click();
       await browser.waitUntil(async () => !(await invokeCommand("plugins_list")).some((plugin) => plugin.id === "hello"), {
         timeout: 10000,
         timeoutMsg: "The hello plugin is still installed",
