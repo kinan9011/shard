@@ -2,29 +2,31 @@
 
 The brand name is **Shard**.
 
-> **TODO: replace the logo.** The current mark, wordmark, app icons, favicons and social image are inherited from [DevTools](https://github.com/me-shaon/devtools) by Ahmed Shamim (MIT) and still read "DevTools". Replace the two SVG masters in `source/` and the social card in `social/`, then run `npm run brand:build`, which regenerates the logos, `public/` icons and `src-tauri/icons/`. Check `public/favicon.svg`, which the script may not touch. Remove this note when done.
-
 ## Files
 
-| Folder | Contents |
-| --- | --- |
-| `source/` | Editable master mark and outlined wordmark SVGs. These are the source of truth. |
-| `svg/` | Mark, wordmark, horizontal and stacked logos in primary, reverse, slate and black. |
-| `png/` | Transparent high-resolution exports of every SVG logo variant. |
+
+| Folder       | Contents                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------ |
+| `source/`    | Editable master mark and outlined wordmark SVGs. These are the source of truth.            |
+| `svg/`       | Mark, wordmark, horizontal and stacked logos in primary, reverse, slate and black.         |
+| `png/`       | Transparent high-resolution exports of every SVG logo variant.                             |
 | `app-icons/` | Blue rounded tile in SVG, PNG sizes 16–1024, Apple touch icon, Windows ICO and macOS ICNS. |
-| `social/` | 1200 × 630 social preview in SVG and PNG. |
-| `reference/` | The approved generated concept, retained as design reference. |
+| `social/`    | 1200 × 630 social preview in SVG and PNG.                                                  |
+| `reference/` | The approved generated concept, retained as design reference.                              |
+
 
 The artwork is vector with flat colors, and the wordmark is outlined, so no font file is required to display or regenerate the assets. Use the supplied wordmark artwork rather than retyping it. Interface copy continues to use the app's system font stack.
 
 ## Colors
 
-| Name | Hex | Use |
-| --- | --- | --- |
-| Shard blue | `#1A6DD2` | Primary mark and app tile |
-| Slate | `#202630` | Wordmark on light surfaces, monochrome mark |
-| White | `#FFFFFF` | Reversed artwork on dark surfaces |
-| Mist | `#F3F6FA` | Optional presentation background |
+
+| Name       | Hex       | Use                                         |
+| ---------- | --------- | ------------------------------------------- |
+| Shard blue | `#1A6DD2` | Primary mark and app tile                   |
+| Slate      | `#202630` | Wordmark on light surfaces, monochrome mark |
+| White      | `#FFFFFF` | Reversed artwork on dark surfaces           |
+| Mist       | `#F3F6FA` | Optional presentation background            |
+
 
 Use `logo-horizontal-primary.svg` on light backgrounds and `logo-horizontal-reverse.svg` on dark backgrounds. Reverse exports are white with transparency, so they appear blank in white-background viewers. Use slate or black for single-color printing.
 

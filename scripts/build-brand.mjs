@@ -39,8 +39,8 @@ for (const [name, ink, text] of [["primary", blue, slate], ["reverse", white, wh
     await png(`png/${filename}.png`, source, filename.startsWith("mark") ? 1024 : 2160);
   }
 }
-const icon = svg(1024, 1024, `<rect x="64" y="64" width="896" height="896" rx="202" fill="${blue}"/>` + symbol(224, 253, 576, white));
-await write("app-icons/app-icon.svg", icon);
+// app-icon.svg is hand-designed and is the source of truth; never regenerate it.
+const icon = await fs.readFile(path.join(brand, "app-icons/app-icon.svg"), "utf8");
 for (const size of [16, 24, 32, 48, 64, 128, 180, 256, 512, 1024]) await png(`app-icons/app-icon-${size}.png`, icon, size);
 const social = svg(1200, 630, `<rect width="1200" height="630" fill="#F3F6FA"/>` + symbol(466, 82, 268, blue) + wordmark(290, 390, 620, slate));
 await write("social/social-card.svg", social);
