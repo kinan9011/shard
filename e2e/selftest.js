@@ -144,10 +144,13 @@
       }
     });
 
-    await step("encodes text to Base64", async () => {
-      await openTool("Base64");
-      setValue(document.querySelector('textarea[placeholder="Enter text to encode to Base64..."]'), "hello");
-      await waitFor(() => text().includes("aGVsbG8="), "Base64 output");
+    await step("decodes a JWT", async () => {
+      await openTool("JWT Decoder");
+      setValue(
+        document.querySelector("#jwt-input"),
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.signature",
+      );
+      await waitFor(() => text(toolContent()).includes("John Doe"), "decoded JWT payload");
     });
 
     await step("formats JSON", async () => {

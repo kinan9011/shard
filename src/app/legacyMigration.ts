@@ -34,6 +34,12 @@ export const PORTED_TOOLS: readonly PortedTool[] = [
   { oldId: "bcrypt-generator", pluginId: "bcrypt-generator", name: "Bcrypt Generator" },
   { oldId: "random-string", pluginId: "random-string", name: "Random String" },
   { oldId: "key-generator", pluginId: "key-generator", name: "Key Pair Generator" },
+  { oldId: "base64", pluginId: "base64", name: "Base64" },
+  { oldId: "case-converter", pluginId: "case-converter", name: "Case Converter" },
+  { oldId: "number-base", pluginId: "number-base", name: "Number Base" },
+  { oldId: "url-encoder", pluginId: "url-encoder", name: "URL Encoder" },
+  { oldId: "csv-json", pluginId: "csv-json", name: "CSV to JSON" },
+  { oldId: "yaml-json", pluginId: "yaml-json", name: "Config Converter" },
 ];
 
 /** The plugin ids of the ported tools. A stored pin or recent entry with one of these is kept while the plugin is not installed. */

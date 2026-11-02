@@ -230,14 +230,21 @@ try {
     }
   });
 
-  await step("encodes text to Base64", async () => {
-    await openTool("Base64");
-    await (await browser.$('textarea[placeholder="Enter text to encode to Base64..."]')).setValue("hello");
-    const output = await browser.$("#b64-encode-output");
-    await browser.waitUntil(async () => (await output.isExisting()) && (await output.getValue()) === "aGVsbG8=", {
-      timeout: 5000,
-      timeoutMsg: "Base64 output did not match",
+  await step("decodes a JWT", async () => {
+    await openTool("JWT Decoder");
+    await browser.execute(() => {
+      const input = document.querySelector("#jwt-input");
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set.call(
+        input,
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.signature",
+      );
+      input.dispatchEvent(new Event("input", { bubbles: true }));
     });
+    await browser.waitUntil(
+      () =>
+        browser.execute(() => document.querySelector("section.tool-panel:not([hidden])").innerText.includes("John Doe")),
+      { timeout: 5000, timeoutMsg: "Decoded JWT payload did not show" },
+    );
   });
 
   await step("formats JSON", async () => {

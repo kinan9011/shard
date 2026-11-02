@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ALL_TOOLS } from "@/app/toolRegistry";
 import { detectPastedContent } from "@/utils/clipboard-detect";
 
-const ids = new Set<string>([...ALL_TOOLS.map((tool) => tool.id), "certificate-decoder", "curl-to-code", "svg-to-css", "uuid-generator", "password-generator", "lorem-generator", "qr-generator", "bcrypt-generator", "random-string", "key-generator", "cron-calculator", "color-palette", "har-viewer", "ip-cidr", "chmod-calculator", "timestamp"]);
+const ids = new Set<string>([...ALL_TOOLS.map((tool) => tool.id), "certificate-decoder", "curl-to-code", "svg-to-css", "uuid-generator", "password-generator", "lorem-generator", "qr-generator", "bcrypt-generator", "random-string", "key-generator", "base64", "case-converter", "number-base", "url-encoder", "csv-json", "yaml-json", "cron-calculator", "color-palette", "har-viewer", "ip-cidr", "chmod-calculator", "timestamp"]);
 const first = (text: string) => detectPastedContent(text, ids)[0]?.toolId;
 
 describe("detectPastedContent", () => {
