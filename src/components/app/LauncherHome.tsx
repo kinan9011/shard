@@ -3,10 +3,8 @@ import { Plus, Puzzle, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CatalogTool } from "@/app/catalog";
 import { useReorder } from "@/app/useReorder";
-import { EmptyHome, PluginsIntroBanner, UpdateBanner } from "@/components/app/Home";
-import type { PortedTool } from "@/app/legacyMigration";
+import { EmptyHome, UpdateBanner } from "@/components/app/Home";
 import { PinnedEditor } from "@/components/app/PinnedEditor";
-import { PortedToolBanners } from "@/components/app/PortedToolBanners";
 import type { PluginUpdate } from "@/plugins/api";
 
 interface LauncherHomeProps {
@@ -30,17 +28,13 @@ interface LauncherHomeProps {
   empty: boolean;
   onBrowsePlugins: () => void;
   onInstallFromFile: () => void;
-  pluginsIntro: boolean;
-  onDismissPluginsIntro: () => void;
-  portedOffers: readonly PortedTool[];
-  onDismissPorted: (id: string) => void;
 }
 
 const sectionLabel = "text-2xs font-semibold uppercase tracking-[.06em] text-muted-foreground";
 
 /** Home in the Launcher layout (design screen 01 B): search hero, pinned tiles, category chips. */
 export function LauncherHome(props: LauncherHomeProps) {
-  const { tools, categories, pinned, pinnedTools, onPin, onUnpin, onMovePinned, onPinInstalled, onOpenPlugin, platform, paletteShortcutLabel, onSelect, onOpenPalette, updates, onReviewUpdates, empty, onBrowsePlugins, onInstallFromFile, pluginsIntro, onDismissPluginsIntro, portedOffers, onDismissPorted } = props;
+  const { tools, categories, pinned, pinnedTools, onPin, onUnpin, onMovePinned, onPinInstalled, onOpenPlugin, platform, paletteShortcutLabel, onSelect, onOpenPalette, updates, onReviewUpdates, empty, onBrowsePlugins, onInstallFromFile } = props;
   const [editing, setEditing] = useState(false);
   const [pickerFirst, setPickerFirst] = useState(false);
   const { dragging, announcement, tileProps, gridProps } = useReorder({ tools: pinnedTools, onMove: onMovePinned, horizontal: true });
@@ -73,15 +67,14 @@ export function LauncherHome(props: LauncherHomeProps) {
           <span className="flex-1 truncate text-left">Find a tool, or paste JSON, a JWT, a URL or a timestamp</span>
           {!editing && <kbd>{paletteShortcutLabel}</kbd>}
         </button>
-        <span className="text-xs text-muted-foreground">
+        {/* A phone has no Ctrl+V; it pastes from the keyboard's own menu, which Shard also sees. */}
+        <span className="hidden text-xs text-muted-foreground sm:inline">
           Paste anything with {platform === "darwin" ? "⌘V" : "Ctrl+V"} and Shard suggests the right tool.
         </span>
       </div>
 
-      {(pluginsIntro || portedOffers.length > 0 || updates.length > 0) && !editing && (
+      {updates.length > 0 && !editing && (
         <div className="w-full max-w-[1040px] [&>div]:mb-0 [&>div]:mt-0">
-          {pluginsIntro && <PluginsIntroBanner onBrowse={onBrowsePlugins} onDismiss={onDismissPluginsIntro} />}
-          <PortedToolBanners offers={portedOffers} onDismiss={onDismissPorted} onOpenPlugin={onOpenPlugin} />
           {updates.length > 0 && <UpdateBanner updates={updates} onReview={onReviewUpdates} />}
         </div>
       )}

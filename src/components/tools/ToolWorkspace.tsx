@@ -1,4 +1,5 @@
 import { useState, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { Columns2, Rows2, ShieldCheck } from "lucide-react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
@@ -38,7 +39,10 @@ const readLayout = (id: string): PaneLayout => {
  * pane and a result pane that can sit side by side or stacked, and a status bar.
  */
 export function ToolWorkspace({ id, toolbar, wrapToolbar = false, secondaryToolbar, notice, first, second, status, help }: ToolWorkspaceProps) {
-  const [layout, setLayout] = useState<PaneLayout>(() => readLayout(id));
+  const [chosen, setLayout] = useState<PaneLayout>(() => readLayout(id));
+  // A phone is too narrow for two panes side by side: the result goes below, and the choice is not offered.
+  const phone = useIsMobile();
+  const layout: PaneLayout = phone ? "below" : chosen;
 
   const changeLayout = (next: PaneLayout) => {
     setLayout(next);
@@ -53,7 +57,7 @@ export function ToolWorkspace({ id, toolbar, wrapToolbar = false, secondaryToolb
     <div className="json-workspace tool-workspace">
       <div className="editor-toolbar">
         <div className={`toolbar-actions ${wrapToolbar ? "flex-wrap min-w-0" : ""}`}>{toolbar}</div>
-        <div className="layout-switch" role="group" aria-label="Result layout">
+        <div className="layout-switch hidden sm:flex" role="group" aria-label="Result layout">
           <button type="button" aria-pressed={layout === "side"} onClick={() => changeLayout("side")}>
             <Columns2 size={14} aria-hidden="true" />Side
           </button>

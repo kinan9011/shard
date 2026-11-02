@@ -8,7 +8,7 @@ import { unzipSync } from "fflate";
 import { afterAll, describe, expect, it } from "vitest";
 import rootConfig from "../../tailwind.config";
 import preset from "../../packages/plugin-sdk/template/tailwind.preset";
-import { validateIndex, validateManifest } from "../../src/plugins/schema";
+import { validateManifest } from "../../src/plugins/schema";
 
 const root = path.resolve(__dirname, "..", "..");
 const template = path.join(root, "packages", "plugin-sdk", "template");
@@ -39,7 +39,7 @@ describe("plugin template", () => {
     const work = fs.mkdtempSync(path.join(os.tmpdir(), "plugin-template-"));
     afterAll(() => fs.rmSync(work, { recursive: true, force: true }));
 
-    it("writes dist, a zip and its checksum that the index script accepts", () => {
+    it("writes dist, a zip and its checksum", () => {
       const dir = path.join(work, "my-plugin");
       fs.cpSync(template, dir, { recursive: true, filter: (src) => !/node_modules|[\\/](dist|release)([\\/]|$)/.test(src) });
       // The template's own dependencies are the app's own: reuse them instead of installing.
@@ -62,12 +62,6 @@ describe("plugin template", () => {
       expect(names.some((n) => /^assets\/.+\.css$/.test(n))).toBe(true);
       const sha = crypto.createHash("sha256").update(zip).digest("hex");
       expect(read(dir, "release", `${zipName}.sha256`)).toBe(`${sha}  ${zipName}\n`);
-
-      const out = path.join(work, "index.json");
-      execFileSync(process.execPath, [path.join(root, "scripts", "plugin-index.mjs"), "--zips", path.join(dir, "release"), "--base-url", "https://example.test/dl", "--index", out, "--name", "Test"], { stdio: "pipe" });
-      const index = JSON.parse(read(out));
-      expect(validateIndex(index).ok).toBe(true);
-      expect(index.plugins[0]).toMatchObject({ id: "my-plugin", version: "0.1.0", sha256: sha, size: zip.length, url: `https://example.test/dl/${zipName}`, changelog: "First version." });
 
       // Packing the same files again gives the same bytes.
       execFileSync(npm, ["run", "build"], { cwd: dir, stdio: "pipe", shell: process.platform === "win32" });

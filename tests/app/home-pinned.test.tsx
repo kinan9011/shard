@@ -94,7 +94,13 @@ describe("Home pinned tools", () => {
   });
 
   it("stops at 12 pinned tools", async () => {
-    const twelve = ALL_TOOLS.slice(0, 12).map((tool) => tool.id);
+    // The 9 built-in tools and 3 installed plugins fill the 12 slots.
+    const installed = (id: string) => ({ id, enabled: true, source: { kind: "zip" }, manifest: { name: id, category: "Development", keywords: [], entry: "index.html" } }) as never;
+    api.listPlugins.mockResolvedValue(["base64", "qr-reader", "token-counter"].map(installed));
+    const entry = (id: string, name: string) => ({ id, name, version: "1.0.0", description: "Test.", category: "Development", runtime: "web", url: "https://example.test/p.zip", sha256: "0".repeat(64), repo: "https://github.com/kinan9011/shard-plugins", repoName: "Shard Official", permissions: [] });
+    const extra = entry("extra-tool", "Extra Tool");
+    api.repoCatalog.mockResolvedValue([extra]);
+    const twelve = [...ALL_TOOLS.map((tool) => tool.id), "base64", "qr-reader", "token-counter"];
     localStorage.setItem("shard-pinned", JSON.stringify(twelve));
     render(<Shard />);
     fireEvent.click(await within(main()).findByRole("button", { name: "Edit" }));
@@ -102,8 +108,7 @@ describe("Home pinned tools", () => {
 
     const picker = await screen.findByRole("dialog");
     expect(within(picker).getByText("12 of 12 pinned · Enter to pin")).toBeInTheDocument();
-    const extra = ALL_TOOLS[12];
-    fireEvent.click(within(picker).getByRole("option", { name: new RegExp(extra.name) }));
+    fireEvent.click(await within(picker).findByRole("option", { name: new RegExp(extra.name) }));
     expect(toastMock.error).toHaveBeenCalledWith("You can pin up to 12 tools. Unpin one first.");
     expect(pinnedIds()).toEqual(twelve);
   });

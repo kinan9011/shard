@@ -15,7 +15,7 @@ import {
   signJwt,
   verifyJwtSignature,
 } from '@/utils/jwt';
-import { loadX509 } from '@/utils/certificate';
+import { loadX509 } from '../helpers/x509';
 
 const b64url = (input: string | Uint8Array) =>
   Buffer.from(typeof input === 'string' ? new TextEncoder().encode(input) : input).toString('base64url');

@@ -83,7 +83,7 @@ beforeEach(() => {
   api.setPluginGrants.mockResolvedValue({});
   api.onInstallProgress.mockResolvedValue(() => {});
   api.onPluginUpdates.mockResolvedValue(() => {});
-  setVersion("3.0.0");
+  setVersion("1.0.0");
   Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: vi.fn().mockImplementation(() => ({ matches: false, media: "", addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn(), dispatchEvent: vi.fn() })),
@@ -164,6 +164,16 @@ describe("first-run wizard", () => {
     expect(localStorage.getItem("shard-first-run-started")).toBeNull();
     // Starter plugins are installed, not pinned: only the pick of step 3 is.
     await waitFor(() => expect(JSON.parse(localStorage.getItem("shard-pinned") ?? "null")).toEqual(["json-viewer"]));
+  });
+
+  it("reads the plugin repository, not another built-in one such as Shard Themes", async () => {
+    const themes = { url: "https://github.com/kinan9011/shard-themes", name: "Shard Themes", enabled: true, official: true, type: "index" as const };
+    api.listRepos.mockResolvedValue([themes, official]);
+    api.syncRepos.mockResolvedValue([themes, official]);
+    await startOnStep2();
+    expect(await screen.findByRole("checkbox", { name: "OpenAPI Explorer" })).toBeInTheDocument();
+    expect(api.syncRepos).toHaveBeenCalledWith(OFFICIAL);
+    expect(api.syncRepos).not.toHaveBeenCalledWith(themes.url);
   });
 
   it("installs without a dialog when nothing asks for a permission, and Skip leaves step 2 untouched", async () => {
@@ -255,7 +265,7 @@ describe("first run in the Launcher layout (08 B)", () => {
   it("offers the bundles of the official index, with a footer that counts them", async () => {
     api.repoBundles.mockResolvedValue(bundles);
     await chooseLauncher();
-    expect(await screen.findByText("Start with a set of tools. The 9 built-in tools are always included, and you can add or remove plugins any time.")).toBeInTheDocument();
+    expect(await screen.findByText("Start with a set of tools. The 9 built-in tools are included, and you can hide them or add and remove plugins any time.")).toBeInTheDocument();
     expect(api.repoBundles).toHaveBeenCalledWith(OFFICIAL);
     for (const name of ["Web & APIs", "Data & SQL", "Security"]) expect(screen.getByRole("checkbox", { name })).not.toBeChecked();
     expect(screen.getByText("OpenAPI Explorer")).toBeInTheDocument();
@@ -321,34 +331,18 @@ describe("first run in the Launcher layout (08 B)", () => {
   });
 });
 
-describe("Plugins are here banner", () => {
-  it("shows once to a user upgrading from 2.x, with no wizard", async () => {
+describe("a user with saved settings", () => {
+  it("still gets the wizard until it is finished", async () => {
     localStorage.setItem("shard-recent-tools", "[]");
     render(<Shard />);
-
-    const banner = await screen.findByText("Plugins are here.");
-    expect(screen.queryByRole("heading", { name: "Pick your starter tools" })).not.toBeInTheDocument();
-    expect(banner.parentElement).toHaveTextContent("Add tools from the Shard Official repository, a zip file, a folder or a repo URL.");
-
-    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
-    expect(screen.queryByText("Plugins are here.")).not.toBeInTheDocument();
-    expect(localStorage.getItem("shard-plugins-intro-seen")).toBe("true");
+    expect(await screen.findByRole("radio", { name: /Launcher/ })).toBeInTheDocument();
   });
 
-  it("stays away before 3.0.0 and after it was dismissed", async () => {
-    localStorage.setItem("shard-recent-tools", "[]");
-    setVersion("2.8.0");
-    const { unmount } = render(<Shard />);
-    await waitFor(() => expect(desktopMock.bridge?.getVersion).toHaveBeenCalled());
-    expect(screen.queryByText("Plugins are here.")).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Pick your starter tools" })).not.toBeInTheDocument();
-    unmount();
-
-    setVersion("3.0.0");
+  it("does not see it again once it is done", async () => {
+    setVersion("1.0.0");
     localStorage.setItem("shard-first-run-done", "true");
-    localStorage.setItem("shard-plugins-intro-seen", "true");
     render(<Shard />);
     await waitFor(() => expect(desktopMock.bridge?.getVersion).toHaveBeenCalled());
-    expect(screen.queryByText("Plugins are here.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Welcome to Shard" })).not.toBeInTheDocument();
   });
 });

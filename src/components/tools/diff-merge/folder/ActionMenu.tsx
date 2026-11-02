@@ -8,8 +8,6 @@ export type MenuChoice = MergeAction | "hand";
 interface Props {
   row: FileRow | null;
   anchor: HTMLElement | null;
-  /** Pixels from the top of the table box. */
-  top: number;
   onPick(choice: MenuChoice): void;
   onClose(): void;
 }
@@ -34,11 +32,11 @@ const heading = (row: FileRow) =>
   row.kind === "left" ? `${row.name} is only on the left` : row.kind === "right" ? `${row.name} is only on the right` : `${row.name} differs on both sides`;
 
 /** Action menu under a row's action chip. Items the row does not allow are not rendered. */
-export function ActionMenu({ row, anchor, top, onPick, onClose }: Props) {
+export function ActionMenu({ row, anchor, onPick, onClose }: Props) {
   const anchorRef = useMemo(() => ({ current: anchor }), [anchor]);
   const allowed = row ? allowedActions(row.kind) : [];
   return (
-    <AnchoredPanel open={!!row && !!anchor} onClose={onClose} anchorRef={anchorRef} width={264} top={top} align="start" role="menu">
+    <AnchoredPanel open={!!row && !!anchor} onClose={onClose} anchorRef={anchorRef} width={264} align="start" role="menu">
       {row && (
         <div className="p-1">
           <div className="px-2 pb-1 pt-1.5 text-[11px] text-muted-foreground">{heading(row)}</div>

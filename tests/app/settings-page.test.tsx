@@ -46,25 +46,19 @@ afterEach(() => {
 });
 
 describe("Settings page", () => {
-  it("opens from the sidebar on Appearance with the six sections", async () => {
+  it("opens from the sidebar on Appearance with the seven sections", async () => {
     render(<Shard />);
     openSettings();
 
     expect(within(main()).getByRole("heading", { name: "Appearance" })).toBeInTheDocument();
     expect(within(main()).getByText("Changes apply right away.")).toBeInTheDocument();
-    for (const name of ["General", "Appearance", "Home", "Plugins", "Shortcuts", "About"]) {
+    for (const name of ["General", "Appearance", "Built-in tools", "Home", "Plugins", "Shortcuts", "About"]) {
       expect(settingsNav().getByRole("button", { name })).toBeInTheDocument();
     }
     expect(settingsNav().getByRole("button", { name: "Appearance" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("button", { name: "Settings" })).toHaveAttribute("aria-current", "page");
     // The Shortcuts dialog is no longer what Settings opens.
     expect(screen.queryByRole("dialog", { name: "Shortcut Settings" })).not.toBeInTheDocument();
-  });
-
-  it("opens from the Appearance button in the header", () => {
-    render(<Shard />);
-    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
-    expect(within(main()).getByRole("heading", { name: "Appearance" })).toBeInTheDocument();
   });
 
   it("switches section from the nav", () => {
@@ -100,6 +94,23 @@ describe("Settings page", () => {
   });
 });
 
+describe("Accent color", () => {
+  afterEach(() => document.getElementById("shard-accent")?.remove());
+
+  it("applies an accent over the scheme, stores it, and goes back to the scheme's own", async () => {
+    render(<Shard />);
+    openSettings();
+    const accent = within(within(main()).getByRole("group", { name: "Accent color" }));
+    expect(accent.getByRole("button", { name: "Scheme" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(accent.getByRole("button", { name: "Orange" }));
+    expect(localStorage.getItem("shard-accent")).toBe("orange");
+    expect(document.getElementById("shard-accent")?.textContent).toContain("--primary:24 90%");
+    fireEvent.click(accent.getByRole("button", { name: "Scheme" }));
+    expect(localStorage.getItem("shard-accent")).toBeNull();
+    expect(document.getElementById("shard-accent")?.textContent).toBe("");
+  });
+});
+
 describe("Settings sections", () => {
   const openSection = (name: string) => {
     openSettings();
@@ -120,6 +131,26 @@ describe("Settings sections", () => {
     expect(within(main()).getByText("Updates are available in the desktop app.")).toBeInTheDocument();
     expect(within(main()).queryByRole("switch", { name: "Update automatically" })).not.toBeInTheDocument();
     expect(within(main()).queryByRole("button", { name: "Check for Updates" })).not.toBeInTheDocument();
+  });
+
+  it("resets all data only after a second click, and Cancel backs out", () => {
+    const reload = vi.fn();
+    vi.stubGlobal("location", { ...window.location, reload });
+    render(<Shard />);
+    openSection("General");
+    localStorage.setItem("some-setting", "1");
+
+    fireEvent.click(within(main()).getByRole("button", { name: "Reset…" }));
+    fireEvent.click(within(main()).getByRole("button", { name: "Cancel" }));
+    expect(within(main()).getByRole("button", { name: "Reset…" })).toBeInTheDocument();
+    expect(localStorage.getItem("some-setting")).toBe("1");
+    expect(reload).not.toHaveBeenCalled();
+
+    fireEvent.click(within(main()).getByRole("button", { name: "Reset…" }));
+    fireEvent.click(within(main()).getByRole("button", { name: "Remove all data" }));
+    expect(localStorage.length).toBe(0);
+    expect(reload).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
   });
 
   it("lists the shortcuts with their keys", () => {
@@ -163,7 +194,7 @@ describe("Sidebar categories setting", () => {
   it("opens or closes every category at once, and Remember restores what was open", () => {
     render(<Shard />);
     const total = categoryButtons().length;
-    expect(total).toBeGreaterThan(2);
+    expect(total).toBeGreaterThan(1);
     expect(within(sidebar()).queryAllByRole("button", { expanded: true })).toHaveLength(0);
 
     openSettings();
@@ -234,5 +265,27 @@ describe("Sidebar categories at launch", () => {
     render(<Shard />);
     // All open: every category is open, the remembered one is not flipped shut.
     expect(within(sidebar()).queryAllByRole("button", { expanded: false })).toHaveLength(0);
+  });
+});
+
+describe("Built-in tools section", () => {
+  it("hides a built-in tool from the sidebar and closes its open tab, and shows it again", async () => {
+    render(<Shard />);
+    fireEvent.change(screen.getByLabelText("Filter tools"), { target: { value: "JSON Viewer" } });
+    fireEvent.click(within(sidebar()).getByRole("button", { name: "JSON Viewer" }));
+    await waitFor(() => expect(screen.getByRole("tab", { name: "JSON Viewer" })).toBeInTheDocument());
+
+    openSettings();
+    fireEvent.click(settingsNav().getByRole("button", { name: "Built-in tools" }));
+    const list = within(within(main()).getByRole("list", { name: "Built-in tools" }));
+    expect(list.getAllByRole("switch")).toHaveLength(9);
+
+    fireEvent.click(list.getByRole("switch", { name: "Show JSON Viewer" }));
+    expect(JSON.parse(localStorage.getItem("shard-hidden-tools") ?? "[]")).toContain("json-viewer");
+    await waitFor(() => expect(screen.queryByRole("tab", { name: "JSON Viewer" })).toBeNull());
+    expect(within(sidebar()).queryByRole("button", { name: "JSON Viewer" })).toBeNull();
+
+    fireEvent.click(list.getByRole("switch", { name: "Show JSON Viewer" }));
+    expect(JSON.parse(localStorage.getItem("shard-hidden-tools") ?? "[]")).not.toContain("json-viewer");
   });
 });

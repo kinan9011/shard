@@ -1,10 +1,13 @@
 import type { KeyboardEvent } from "react";
+import { isMobileApp } from "@/lib/platform";
 
 export type Mode = "text" | "folders";
 const MODES: [Mode, string][] = [["text", "Text"], ["folders", "Folders"]];
 
 /** The Text | Folders switch: a radio group, sized and styled as in the spec. */
 export function ModeSwitch({ mode, onChange }: { mode: Mode; onChange(m: Mode): void }) {
+  // Folder compare reads folders on disk, which a phone does not offer.
+  if (isMobileApp()) return null;
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
     e.preventDefault();

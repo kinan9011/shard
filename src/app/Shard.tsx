@@ -12,25 +12,30 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { CommandPalette, type PaletteCommand } from "@/components/app/CommandPalette";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useAccent } from "@/hooks/useAccent";
+import { useUserThemes } from "@/hooks/useUserThemes";
+import { buildInstallables, usePaletteListed } from "@/hooks/usePaletteInstallables";
+import { refreshThemeUpdates, useThemeUpdateCount, useThemeUpdateSync } from "@/hooks/useThemeUpdates";
 import { pruneToolIds, type CatalogTool } from "@/app/catalog";
-import { PORTED_PLUGIN_IDS, PORTED_TOOLS, migrateToolIds, portedToOffer, type PortedTool } from "@/app/legacyMigration";
-import { useToolCatalog } from "@/app/useToolCatalog";
+import { INSTALLABLE_PLUGIN_IDS, INSTALLABLE_TOOLS, type InstallableTool } from "@/app/installableTools";
+import { setToolHidden, useToolCatalog } from "@/app/useToolCatalog";
 import { getReleaseNotes } from "@/data/releaseNotes";
 import { parseDeepLink } from "@/utils/deep-link";
 import { buildToolManifest } from "@/utils/tool-manifest";
 import { detectPastedContent, type PasteSuggestion } from "@/utils/clipboard-detect";
 import { PasteSuggestions } from "@/components/app/PasteSuggestions";
-import { PortedToolInstall } from "@/components/app/PortedToolBanners";
+import { PasteInstall } from "@/components/app/PasteInstall";
 import { Sidebar } from "@/components/app/Sidebar";
 import { MAX_PINNED, PINNED_STORAGE_KEY, loadPinned, moveId, pinLimitMessage } from "@/app/pinned";
 import { Home } from "@/components/app/Home";
 import { LauncherHome } from "@/components/app/LauncherHome";
 import { FirstRunWizard } from "@/components/app/FirstRunWizard";
-import { dismissPluginsIntro, finishFirstRun, hadStoredState, startFirstRun, type FirstRun } from "@/app/firstRun";
+import { finishFirstRun, startFirstRun, type FirstRun } from "@/app/firstRun";
 import { TopTabs } from "@/components/app/TopTabs";
 import { ToolHost } from "@/components/app/ToolHost";
 import { notifyThemeChanged } from "@/plugins/bridge";
-import { pluginUpdates, syncRepos } from "@/plugins/api";
+import { pluginUpdates, setPluginEnabled, syncRepos } from "@/plugins/api";
+import { refreshPlugins } from "@/plugins/usePlugins";
 import { setPluginUpdates, usePluginUpdates } from "@/plugins/usePluginUpdates";
 import { loadGlobalShortcut, saveGlobalShortcut, toAccelerator, type GlobalShortcut } from "@/utils/global-shortcut";
 import { convertMarkdown } from "@/utils/markdown";
@@ -52,7 +57,9 @@ import {
   SYSTEM_THEME_QUERY,
   THEME_STORAGE_KEY,
   getStoredChoice,
+  COLOR_SCHEMES,
   getStoredColorScheme,
+  resolveColorScheme,
   getStoredThemePreference,
   getSystemDarkMode,
   resolveDarkMode,
@@ -62,7 +69,10 @@ import {
 import { SettingsPage } from "@/components/app/settings/SettingsPage";
 import { updateNoticeLabel } from "@/components/app/settings/updateLabels";
 import { PluginsPage } from "@/components/plugins/PluginsPage";
-import { getDesktopBridge, type UpdateState } from "@/lib/desktop";
+import { getDesktopBridge, installTheme, type UpdateState } from "@/lib/desktop";
+import { isMobilePlatform } from "@/lib/platform";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { MobileNav, PhoneHeader, type PhoneDestination } from "@/components/app/PhoneShell";
 
 type AppView =
   | { kind: "home" }
@@ -94,8 +104,12 @@ function readStoredIds(key: string, what: string): string[] {
 const ANY_TOOL_ID: ReadonlySet<string> = { has: () => true } as unknown as ReadonlySet<string>;
 
 const Shard = () => {
-  const desktop = getDesktopBridge();
-  const platform = desktop?.platform;
+  const bridge = getDesktopBridge();
+  // The phone app has the native side (plugins, themes, deep links) but none of the desktop-only features:
+  // updates, shortcuts, the tray, folders. `desktop` is the bridge only where those exist.
+  const desktop = bridge && !isMobilePlatform(bridge.platform) ? bridge : null;
+  const platform = bridge?.platform;
+  const phone = useIsMobile(platform);
   const { tools: catalogTools, byId: toolById, ids: toolIds, categories, pluginsReady, pluginsFailed, pluginCount, installedIds } = useToolCatalog();
   const updates = usePluginUpdates();
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window === "undefined" || window.innerWidth >= 640);
@@ -105,10 +119,16 @@ const Shard = () => {
   const [colorScheme, setColorScheme] = useState(() =>
     getStoredColorScheme(typeof window !== "undefined" ? window.localStorage : undefined)
   );
+  const customThemes = useUserThemes();
+  const [accent, setAccent] = useAccent();
+  // Installed themes whose repository lists a newer version count next to the plugin updates.
+  useThemeUpdateSync(Boolean(bridge), customThemes.themes);
+  const themeUpdateCount = useThemeUpdateCount();
+  const activeScheme = resolveColorScheme(colorScheme, [...COLOR_SCHEMES, ...customThemes.schemes], customThemes.loaded);
   const [sidebarCategories, setSidebarCategories] = useState(() =>
     getStoredChoice(typeof window !== "undefined" ? window.localStorage : undefined, SIDEBAR_CATEGORIES_STORAGE_KEY, SIDEBAR_CATEGORY_MODES, "remember")
   );
-  const [layout, setLayout] = useState(() =>
+  const [storedLayout, setLayout] = useState(() =>
     getStoredChoice(typeof window !== "undefined" ? window.localStorage : undefined, LAYOUT_STORAGE_KEY, LAYOUTS, "sidebar")
   );
   const [openToolsIn, setOpenToolsIn] = useState(() =>
@@ -131,7 +151,6 @@ const Shard = () => {
   const [updateState, setUpdateState] = useState<UpdateState>({ status: "idle" });
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   // Whether anything was saved before this start (an upgrade). Read in the first render, before the app writes its own keys.
-  const [existingUser] = useState(() => hadStoredState(typeof window !== "undefined" ? window.localStorage : undefined));
   const [firstRun, setFirstRun] = useState<FirstRun>(null);
   const [seenWhatsNewVersion, setSeenWhatsNewVersion] = useState("");
   const [showCommandPalette, setShowCommandPalette] = useState(false);
@@ -160,9 +179,8 @@ const Shard = () => {
   // plugin tool would look unknown. Once only, so hiding or disabling a tool later does not erase its pin.
   useEffect(() => {
     if (!pluginsReady || idsPruned) return;
-    // The ported tools keep their slots while their plugins are not installed (they show up as "X is now a plugin" on Home).
-    setPinned((previous) => pruneToolIds(migrateToolIds(previous), toolById, PORTED_PLUGIN_IDS));
-    setRecentToolIds((previous) => pruneToolIds(migrateToolIds(previous), toolById, PORTED_PLUGIN_IDS));
+    setPinned((previous) => pruneToolIds(previous, toolById));
+    setRecentToolIds((previous) => pruneToolIds(previous, toolById));
     setIdsPruned(true);
   }, [pluginsReady, idsPruned, toolById]);
 
@@ -210,7 +228,11 @@ const Shard = () => {
   }, [darkMode]);
 
   useEffect(() => {
-    syncColorScheme(document.documentElement, colorScheme);
+    syncColorScheme(document.documentElement, activeScheme);
+  }, [activeScheme]);
+
+  // What the user chose is stored, not what shows: a theme that fails to load for a moment must not erase the choice.
+  useEffect(() => {
     try {
       localStorage.setItem(SCHEME_STORAGE_KEY, colorScheme);
     } catch (error) {
@@ -221,7 +243,7 @@ const Shard = () => {
   useEffect(() => {
     // Plugin frames get the new colors. This runs after the two effects above, so the root already has the class and scheme.
     notifyThemeChanged();
-  }, [darkMode, colorScheme]);
+  }, [darkMode, activeScheme, customThemes.schemes]);
 
   useEffect(() => {
     // The native window material follows the window appearance, not the page theme.
@@ -246,11 +268,13 @@ const Shard = () => {
 
   useEffect(() => {
     try {
-      localStorage.setItem(LAYOUT_STORAGE_KEY, layout);
+      localStorage.setItem(LAYOUT_STORAGE_KEY, storedLayout);
     } catch (error) {
       console.error("Failed to save layout setting:", error);
     }
-  }, [layout]);
+  }, [storedLayout]);
+  // A phone always gets the Launcher layout, whatever the saved choice: it has no room for a sidebar or a tab strip.
+  const layout = phone ? "launcher" : storedLayout;
 
   useEffect(() => {
     try {
@@ -282,7 +306,7 @@ const Shard = () => {
   }, []);
 
   useEffect(() => {
-    if (!desktop) {
+    if (!bridge) {
       return undefined;
     }
 
@@ -290,9 +314,10 @@ const Shard = () => {
 
     const loadAppMeta = async () => {
       try {
+        // A phone has a version and no updater: its store updates it.
         const [version, currentUpdateState] = await Promise.all([
-          desktop.getVersion(),
-          desktop.getUpdateState(),
+          bridge.getVersion(),
+          desktop ? desktop.getUpdateState() : Promise.resolve(null),
         ]);
 
         if (!cancelled) {
@@ -308,17 +333,19 @@ const Shard = () => {
 
     loadAppMeta();
 
-    const unsubscribe = desktop.onUpdateState((nextState) => {
-      if (!cancelled && nextState && typeof nextState === "object") {
-        setUpdateState(nextState as UpdateState);
-      }
-    });
+    const unsubscribe = desktop
+      ? desktop.onUpdateState((nextState) => {
+          if (!cancelled && nextState && typeof nextState === "object") {
+            setUpdateState(nextState as UpdateState);
+          }
+        })
+      : () => {};
 
     return () => {
       cancelled = true;
       unsubscribe();
     };
-  }, [desktop]);
+  }, [bridge, desktop]);
 
   useEffect(() => {
     if (!releaseNotes) {
@@ -330,15 +357,15 @@ const Shard = () => {
     }
   }, [seenWhatsNewVersion, releaseNotes]);
 
-  // The wizard (new user) or the "Plugins are here" banner (upgrade) from 3.0.0 on. Needs the version, so it waits for it.
+  // The wizard, until it is finished. Needs the version, so it waits for it.
   useEffect(() => {
     if (!appVersion) return;
     try {
-      setFirstRun(startFirstRun(window.localStorage, appVersion, existingUser));
+      setFirstRun(startFirstRun(window.localStorage, appVersion));
     } catch (error) {
       console.error("Failed to read first-run state:", error);
     }
-  }, [appVersion, existingUser]);
+  }, [appVersion]);
 
   const handleUpdateAction = async () => {
     if (!desktop) {
@@ -386,11 +413,11 @@ const Shard = () => {
 
 
   const [paletteQuery, setPaletteQuery] = useState("");
-  const openCommandPaletteWith = (query: string) => {
+  const openCommandPaletteWith = useCallback((query: string) => {
     setPaletteQuery(query);
     setShowCommandPalette(true);
-  };
-  const openCommandPalette = () => openCommandPaletteWith("");
+  }, []);
+  const openCommandPalette = useCallback(() => openCommandPaletteWith(""), [openCommandPaletteWith]);
 
   const closeCommandPalette = () => {
     setShowCommandPalette(false);
@@ -445,16 +472,6 @@ const Shard = () => {
 
     return catalogTools.filter((tool) => !hiddenToolIds.has(tool.id)).slice(0, MAX_RECENT_TOOLS);
   }, [catalogTools, pinned, recentToolIds]);
-  // Tools that became plugins, pinned or used before, and not installed yet.
-  const portedOffers = useMemo(
-    () => (idsPruned ? portedToOffer(new Set([...pinned, ...recentToolIds]), installedIds) : []),
-    [idsPruned, pinned, recentToolIds, installedIds],
-  );
-  // The user does not want the ported tool back: its pin and recent entry go.
-  const dismissPorted = (id: string) => {
-    setPinned((previous) => previous.filter((item) => item !== id));
-    setRecentToolIds((previous) => previous.filter((item) => item !== id));
-  };
   // Every built-in is hidden and no plugin is installed.
   const empty = pluginsReady && catalogTools.length === 0 && pluginCount === 0;
   // Shown in the sidebar footer until the update is dealt with. "Checking" and "unsupported" are not news.
@@ -500,7 +517,7 @@ const Shard = () => {
         }
       },
     }),
-    [pinnedTools, layout],
+    [pinnedTools, layout, openCommandPalette],
   );
 
   useKeyboardShortcuts({
@@ -599,7 +616,7 @@ const Shard = () => {
     else if (action.type === "search") openCommandPaletteWith(action.query);
     else selectTool(null);
   };
-  useEffect(() => desktop?.onDeepLink?.((url) => deepLinkHandlerRef.current(url)), [desktop]);
+  useEffect(() => bridge?.onDeepLink?.((url) => deepLinkHandlerRef.current(url)), [bridge]);
   useEffect(() => {
     if (!pluginsReady || !pendingLinkRef.current) return;
     const url = pendingLinkRef.current;
@@ -645,14 +662,34 @@ const Shard = () => {
   // filled in. The app only sees what the user pastes; it never reads the clipboard on its own.
   const [pasted, setPasted] = useState<{ text: string; suggestions: PasteSuggestion[] } | null>(null);
   const pasteBlocked = showCommandPalette || recordingShortcut || showWhatsNew;
-  // Tools that became plugins and are not installed: a paste that fits one suggests "Install <tool>". Only known once
+  // Official plugins that are not installed: a paste that fits one suggests "Install <tool>". Only known once
   // the installed plugins have been read, so a failed read never suggests a plugin that may be installed.
   const installableIds = useMemo<ReadonlySet<string>>(
-    () => (pluginsReady && !pluginsFailed ? new Set([...PORTED_PLUGIN_IDS].filter((id) => !installedIds.has(id))) : new Set<string>()),
+    () => (pluginsReady && !pluginsFailed ? new Set([...INSTALLABLE_PLUGIN_IDS].filter((id) => !installedIds.has(id))) : new Set<string>()),
     [pluginsReady, pluginsFailed, installedIds],
   );
-  // The ported tool a paste suggestion is installing (`nonce` restarts the flow when the same tool is asked for again).
-  const [pasteInstall, setPasteInstall] = useState<{ tool: PortedTool; nonce: number } | null>(null);
+  // The plugin a paste suggestion is installing (`nonce` restarts the flow when the same tool is asked for again).
+  const [pasteInstall, setPasteInstall] = useState<{ tool: InstallableTool; nonce: number } | null>(null);
+  // "Install Nord" in the command palette: the plugins and themes the repositories list and the user does not have.
+  const paletteListed = usePaletteListed(showCommandPalette);
+  const paletteInstallables = useMemo(
+    () =>
+      buildInstallables(paletteListed, installedIds, new Set(customThemes.themes.map((theme) => theme.id)), {
+        // The same flow as a paste suggestion: permission dialog, then install.
+        installPlugin: (entry) => setPasteInstall((current) => ({ tool: { pluginId: entry.id, name: entry.name }, nonce: (current?.nonce ?? 0) + 1 })),
+        installTheme: (entry) => {
+          installTheme(entry.repo, entry.id).then(
+            async () => {
+              await customThemes.reload();
+              void refreshThemeUpdates();
+              toast.success(`Installed ${entry.name}`, { action: { label: "Apply", onClick: () => setColorScheme(entry.id) } });
+            },
+            (error) => toast.error(`Couldn't install ${entry.name}`, { description: error instanceof Error ? error.message : String(error) }),
+          );
+        },
+      }),
+    [paletteListed, installedIds, customThemes],
+  );
   useEffect(() => {
     if (pasteBlocked) return;
     const handlePaste = (event: ClipboardEvent) => {
@@ -676,8 +713,8 @@ const Shard = () => {
     setPasted(null);
     if (wantsInstall) {
       // Not installed: the install flow of the Home banners (permission dialog, then install). The pasted text is not carried over.
-      const ported = PORTED_TOOLS.find((item) => item.pluginId === toolId);
-      if (ported) setPasteInstall((current) => ({ tool: ported, nonce: (current?.nonce ?? 0) + 1 }));
+      const installable = INSTALLABLE_TOOLS.find((item) => item.pluginId === toolId);
+      if (installable) setPasteInstall((current) => ({ tool: installable, nonce: (current?.nonce ?? 0) + 1 }));
       return;
     }
     if (!tool) return;
@@ -747,6 +784,25 @@ const Shard = () => {
     }
   }, [openTools, selectedTool]);
   const closeTool = useCallback((tool: CatalogTool) => closeTools(new Set([tool.id])), [closeTools]);
+  // From the tab menu. A built-in tool is hidden (its tab closes by itself, see below) and a plugin is turned off; both come back from Settings.
+  const hideTool = useCallback((tool: CatalogTool) => {
+    if (tool.pluginId) {
+      setPluginEnabled(tool.pluginId, false).then(
+        () => Promise.allSettled([refreshPlugins()]).then(() => toast.success(`${tool.name} is off`, { description: "Turn it back on in Plugins → Installed.", action: { label: "Undo", onClick: () => void setPluginEnabled(tool.pluginId!, true).then(() => refreshPlugins()) } })),
+        (error) => toast.error(`Couldn't turn off ${tool.name}`, { description: error instanceof Error ? error.message : String(error) }),
+      );
+      return;
+    }
+    setToolHidden(tool.id, true);
+    toast.success(`${tool.name} is hidden`, { description: "Show it again in Settings → Built-in tools.", action: { label: "Undo", onClick: () => setToolHidden(tool.id, false) } });
+  }, []);
+
+  // A tool that was hidden (or whose plugin was turned off) while its tab was open: close the tab.
+  useEffect(() => {
+    if (!pluginsReady) return;
+    const gone = new Set(openTools.filter((tool) => !toolIds.has(tool.id)).map((tool) => tool.id));
+    if (gone.size) closeTools(gone);
+  }, [pluginsReady, toolIds, openTools, closeTools]);
 
   useEffect(() => {
     // Browser previews retain the browser's own tab/window shortcuts.
@@ -800,8 +856,9 @@ const Shard = () => {
     );
   }
 
+  const phoneDestination: PhoneDestination = selectedTool ? "tool" : view.kind === "plugins" ? "plugins" : view.kind === "settings" ? "settings" : "home";
   return (
-    <div data-platform={desktop?.platform} data-sidebar-open={layout === "sidebar" && sidebarOpen} data-layout={layout} className="workspace h-screen overflow-hidden bg-background flex">
+    <div data-platform={platform} data-phone={phone || undefined} data-sidebar-open={layout === "sidebar" && sidebarOpen} data-layout={layout} className="workspace h-screen overflow-hidden bg-background flex">
       {layout === "sidebar" && <Sidebar
         open={sidebarOpen}
         onOpenChange={setSidebarOpen}
@@ -824,7 +881,7 @@ const Shard = () => {
         onWhatsNew={openWhatsNew}
         onOpenPlugins={() => openPlugins("browse")}
         pluginsOpen={view.kind === "plugins"}
-        updateCount={updates.length}
+        updateCount={updates.length + themeUpdateCount}
         onOpenSettings={openSettings}
         settingsOpen={view.kind === "settings"}
         categoryMode={sidebarCategories}
@@ -833,7 +890,20 @@ const Shard = () => {
 
       {/* Main Content */}
       <main className="flex-1 min-h-0 flex flex-col min-w-0">
-        {layout === "launcher" ? (
+        {phone ? (
+          <PhoneHeader
+            destination={phoneDestination}
+            title={selectedTool?.name ?? (view.kind === "plugins" ? "Plugins" : view.kind === "settings" ? "Settings" : "Shard")}
+            onBack={() => setView(HOME_VIEW)}
+            onSearch={openCommandPalette}
+            tool={selectedTool}
+            pinned={selectedTool ? pinned.includes(selectedTool.id) : false}
+            onTogglePin={() => selectedTool && togglePinned(selectedTool.id)}
+            openTools={openTools}
+            onSelectTool={selectTool}
+            onCloseTool={closeTool}
+          />
+        ) : layout === "launcher" ? (
         <header data-tauri-drag-region className="workspace-titlebar launcher-titlebar">
           <div data-tauri-drag-region className="flex items-center gap-2.5 pr-2.5">
             <img src="./brand/mark.svg" alt="" aria-hidden="true" className="h-[22px] w-[22px]" />
@@ -844,7 +914,7 @@ const Shard = () => {
               <House size={15} aria-hidden="true" />
               <span>Home</span>
             </button>
-            <TopTabs tools={openTools} selectedId={selectedTool?.id ?? null} onSelect={selectTool} onClose={closeTool} onCloseMany={closeTools} />
+            <TopTabs tools={openTools} selectedId={selectedTool?.id ?? null} onSelect={selectTool} onClose={closeTool} onCloseMany={closeTools} onHide={hideTool} />
           </div>
           <button type="button" className="chrome-button" aria-label="Open a tool" title="Open a tool" onClick={openCommandPalette}><Plus size={16} /></button>
           <div className="flex min-w-0 flex-1 justify-center">
@@ -859,25 +929,23 @@ const Shard = () => {
             <button type="button" className="chrome-button relative" title="Plugins" aria-current={view.kind === "plugins" ? "page" : undefined} onClick={() => openPlugins("browse")}>
               <Puzzle size={16} aria-hidden="true" />
               <span className="sr-only">Plugins</span>
-              {updates.length > 0 && <span className="launcher-badge" title={`${updates.length} plugin ${updates.length === 1 ? "update" : "updates"}`}>{updates.length}</span>}
+              {updates.length + themeUpdateCount > 0 && <span className="launcher-badge" title={`${updates.length + themeUpdateCount} plugin and theme ${updates.length + themeUpdateCount === 1 ? "update" : "updates"}`}>{updates.length + themeUpdateCount}</span>}
             </button>
             <button type="button" className="chrome-button" aria-label="Settings" title="Settings" aria-current={view.kind === "settings" ? "page" : undefined} onClick={() => openSettings()}><Settings size={16} aria-hidden="true" /></button>
-            <button type="button" className="chrome-button" aria-label="Appearance" onClick={() => openSettings("appearance")}>
-              {darkMode ? <Moon size={16} /> : <Sun size={16} />}
-              <span className="sr-only">{darkMode ? "Dark" : "Light"}</span>
+            <button type="button" className="chrome-button" aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} onClick={() => setThemePreference(darkMode ? "light" : "dark")}>
+              {darkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
             </button>
           </div>
         </header>
         ) : (
         <header data-tauri-drag-region className="workspace-titlebar">
           <button type="button" className="chrome-button" aria-label="Toggle sidebar" onClick={() => setSidebarOpen(!sidebarOpen)}><PanelLeft size={16} /></button>
-          <TopTabs tools={openTools} selectedId={selectedTool?.id ?? null} onSelect={selectTool} onClose={closeTool} onCloseMany={closeTools} />
+          <TopTabs tools={openTools} selectedId={selectedTool?.id ?? null} onSelect={selectTool} onClose={closeTool} onCloseMany={closeTools} onHide={hideTool} />
           <button type="button" className="chrome-button" aria-label="Open a tool" title="Open a tool" onClick={openCommandPalette}><Plus size={17} /></button>
           <div className="ml-auto flex shrink-0 items-center gap-1">
             {selectedTool && <button type="button" className="chrome-button" aria-label={pinned.includes(selectedTool.id) ? "Unpin from Home" : "Pin to Home"} onClick={() => togglePinned(selectedTool.id)}><Pin size={15} className={pinned.includes(selectedTool.id) ? "fill-current text-primary" : ""} /></button>}
-            <button type="button" className="chrome-button" aria-label="Appearance" onClick={() => openSettings("appearance")}>
-              {darkMode ? <Moon size={16} /> : <Sun size={16} />}
-              <span className="sr-only">{darkMode ? "Dark" : "Light"}</span>
+            <button type="button" className="chrome-button" aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} onClick={() => setThemePreference(darkMode ? "light" : "dark")}>
+              {darkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
             </button>
           </div>
         </header>
@@ -891,8 +959,11 @@ const Shard = () => {
               onSection={(section) => setView({ kind: "settings", section })}
               preference={themePreference}
               onPreference={setThemePreference}
-              scheme={colorScheme}
+              scheme={activeScheme}
               onScheme={setColorScheme}
+              accent={accent}
+              onAccent={setAccent}
+              customThemes={bridge ? customThemes : undefined}
               dark={darkMode}
               layout={layout}
               onLayout={setLayout}
@@ -902,6 +973,7 @@ const Shard = () => {
               onOpenToolsIn={setOpenToolsIn}
               platform={platform}
               isDesktop={Boolean(desktop)}
+              hasNative={Boolean(bridge)}
               appVersion={appVersion}
               updateState={updateState}
               onUpdateAction={handleUpdateAction}
@@ -921,7 +993,7 @@ const Shard = () => {
               onWhatsNew={openWhatsNew}
             />
           ) : view.kind === "plugins" ? (
-            <PluginsPage variant={layout === "launcher" ? "cards" : "list"} startInstall={view.install} tab={view.tab} onTabChange={(tab) => setView({ kind: "plugins", tab })} onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }} />
+            <PluginsPage variant={layout === "launcher" ? "cards" : "list"} customThemes={bridge ? customThemes : undefined} themeApply={{ scheme: activeScheme, onScheme: setColorScheme, dark: darkMode }} startInstall={view.install} tab={view.tab} onTabChange={(tab) => setView({ kind: "plugins", tab })} onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }} />
           ) : !selectedTool && layout === "launcher" ? (
             <LauncherHome
               tools={catalogTools}
@@ -942,13 +1014,6 @@ const Shard = () => {
               empty={empty}
               onBrowsePlugins={() => openPlugins("browse")}
               onInstallFromFile={() => openPlugins("browse", true)}
-              pluginsIntro={firstRun === "intro"}
-              onDismissPluginsIntro={() => {
-                dismissPluginsIntro(window.localStorage);
-                setFirstRun(null);
-              }}
-              portedOffers={portedOffers}
-              onDismissPorted={dismissPorted}
             />
           ) : !selectedTool ? (
             <Home
@@ -971,29 +1036,33 @@ const Shard = () => {
               empty={empty}
               onBrowsePlugins={() => openPlugins("browse")}
               onInstallFromFile={() => openPlugins("browse", true)}
-              pluginsIntro={firstRun === "intro"}
-              onDismissPluginsIntro={() => {
-                dismissPluginsIntro(window.localStorage);
-                setFirstRun(null);
-              }}
-              portedOffers={portedOffers}
-              onDismissPorted={dismissPorted}
             />
           ) : null}
           <ToolHost tools={openTools} selectedId={selectedTool?.id ?? null} />
         </div>
       </main>
 
+      {phone && (
+        <MobileNav
+          destination={phoneDestination}
+          onHome={() => setView(HOME_VIEW)}
+          onSearch={openCommandPalette}
+          onPlugins={() => openPlugins("browse")}
+          onSettings={() => openSettings()}
+          badge={updates.length + themeUpdateCount}
+        />
+      )}
+
       {pasted && (
         <PasteSuggestions
           suggestions={pasted.suggestions}
-          toolName={(toolId) => toolById.get(toolId)?.name ?? PORTED_TOOLS.find((item) => item.pluginId === toolId)?.name ?? toolId}
+          toolName={(toolId) => toolById.get(toolId)?.name ?? INSTALLABLE_TOOLS.find((item) => item.pluginId === toolId)?.name ?? toolId}
           onOpen={openPastedIn}
           onDismiss={dismissPasted}
         />
       )}
       {pasteInstall && (
-        <PortedToolInstall
+        <PasteInstall
           key={pasteInstall.nonce}
           tool={pasteInstall.tool}
           onOpenPlugin={(id) => openPluginRef.current(id)}
@@ -1008,6 +1077,7 @@ const Shard = () => {
         onClose={closeCommandPalette}
         onSelectTool={selectTool}
         commands={paletteCommands}
+        installables={paletteInstallables}
         initialQuery={paletteQuery}
       />
 

@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useInstallFlow } from "@/plugins/useInstallFlow";
-import { rowKey, usePluginCatalog } from "@/plugins/usePluginCatalog";
-import { usePlugins } from "@/plugins/usePlugins";
+import { toast } from "sonner";
+import { uninstallPlugin } from "@/plugins/api";
+import { rowKey, usePluginCatalog, type CatalogRow } from "@/plugins/usePluginCatalog";
+import { refreshPlugins, usePlugins } from "@/plugins/usePlugins";
 import { BrowseTab } from "./BrowseTab";
 import { InstallDialog } from "./InstallDialog";
 import { InstalledTab } from "./InstalledTab";
@@ -11,8 +13,11 @@ import { PermissionDialog } from "./PermissionDialog";
 import { PluginDetail } from "./PluginDetail";
 import { RepositoriesTab } from "./RepositoriesTab";
 import { TabButton } from "./TabButton";
+import { useThemeUpdateCount } from "@/hooks/useThemeUpdates";
+import { ThemesTab, type ThemeApply } from "./ThemesTab";
+import type { CustomThemes } from "@/components/app/settings/CustomThemes";
 
-export const PLUGIN_TABS = ["browse", "installed", "repositories"] as const;
+export const PLUGIN_TABS = ["browse", "installed", "themes", "repositories"] as const;
 export type PluginsTab = (typeof PLUGIN_TABS)[number];
 
 interface PluginsPageProps {
@@ -24,17 +29,34 @@ interface PluginsPageProps {
   startInstall?: boolean;
   /** "cards" is the Launcher layout (screens 02 B – 05 B): the same data and dialogs, other chrome. */
   variant?: "list" | "cards";
+  /** The themes folder. Omitted in the browser preview, which has none and so no Themes tab. */
+  customThemes?: CustomThemes;
+  /** Lets the Themes tab apply a theme it lists. */
+  themeApply?: ThemeApply;
 }
 
-/** The Plugins destination: Browse, Installed and Repositories. */
-export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = false, variant = "list" }: PluginsPageProps) {
+/** The Plugins destination: Browse, Installed, Themes and Repositories. */
+export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = false, variant = "list", customThemes, themeApply }: PluginsPageProps) {
   const catalog = usePluginCatalog();
   const { plugins } = usePlugins();
   const install = useInstallFlow({ onOpen: (id) => onOpenPlugin?.(id), refresh: catalog.refresh });
+  // The detail has asked and confirmed. Same steps as the Installed tab.
+  const uninstall = async (row: CatalogRow) => {
+    const name = row.installed?.manifest.name ?? row.entry.name;
+    try {
+      await uninstallPlugin(row.entry.id);
+      toast.success("Uninstalled", { description: name });
+      await Promise.allSettled([refreshPlugins(), catalog.refresh()]);
+    } catch (error) {
+      toast.error(`Couldn't uninstall ${name}`, { description: error instanceof Error ? error.message : String(error) });
+    }
+  };
   const pending = install.pending;
   const [installOpen, setInstallOpen] = useState(startInstall);
-  const current: PluginsTab = PLUGIN_TABS.find((candidate) => candidate === tab) ?? "browse";
+  const found = PLUGIN_TABS.find((candidate) => candidate === tab) ?? "browse";
+  const current: PluginsTab = found === "themes" && !customThemes ? "browse" : found;
   const updateCount = catalog.updates.length;
+  const themeUpdateCount = useThemeUpdateCount();
   const cards = variant === "cards";
   // Cards: the detail is a page over the tabs. The tabs stay mounted (hidden), so Browse keeps its search and filters.
   const [detailKey, setDetailKey] = useState("");
@@ -60,6 +82,7 @@ export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = fal
           row={detail}
           progress={install.progress[detail.entry.id]}
           onInstall={() => install.request(detail)}
+          onUninstall={() => void uninstall(detail)}
           official={catalog.repos.some((item) => item.url === detail.entry.repo && item.official)}
           onBack={closeDetail}
         />
@@ -91,6 +114,16 @@ export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = fal
               </span>
             )}
           </TabButton>
+          {customThemes && (
+            <TabButton idPrefix="plugins-tab" controls="plugins-panel" id="themes" selected={current === "themes"} onSelect={onTabChange}>
+              Themes
+              {themeUpdateCount > 0 && (
+                <span className="inline-grid h-[18px] min-w-[18px] place-items-center rounded-full bg-primary/15 px-1.5 text-2xs font-semibold text-primary">
+                  {themeUpdateCount} {themeUpdateCount === 1 ? "update" : "updates"}
+                </span>
+              )}
+            </TabButton>
+          )}
           <TabButton idPrefix="plugins-tab" controls="plugins-panel" id="repositories" selected={current === "repositories"} onSelect={onTabChange}>
             Repositories
             {catalog.repos.length > 0 && <span className="font-normal text-muted-foreground">{catalog.repos.length}</span>}
@@ -99,7 +132,7 @@ export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = fal
       </div>
       <div ref={body} id="plugins-panel" role="tabpanel" aria-labelledby={`plugins-tab-${current}`} className={cn("flex min-h-0 flex-1", detail && "hidden")}>
         {current === "browse" ? (
-          <BrowseTab rows={catalog.rows} repos={catalog.repos} loading={catalog.loading} error={catalog.error} onInstall={install.request} progress={install.progress} variant={variant} onOpen={(row) => setDetailKey(rowKey(row))} />
+          <BrowseTab rows={catalog.rows} repos={catalog.repos} loading={catalog.loading} error={catalog.error} onInstall={install.request} onUninstall={(row) => void uninstall(row)} progress={install.progress} variant={variant} onOpen={(row) => setDetailKey(rowKey(row))} />
         ) : current === "installed" ? (
           <InstalledTab
             plugins={plugins}
@@ -111,6 +144,8 @@ export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = fal
             refresh={catalog.refresh}
             variant={variant}
           />
+        ) : current === "themes" && customThemes ? (
+          <ThemesTab themes={customThemes} apply={themeApply} onAddRepository={() => onTabChange("repositories")} />
         ) : (
           <RepositoriesTab repos={catalog.repos} rows={catalog.rows} refresh={catalog.refresh} variant={variant} />
         )}

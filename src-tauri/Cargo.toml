@@ -1,12 +1,16 @@
 [package]
 name = "shard"
-version = "3.0.0"
+version = "1.0.0"
 description = "Shard - Your Essential Developer Companion"
 authors = ["kinan9011"]
 license = "MIT"
 repository = "https://github.com/kinan9011/shard"
 edition = "2021"
 rust-version = "1.77.2"
+
+[lib]
+name = "shard_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -16,23 +20,29 @@ tauri = { version = "2", features = ["macos-private-api", "tray-icon", "image-pn
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-deep-link = "=2.6.1"
 tauri-plugin-dialog = "2"
-tauri-plugin-global-shortcut = "=2.4.1"
 tauri-plugin-opener = "2"
 tauri-plugin-os = "2"
-tauri-plugin-process = "2"
-tauri-plugin-single-instance = { version = "=2.5.2", features = ["deep-link"] }
-tauri-plugin-updater = "2"
 percent-encoding = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 semver = "1"
 sha2 = "0.10"
+# Already in the lock through the updater: the same crate checks the signed indexes.
+minisign-verify = "0.3"
+base64 = "0.22"
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
 # Same crate and provider the updater uses; plugin_fetch installs it when nothing else has.
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 url = "2"
 # Already in the lock through the updater. Deflate only: plugin packages are plain zips.
 zip = { version = "4.6", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+
+# A desktop has these; a phone has no global shortcut, no second instance, no restart and no self-update.
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-global-shortcut = "=2.4.1"
+tauri-plugin-process = "2"
+tauri-plugin-single-instance = { version = "=2.5.2", features = ["deep-link"] }
+tauri-plugin-updater = "2"
 
 [dev-dependencies]
 tempfile = "3"

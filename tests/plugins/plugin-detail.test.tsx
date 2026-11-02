@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 
-const api = vi.hoisted(() => ({ listPlugins: vi.fn(), listRepos: vi.fn(), repoCatalog: vi.fn(), pluginUpdates: vi.fn(), installFromRepo: vi.fn(), setPluginGrants: vi.fn(), onInstallProgress: vi.fn(async () => () => {}) }));
+const api = vi.hoisted(() => ({ listPlugins: vi.fn(), listRepos: vi.fn(), repoCatalog: vi.fn(), pluginUpdates: vi.fn(), installFromRepo: vi.fn(), setPluginGrants: vi.fn(), uninstallPlugin: vi.fn(), onInstallProgress: vi.fn(async () => () => {}) }));
 vi.mock("@/plugins/api", () => api);
 
 import { PluginsPage } from "@/components/plugins/PluginsPage";
@@ -36,7 +36,7 @@ const KAFKA = entry("kafka-inspector", "Kafka Inspector", {
   sha256: "9c41f2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabe07a",
   size: 2516582,
   released: "2026-10-18",
-  minAppVersion: "3.0.0",
+  minAppVersion: "1.0.0",
   changelog: "Adds Avro decoding.",
   permissions: [
     { name: "network", hosts: ["localhost:9092"], reason: "Connect to localhost:9092 and brokers you add" },
@@ -100,6 +100,19 @@ describe("Plugin detail pane", () => {
     expect(within(pane()).getByRole("heading", { name: "Kafka Inspector" })).toBeInTheDocument();
   });
 
+  it("offers Uninstall for an installed plugin only, behind a confirm step", async () => {
+    arrange();
+    api.uninstallPlugin.mockResolvedValue(undefined);
+    await open("Kafka Inspector");
+    expect(within(pane()).queryByRole("button", { name: /^Uninstall/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Hash Generator/ }));
+    fireEvent.click(within(pane()).getByRole("button", { name: "Uninstall Hash Generator" }));
+    expect(api.uninstallPlugin).not.toHaveBeenCalled();
+    const dialog = screen.getByRole("alertdialog", { name: "Uninstall hash-generator?" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Uninstall" }));
+    await vi.waitFor(() => expect(api.uninstallPlugin).toHaveBeenCalledWith("hash-generator"));
+  });
+
   it("shows the header: source, badges and the primary action", async () => {
     arrange();
     await open("Kafka Inspector");
@@ -128,7 +141,7 @@ describe("Plugin detail pane", () => {
     expect(detail.getByText("0.3.1, released 18 Oct 2026")).toBeInTheDocument();
     expect(detail.getByText("2.4 MB")).toBeInTheDocument();
     expect(detail.getByText("Web UI + WASM backend")).toBeInTheDocument();
-    expect(detail.getByText("Shard 3.0 or later")).toBeInTheDocument();
+    expect(detail.getByText("Shard 1.0 or later")).toBeInTheDocument();
     expect(detail.getByRole("link", { name: "github.com/kinan9011/kafka-inspector" })).toHaveAttribute("href", KAFKA_REPO);
     expect(detail.getByText("SHA-256 9c41f2…be07a")).toBeInTheDocument();
     expect(detail.getByText("matches release")).toBeInTheDocument();

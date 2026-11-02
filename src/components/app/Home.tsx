@@ -2,9 +2,7 @@ import { useState } from "react";
 import { ChevronRight, Download, Plus, Puzzle, RefreshCw, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CatalogTool } from "@/app/catalog";
-import type { PortedTool } from "@/app/legacyMigration";
 import { PinnedEditor } from "@/components/app/PinnedEditor";
-import { PortedToolBanners } from "@/components/app/PortedToolBanners";
 import type { PluginUpdate } from "@/plugins/api";
 import { listNames } from "@/plugins/format";
 
@@ -76,12 +74,6 @@ interface HomeProps {
   empty: boolean;
   onBrowsePlugins: () => void;
   onInstallFromFile: () => void;
-  /** An upgrade from 2.x: the one-time "Plugins are here" banner. */
-  pluginsIntro: boolean;
-  onDismissPluginsIntro: () => void;
-  /** Tools that moved out of the app and that the user had pinned or used: "X is now a plugin. Install". */
-  portedOffers: readonly PortedTool[];
-  onDismissPorted: (id: string) => void;
 }
 
 export function UpdateBanner({ updates, onReview }: { updates: readonly PluginUpdate[]; onReview: () => void }) {
@@ -92,32 +84,6 @@ export function UpdateBanner({ updates, onReview }: { updates: readonly PluginUp
         {updates.length} plugin {updates.length === 1 ? "update is" : "updates are"} ready: {listNames(updates.map((update) => update.name))}.
       </span>
       <Button type="button" variant="secondary" size="sm" className="h-7 px-3 text-sm" onClick={onReview}>Review</Button>
-    </div>
-  );
-}
-
-export function PluginsIntroBanner({ onBrowse, onDismiss }: { onBrowse: () => void; onDismiss: () => void }) {
-  return (
-    <div className="mb-6 mt-2 flex items-center gap-3 rounded-lg bg-primary/[.14] px-3 py-2.5 text-sm text-foreground" role="status">
-      <Puzzle size={16} className="shrink-0 text-primary" aria-hidden="true" />
-      <span className="flex-1">
-        <strong className="font-semibold">Plugins are here.</strong> Add tools from the Shard Official repository, a zip file, a folder or a repo URL.
-      </span>
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        className="h-7 px-3 text-sm"
-        onClick={() => {
-          onDismiss();
-          onBrowse();
-        }}
-      >
-        Browse plugins
-      </Button>
-      <button type="button" aria-label="Dismiss" onClick={onDismiss} className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-foreground/10 hover:text-foreground">
-        <X size={14} aria-hidden="true" />
-      </button>
     </div>
   );
 }
@@ -146,7 +112,7 @@ export function EmptyHome({ onBrowse, onInstall, className = "mx-auto h-full max
   );
 }
 
-export function Home({ recentTools, tools, pinned, pinnedTools, onPin, onUnpin, onMovePinned, onPinInstalled, onOpenPlugin, quickAccessTools, platform, paletteShortcutLabel, onSelect, onOpenPalette, updates, onReviewUpdates, empty, onBrowsePlugins, onInstallFromFile, pluginsIntro, onDismissPluginsIntro, portedOffers, onDismissPorted }: HomeProps) {
+export function Home({ recentTools, tools, pinned, pinnedTools, onPin, onUnpin, onMovePinned, onPinInstalled, onOpenPlugin, quickAccessTools, platform, paletteShortcutLabel, onSelect, onOpenPalette, updates, onReviewUpdates, empty, onBrowsePlugins, onInstallFromFile }: HomeProps) {
   const [editing, setEditing] = useState(false);
   const [pickerFirst, setPickerFirst] = useState(false);
   if (empty) return <EmptyHome onBrowse={onBrowsePlugins} onInstall={onInstallFromFile} />;
@@ -176,8 +142,6 @@ export function Home({ recentTools, tools, pinned, pinnedTools, onPin, onUnpin, 
           Or paste a JWT, JSON, a URL, a timestamp, or other text here with {platform === "darwin" ? "⌘V" : "Ctrl+V"} to find the right tool.
         </p>
       )}
-      {!editing && pluginsIntro && <PluginsIntroBanner onBrowse={onBrowsePlugins} onDismiss={onDismissPluginsIntro} />}
-      {!editing && <PortedToolBanners offers={portedOffers} onDismiss={onDismissPorted} onOpenPlugin={onOpenPlugin} />}
       {!editing && updates.length > 0 && <UpdateBanner updates={updates} onReview={onReviewUpdates} />}
       <div className="home-sections space-y-8">
         {editing ? (

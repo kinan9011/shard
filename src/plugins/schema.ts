@@ -51,6 +51,9 @@ export const manifestSchema = {
   },
 } as const;
 
+/** https, or plain http to the machine itself. Mirrors `valid_download_url` in repos.rs. */
+const HTTPS_OR_LOCAL = "^(https://|http://(localhost|127\\.0\\.0\\.1|\\[::1\\])([:/]|$))";
+
 export const indexSchema = {
   type: "object",
   required: ["schema", "name", "plugins"],
@@ -70,6 +73,23 @@ export const indexSchema = {
         },
       },
     },
+    // Optional: color themes. `url` is the theme's JSON file (see docs/themes.md), at most 64 KB.
+    themes: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["id", "name", "version", "url", "sha256", "size"],
+        properties: {
+          id: { type: "string", pattern: "^[a-z0-9-]{1,40}$" },
+          name: str,
+          version,
+          description: { type: "string" },
+          url: { type: "string", format: "uri", pattern: HTTPS_OR_LOCAL },
+          sha256: { type: "string", pattern: "^[0-9a-f]{64}$" },
+          size: { type: "integer", minimum: 1, maximum: 65536 },
+        },
+      },
+    },
     plugins: {
       type: "array",
       items: {
@@ -84,7 +104,7 @@ export const indexSchema = {
           runtime,
           permissions,
           minAppVersion: version,
-          url: { type: "string", format: "uri" },
+          url: { type: "string", format: "uri", pattern: HTTPS_OR_LOCAL },
           sha256: { type: "string", pattern: "^[0-9a-f]{64}$" },
           size: { type: "integer", minimum: 0 },
           released: { type: "string", format: "date" },
@@ -156,6 +176,11 @@ export function validateIndex(data: unknown): ValidationResult<PluginIndex> {
   index.plugins.forEach((plugin, i) => {
     if (seen.has(plugin.id)) errors.push(`plugins[${i}].id: "${plugin.id}" is listed more than once`);
     seen.add(plugin.id);
+  });
+  const themeIds = new Set<string>();
+  index.themes?.forEach((theme, i) => {
+    if (themeIds.has(theme.id)) errors.push(`themes[${i}].id: "${theme.id}" is listed more than once`);
+    themeIds.add(theme.id);
   });
   const listed = new Set(index.plugins.map((plugin) => plugin.id));
   const bundleIds = new Set<string>();

@@ -12,8 +12,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub const MAX_FILES: usize = 5_000;
-pub const MAX_BYTES: u64 = 100 * 1024 * 1024;
+pub const MAX_FILES: usize = 50_000;
+pub const MAX_BYTES: u64 = 1024 * 1024 * 1024;
 
 const REGISTRY_FILE: &str = "plugins.json";
 

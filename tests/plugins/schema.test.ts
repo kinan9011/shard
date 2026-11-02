@@ -44,7 +44,7 @@ describe("validateManifest", () => {
         { name: "clipboard:write", reason: "Copy", optional: true },
         { name: "storage", reason: "Remember settings" },
       ],
-      minAppVersion: "3.0.0",
+      minAppVersion: "1.0.0",
       license: "MIT",
       source: "https://github.com/kinan9011/kafka-inspector",
       screenshots: ["shot1.png"],
@@ -70,7 +70,7 @@ describe("validateManifest", () => {
   });
 
   it("accepts build metadata and prerelease, rejects a non-http source", () => {
-    expect(validateManifest(manifest({ version: "1.0.0+build.5", minAppVersion: "3.0.0-beta.1" })).ok).toBe(true);
+    expect(validateManifest(manifest({ version: "1.0.0+build.5", minAppVersion: "1.0.0-beta.1" })).ok).toBe(true);
     expect(errorsOf(validateManifest(manifest({ source: "javascript:alert(1)" })))[0]).toMatch(/^source: "javascript:alert\(1\)" does not match/);
   });
 
@@ -117,6 +117,14 @@ describe("validateIndex", () => {
   it("accepts an index and extra fields", () => {
     expect(validateIndex(index([entry({ released: "2026-10-18", changelog: "x", icon: "https://x/i.svg", permissions: [{ name: "storage", reason: "r" }] })])).ok).toBe(true);
     expect(validateIndex(index([], { extra: true })).ok).toBe(true);
+  });
+
+  it("accepts a themes-only index and rejects a duplicate or oversized theme", () => {
+    const theme = (extra = {}) => ({ id: "nord", name: "Nord", version: "1.0.0", url: "https://x.test/nord.json", sha256: "a".repeat(64), size: 900, ...extra });
+    expect(validateIndex(index([], { themes: [theme()] })).ok).toBe(true);
+    expect(errorsOf(validateIndex(index([], { themes: [theme(), theme()] })))).toEqual(['themes[1].id: "nord" is listed more than once']);
+    expect(validateIndex(index([], { themes: [theme({ size: 70000 })] })).ok).toBe(false);
+    expect(validateIndex(index([], { themes: [theme({ id: "Bad Id" })] })).ok).toBe(false);
   });
 
   it("rejects a schema other than 1", () => {

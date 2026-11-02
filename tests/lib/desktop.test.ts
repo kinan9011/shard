@@ -417,4 +417,33 @@ describe("folder bridge", () => {
     await expect(d.revealPath("/a")).rejects.toThrow("Folder compare needs the desktop app.");
     expect(tauri.invoke).not.toHaveBeenCalled();
   });
+
+  it("resets in order: files first, then the webview's storage, then a restart", async () => {
+    localStorage.setItem("shard-pinned", "[]");
+    const order: string[] = [];
+    tauri.invoke.mockImplementation(async (command: string) => void order.push(`invoke:${command}:${localStorage.length}`));
+    tauri.relaunch.mockImplementation(async () => void order.push(`relaunch:${localStorage.length}`));
+    const d = await loadDesktop();
+    await d.resetAppData();
+    expect(order).toEqual(["invoke:reset_app_data:1", "relaunch:0"]);
+  });
+
+  it("a reset that fails clears nothing and does not restart", async () => {
+    localStorage.setItem("shard-pinned", "[]");
+    tauri.invoke.mockRejectedValueOnce("Could not remove /data: permission denied");
+    tauri.relaunch.mockClear();
+    const d = await loadDesktop();
+    await expect(d.resetAppData()).rejects.toBe("Could not remove /data: permission denied");
+    expect(localStorage.getItem("shard-pinned")).toBe("[]");
+    expect(tauri.relaunch).not.toHaveBeenCalled();
+    localStorage.clear();
+  });
+
+  it("opens the themes folder through the backend", async () => {
+    tauri.invoke.mockReset();
+    tauri.invoke.mockResolvedValue(undefined);
+    const d = await loadDesktop();
+    await d.openThemesFolder();
+    expect(tauri.invoke).toHaveBeenCalledWith("theme_open_dir");
+  });
 });

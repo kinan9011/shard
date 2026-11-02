@@ -62,10 +62,10 @@ const lookUp = async (text = URL_TEXT) => {
   fireEvent.click(screen.getByRole("button", { name: "Look up" }));
 };
 // Lets the dialog read the setting first: a drop before that is ignored.
-const dropOn = async (files: File[], entryIsDirectory = false) => {
+const dropOn = async (files: File[], entryIsDirectory = false, uriList = "") => {
   await act(async () => {});
   fireEvent.drop(screen.getByTestId("drop-zone"), {
-    dataTransfer: { files, items: [{ webkitGetAsEntry: () => ({ isDirectory: entryIsDirectory }) }] },
+    dataTransfer: { files, items: [{ webkitGetAsEntry: () => ({ isDirectory: entryIsDirectory }) }], getData: () => uriList },
   });
 };
 
@@ -215,6 +215,15 @@ describe("InstallDialog", () => {
     const job = onContinue.mock.calls[0]![0];
     await job.discard?.();
     expect(api.clearDroppedZip).toHaveBeenCalledTimes(1);
+  });
+
+  it("installs from the path of a dropped file:// URI when the webview gives no File", async () => {
+    api.inspectZip.mockResolvedValue({ manifest: MANIFEST, sha256: "c".repeat(64), warnings: [] });
+    renderDialog();
+    await dropOn([], false, "# comment\r\nfile:///home/u/My%20Plugin.zip\r\n");
+    expect(await screen.findByText("My Plugin.zip · Web + WASM")).toBeInTheDocument();
+    expect(api.inspectZip).toHaveBeenCalledWith("/home/u/My Plugin.zip");
+    expect(api.stageDroppedZip).not.toHaveBeenCalled();
   });
 
   it("tells a dropped folder or a dropped non-zip what to do", async () => {

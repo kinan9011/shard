@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
 import { Archive, Check, Folder, Link, Puzzle, ShieldCheck, TriangleAlert, Upload, X } from "lucide-react";
 import { useDialogFocus } from "@/components/app/useDialogFocus";
+import { isMobileApp } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import {
   clearDroppedZip,
@@ -124,6 +125,13 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
     const first = event.dataTransfer.items?.[0];
     const file = event.dataTransfer.files?.[0];
     if (first?.webkitGetAsEntry?.()?.isDirectory) return setError("Folders can't be dropped here. Use Choose folder.");
+    // Linux file managers often give the webview a file:// URI and no File. A URI has the real path: no copy, no size limit on the bytes sent.
+    // ponytail: the File branch below reads the whole zip into memory. Turn on Tauri's native drag-drop (real paths) if big drops hurt on Windows or macOS.
+    const uri = event.dataTransfer.getData?.("text/uri-list")?.split(/\r?\n/).find((line) => line.startsWith("file://"));
+    const path = uri ? decodeURIComponent(new URL(uri).pathname) : null;
+    if (path && /\.zip$/i.test(path)) {
+      return inspect(() => inspectZip(path), (preview) => ({ kind: "zip", path, name: baseName(path), dropped: false, preview }));
+    }
     if (!file || !/\.zip$/i.test(file.name)) return setError("Drop a plugin .zip file.");
     await inspect(
       async () => {
@@ -186,40 +194,45 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
               </button>
             </p>
           )}
-          <div
-            data-testid="drop-zone"
-            onDragOver={(event) => {
-              event.preventDefault();
-              if (!outsideOff) setDragging(true);
-            }}
-            onDragLeave={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false);
-            }}
-            onDrop={onDrop}
-            className={cn(
-              "flex h-[132px] flex-col items-center justify-center gap-2.5 rounded-[10px] border-[1.5px] border-dashed text-sm",
-              dragging ? "border-primary bg-primary/10" : "border-input",
-              outsideOff && "opacity-60",
-            )}
-          >
-            <Upload size={20} aria-hidden="true" className="text-muted-foreground" />
-            <span className="font-medium text-foreground">Drop a plugin .zip or folder here</span>
-            <div className="flex gap-2">
-              <button type="button" disabled={outsideOff || !!busy} onClick={() => void chooseZip()} className={cn(buttonClass, "h-7")}>
-                <Archive size={14} aria-hidden="true" />
-                Choose zip file
-              </button>
-              <button type="button" disabled={outsideOff || !!busy} onClick={() => void chooseFolder()} className={cn(buttonClass, "h-7")}>
-                <Folder size={14} aria-hidden="true" />
-                Choose folder
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            or from a repository URL
-            <span className="h-px flex-1 bg-border" />
-          </div>
+          {/* A phone cannot hand over a path to unpack: only a repository address installs there. */}
+          {!isMobileApp() && (
+            <>
+              <div
+                data-testid="drop-zone"
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  if (!outsideOff) setDragging(true);
+                }}
+                onDragLeave={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false);
+                }}
+                onDrop={onDrop}
+                className={cn(
+                  "flex h-[132px] flex-col items-center justify-center gap-2.5 rounded-[10px] border-[1.5px] border-dashed text-sm",
+                  dragging ? "border-primary bg-primary/10" : "border-input",
+                  outsideOff && "opacity-60",
+                )}
+              >
+                <Upload size={20} aria-hidden="true" className="text-muted-foreground" />
+                <span className="font-medium text-foreground">Drop a plugin .zip or folder here</span>
+                <div className="flex gap-2">
+                  <button type="button" disabled={outsideOff || !!busy} onClick={() => void chooseZip()} className={cn(buttonClass, "h-7")}>
+                    <Archive size={14} aria-hidden="true" />
+                    Choose zip file
+                  </button>
+                  <button type="button" disabled={outsideOff || !!busy} onClick={() => void chooseFolder()} className={cn(buttonClass, "h-7")}>
+                    <Folder size={14} aria-hidden="true" />
+                    Choose folder
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
+                <span className="h-px flex-1 bg-border" />
+                or from a repository URL
+                <span className="h-px flex-1 bg-border" />
+              </div>
+            </>
+          )}
           <form onSubmit={(event) => void lookUp(event)} className="flex gap-2">
             <label className="flex h-[34px] min-w-0 flex-1 items-center gap-[9px] rounded-[7px] border border-input bg-background px-[11px] text-muted-foreground focus-within:ring-2 focus-within:ring-ring">
               <Link size={15} aria-hidden="true" className="shrink-0" />

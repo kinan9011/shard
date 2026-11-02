@@ -283,6 +283,7 @@ describe("deep links to plugin tools", () => {
       }),
     };
     localStorage.setItem("shard-whats-new-seen-version", "2.0.0");
+    localStorage.setItem("shard-first-run-done", "true");
   };
 
   it("opens an installed plugin", async () => {

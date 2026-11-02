@@ -116,7 +116,6 @@ button:disabled { opacity: .6; cursor: not-allowed; }
 .tool-panel[hidden] { display: none; }
 .tool-panel-editor { height: 100%; }
 .tool-panel-form { max-width: 1100px; margin: 0 auto; padding: 28px 32px; }
-.tool-heading { font-size: 17px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 24px; }
 .json-workspace { display: flex; flex-direction: column; height: 100%; min-height: 420px; background: var(--surface-editor); }
 .editor-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-bottom: 1px solid hsl(var(--border)); }
 .toolbar-actions { display: flex; align-items: center; gap: 12px; }
@@ -142,7 +141,6 @@ button:disabled { opacity: .6; cursor: not-allowed; }
 .code-output pre { padding: 16px 16px 16px 0; font: 14px/24px var(--font-code); min-width: max-content; }
 .code-line { display: flex; }
 .output-line-number { flex: 0 0 44px; padding-right: 10px; text-align: right; color: hsl(var(--muted-foreground)); font-size: 12px; user-select: none; }
-.json-key { color: var(--syntax-kw); }.json-string { color: var(--syntax-str); }.json-literal { color: var(--syntax-lit); }.json-number { color: var(--syntax-num); }
 .editor-empty { height: 100%; min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: hsl(var(--muted-foreground)); gap: 8px; padding: 20px; text-align: center; }
 .editor-empty p { color: hsl(var(--foreground)); font-weight: 500; }.editor-empty span { font-size: 12px; }
 .editor-open-file { flex: 1; height: auto; margin: 12px; border: 1px dashed hsl(var(--border)); border-radius: 8px; cursor: pointer; transition: border-color .15s, background-color .15s; }
@@ -200,14 +198,7 @@ body:has(.workspace[data-platform="darwin"]) #root,
 .home-tool-row { display: flex; align-items: center; gap: 12px; padding: 12px 8px; text-align: left; border-radius: 7px; transition: background 120ms; }
 .home-tool-row:hover { background: hsl(var(--muted)); }
 .home-tool-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: linear-gradient(hsl(var(--card)), hsl(var(--muted))); box-shadow: inset 0 0 0 1px hsl(var(--foreground) / .07), 0 1px 2px rgb(0 0 0 / .04); }
-.release-backdrop { background: rgb(18 23 32 / .18); backdrop-filter: blur(5px); }
-.release-sheet { background: linear-gradient(hsl(var(--card) / .96), hsl(var(--background) / .94)); backdrop-filter: blur(40px) saturate(1.3); box-shadow: 0 24px 80px rgb(0 0 0 / .22), 0 2px 8px rgb(0 0 0 / .10), inset 0 1px rgb(255 255 255 / .5); border-color: hsl(var(--foreground) / .14); }
-.release-sheet h2 { letter-spacing: -.01em; }
 .release-body { scrollbar-width: thin; }
-@media (prefers-reduced-transparency: reduce) {
-  .release-sheet { background: hsl(var(--card)); backdrop-filter: none; }
-  .release-backdrop { backdrop-filter: none; }
-}
 
 /* A continuous window frame around a distinct, inset working surface. */
 
@@ -266,8 +257,8 @@ body:has(.workspace[data-platform="darwin"]) #root,
 }
 
 /* Dialogs share the window's cool glass chrome, with opaque reading surfaces. */
-.modal-backdrop { background: rgb(22 33 53 / .20); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
-.modal-surface { background: hsl(var(--card) / .94); border: 1px solid hsl(var(--foreground) / .14); border-radius: 14px; overflow: hidden; box-shadow: 0 24px 70px rgb(17 30 53 / .24), 0 4px 12px rgb(17 30 53 / .12); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); }
+.modal-backdrop { background: rgb(0 0 0 / .20); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.modal-surface { background: hsl(var(--card) / .94); border: 1px solid hsl(var(--foreground) / .14); border-radius: 14px; overflow: hidden; box-shadow: 0 24px 70px rgb(0 0 0 / .24), 0 4px 12px rgb(0 0 0 / .12); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); }
 .modal-header, .modal-footer { flex-shrink: 0; padding: 18px 24px; background: linear-gradient(120deg, hsl(var(--card) / .85), hsl(var(--accent) / .35)); }
 .modal-header { border-bottom: 1px solid hsl(var(--foreground) / .08); box-shadow: inset 0 1px rgb(255 255 255 / .45); }
 .modal-header h2 { font-size: 17px; letter-spacing: -.01em; }
@@ -333,7 +324,6 @@ body:has(.workspace[data-platform="darwin"]) #root,
 .workspace-tabs[data-overflow="true"] { mask-image: linear-gradient(90deg, transparent, #000 20px, #000 calc(100% - 20px), transparent); }
 
 /* Shared tool workspace: panes for text-in, text-out tools. */
-.tool-panel-workspace { padding: 0; }
 .pane-actions { display: flex; align-items: center; gap: 2px; }
 /* Relative so that absolute children such as sr-only labels scroll and clip with the pane, and do not stretch the page. */
 .pane-body { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -341,35 +331,12 @@ body:has(.workspace[data-platform="darwin"]) #root,
 .code-textarea { flex: 1; width: 100%; min-height: 0; resize: none; border: 0; padding: 14px 16px; background: transparent; color: hsl(var(--foreground)); font: 13px/22px var(--font-code); tab-size: 2; }
 .code-textarea:focus-visible { outline-offset: -2px; }
 .code-textarea::placeholder { color: hsl(var(--muted-foreground)); }
-.pane-options { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 16px; border-bottom: 1px solid hsl(var(--border) / .5); font-size: 12px; }
 .option-switch { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: hsl(var(--foreground)); }
 .result-list { display: flex; flex-direction: column; }
 .result-row { display: grid; grid-template-columns: 112px 1fr auto; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid hsl(var(--border) / .5); }
 .result-row-label { font-size: 12px; font-weight: 500; color: hsl(var(--muted-foreground)); }
 .result-row-value { min-width: 0; font: 12px/18px var(--font-code); overflow-wrap: anywhere; color: hsl(var(--foreground)); user-select: text; }
 .result-row-value:empty::before { content: '—'; color: hsl(var(--muted-foreground)); }
-/* HTML preview: a centered frame with a width handle, and a full screen overlay. */
-.html-preview-stage { display: flex; flex: 1; min-height: 0; overflow: auto; background: hsl(var(--muted)); }
-.html-preview-stage[data-fixed-height] { align-items: flex-start; padding: 12px 0; }
-.html-preview-frame { position: relative; margin-left: auto; overflow: hidden; border-inline: 1px solid hsl(var(--border)); }
-.html-preview-stage[data-fixed-height] .html-preview-frame { border: 1px solid hsl(var(--border)); }
-.html-preview-frame > iframe { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
-.html-preview-handle { flex: none; align-self: stretch; width: 12px; margin-right: auto; display: flex; align-items: center; justify-content: center; cursor: ew-resize; touch-action: none; }
-.html-preview-handle::after { content: ''; width: 4px; height: 40px; border-radius: 2px; background: hsl(var(--muted-foreground) / .5); }
-.html-preview-handle:hover::after, .html-preview-handle[data-active]::after, .html-preview-handle:focus-visible::after { background: hsl(var(--primary)); }
-.html-preview-devicebar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; padding: 6px 12px; font-size: 12px; color: hsl(var(--muted-foreground)); border-bottom: 1px solid hsl(var(--border) / .5); }
-.html-preview-full .html-preview-devicebar { padding: 0; border: 0; }
-.mermaid-stage { display: flex; flex: 1; min-height: 0; overflow: auto; padding: 16px; }
-.mermaid-stage > img { margin: auto; max-width: none; }
-.mermaid-stage[data-fit] > img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
-.html-preview-devicebar select, .html-preview-devicebar input { height: 26px; background-color: transparent; color: hsl(var(--foreground)); padding: 0 8px; border: 1px solid hsl(var(--input)); border-radius: 5px; font-size: 12px; }
-.html-preview-devicebar select { padding-right: 24px; }
-.html-preview-devicebar option { background: var(--surface-editor); }
-.html-preview-devicebar input { width: 60px; font-variant-numeric: tabular-nums; appearance: textfield; -moz-appearance: textfield; }
-.html-preview-devicebar input::-webkit-inner-spin-button, .html-preview-devicebar input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-.html-preview-full { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; background: hsl(var(--background)); }
-/* The overlay sits outside the workspace, so it clears the macOS window controls itself */
-body:has(.workspace[data-platform="darwin"]) .html-preview-full > .editor-toolbar { padding-left: 82px; }
 .copy-button[data-copied] { color: hsl(var(--success)); }
 .workspace-notice { padding: 8px 16px; font-size: 12px; border-bottom: 1px solid hsl(var(--border) / .5); }
 .workspace-notice[data-tone="error"] { color: hsl(var(--destructive)); }
@@ -389,10 +356,9 @@ body:has(.workspace[data-platform="darwin"]) .html-preview-full > .editor-toolba
 /* A blue wash over the native glass. The blur still shows through, and the wash keeps sidebar text
    readable whatever is behind the window (vibrancy alone lightens over bright content). */
 .workspace[data-platform="darwin"] { background: linear-gradient(180deg, rgb(238 244 255 / .42), rgb(218 231 253 / .38)); }
-.dark .workspace[data-platform="darwin"] { background: linear-gradient(180deg, rgb(15 21 34 / .84), rgb(12 17 28 / .88)); }
 /* Linux: WebKitGTK blurs backdrops in software on every frame, so overlays drop it. The surfaces are
    already nearly opaque, so they look the same. */
-body:has(.workspace[data-platform="linux"]) :is(.workspace-sidebar, .command-surface, .release-backdrop, .release-sheet, .modal-backdrop, .modal-surface, .desktop-menu, .desktop-tooltip) { backdrop-filter: none; -webkit-backdrop-filter: none; }
+body:has(.workspace[data-platform="linux"]) :is(.workspace-sidebar, .command-surface, .modal-backdrop, .modal-surface, .desktop-menu, .desktop-tooltip) { backdrop-filter: none; -webkit-backdrop-filter: none; }
 .workspace-content, .workspace-content.is-home { background: hsl(var(--card)); }
 .workspace-content { box-shadow: 0 0 0 1px rgb(0 0 0 / .06), 0 1px 2px rgb(0 0 0 / .06), 0 6px 20px rgb(0 0 0 / .06); }
 .dark .workspace-content { box-shadow: 0 0 0 1px rgb(255 255 255 / .07), 0 2px 6px rgb(0 0 0 / .3), 0 10px 30px rgb(0 0 0 / .25); }
@@ -495,3 +461,23 @@ code, pre, kbd, samp, .font-mono { font-family: var(--font-code); font-feature-s
 .launcher-search kbd { font-family: var(--font-ui); font-size: 11px; padding: 2px 6px; border-radius: 4px; background: hsl(var(--muted)); border: 1px solid hsl(var(--border)); }
 .launcher-badge { position: absolute; top: 2px; right: 1px; display: grid; place-items: center; box-sizing: border-box; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 999px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-size: 10px; font-weight: 600; line-height: 1; }
 .launcher-tabs .workspace-tab-placeholder { display: none; }
+
+/* ---- Phone shell: one column, a top bar, a bottom bar, the content fills the screen. See src/components/app/PhoneShell.tsx. */
+.workspace[data-phone="true"] { height: 100dvh; flex-direction: column; }
+.workspace[data-phone="true"] > main { padding: 0; }
+.workspace[data-phone="true"] .workspace-content { border-radius: 0; box-shadow: none; }
+.phone-header { display: flex; flex-shrink: 0; align-items: center; gap: 4px; min-height: calc(52px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 8px 0 12px; background: var(--surface-chrome); border-bottom: 1px solid hsl(var(--border)); }
+.phone-nav { display: grid; flex-shrink: 0; grid-template-columns: repeat(4, 1fr); padding-bottom: env(safe-area-inset-bottom); background: var(--surface-chrome); border-top: 1px solid hsl(var(--border)); }
+.phone-nav-item { display: flex; min-height: 56px; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; color: hsl(var(--muted-foreground)); }
+.phone-nav-item[aria-current="page"] { color: hsl(var(--primary)); font-weight: 600; }
+/* Fingers: bigger targets, and nothing that only shows on hover. */
+@media (pointer: coarse) {
+  .chrome-button { min-width: 44px; min-height: 44px; }
+  .tab-close, .sidebar-favorite { opacity: 1; }
+}
+/* A text field under 16px makes iOS and some Android browsers zoom in on focus. */
+@media (max-width: 639px) { input, select, textarea { font-size: 16px; } }
+/* The result goes below on a phone, so there is nothing to choose. */
+@media (max-width: 639px) { .layout-switch[aria-label="Result layout"] { display: none; } }
+/* Key hints are for a keyboard. */
+@media (max-width: 639px) { .launcher-search kbd { display: none; } }

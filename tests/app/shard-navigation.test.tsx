@@ -61,11 +61,11 @@ describe("Shard navigation", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /^home$/i }));
     const sidebarNav = screen.getAllByRole("navigation")[0];
-    fireEvent.click(within(sidebarNav).getByRole("button", { name: /generators/i }));
-    fireEvent.click(within(sidebarNav).getByRole("button", { name: /^bcrypt generator$/i }));
+    fireEvent.click(within(sidebarNav).getByRole("button", { name: /development tools/i }));
+    fireEvent.click(within(sidebarNav).getByRole("button", { name: /^json diff$/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("tab", { name: "Bcrypt Generator" })).toHaveAttribute("aria-selected", "true");
+      expect(screen.getByRole("tab", { name: "JSON Diff" })).toHaveAttribute("aria-selected", "true");
     });
 
     fireEvent.click(screen.getByRole("button", { name: /^home$/i }));
@@ -83,9 +83,9 @@ describe("Shard navigation", () => {
     }
 
     const recentButtons = within(recentSection).getAllByRole("button", {
-      name: /json viewer|bcrypt generator/i,
+      name: /json viewer|json diff/i,
     });
-    expect(recentButtons[0]).toHaveTextContent("Bcrypt Generator");
+    expect(recentButtons[0]).toHaveTextContent("JSON Diff");
     expect(recentButtons[1]).toHaveTextContent("JSON Viewer");
   });
 
@@ -182,9 +182,9 @@ describe("Shard navigation", () => {
     localStorage.setItem(
       "shard-recent-tools",
       JSON.stringify([
-        "password-generator",
-        "bcrypt-generator",
-        "checksum",
+        "text-compare",
+        "jwt-decoder",
+        "json-diff",
         "json-typescript",
         "regex-generator",
         "code-playground",
@@ -213,11 +213,11 @@ describe("Shard navigation", () => {
     }
 
     const recentButtons = within(recentSection).getAllByRole("button", {
-      name: /code playground|regex tester|json to code|checksum|bcrypt generator|password generator/i,
+      name: /code playground|regex tester|json to code|json diff|jwt decoder|text compare/i,
     });
 
     expect(recentButtons).toHaveLength(6);
-    expect(recentButtons[0]).toHaveTextContent("Password Generator");
+    expect(recentButtons[0]).toHaveTextContent("Text Compare");
     expect(recentButtons[5]).toHaveTextContent("Code Playground");
     expect(
       within(recentSection).queryByRole("button", { name: /json viewer/i })
@@ -225,18 +225,17 @@ describe("Shard navigation", () => {
   });
 });
 
-it('keeps the stopwatch running while another tool is selected', async () => {
+it('keeps a tool open while another tool is selected, and closes it from its tab', async () => {
   setupMatchMedia();
   render(<Shard />);
-  fireEvent.change(screen.getByPlaceholderText('Search...'), {target:{value:'stopwatch'}});
-  fireEvent.click(screen.getByRole('button',{name:'Stopwatch'}));
-  await screen.findByRole('button',{name:'Start'});
-  fireEvent.click(screen.getByRole('button',{name:'Start'}));
+  fireEvent.change(screen.getByPlaceholderText('Search...'), {target:{value:'jwt decoder'}});
+  fireEvent.click(screen.getByRole('button',{name:'JWT Decoder'}));
+  await screen.findByRole('tab',{name:'JWT Decoder'});
   fireEvent.change(screen.getByPlaceholderText('Search...'), {target:{value:'json viewer'}});
   fireEvent.click(screen.getByRole('button',{name:'JSON Viewer'}));
   await screen.findByText('JSON Input');
-  fireEvent.click(screen.getByRole('tab',{name:'Stopwatch'}));
-  expect(screen.getByRole('button',{name:'Pause'})).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button',{name:'Close Stopwatch'}));
-  expect(screen.queryByRole('tab',{name:'Stopwatch'})).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('tab',{name:'JWT Decoder'}));
+  expect(screen.getByRole('tab',{name:'JWT Decoder'})).toHaveAttribute('aria-selected','true');
+  fireEvent.click(screen.getByRole('button',{name:'Close JWT Decoder'}));
+  expect(screen.queryByRole('tab',{name:'JWT Decoder'})).not.toBeInTheDocument();
 });

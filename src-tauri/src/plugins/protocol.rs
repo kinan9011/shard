@@ -13,6 +13,7 @@ use tauri::http::{header, Response, StatusCode};
 pub const SCHEME: &str = "shard-plugin";
 
 /// On Windows, WebView2 maps a custom scheme to `http://<scheme>.localhost/`, so the id is the first path segment.
+/// `register` passes this host for every Windows request, because wry reverts the page's host to `localhost` first.
 const WINDOWS_HOST: &str = "shard-plugin.localhost";
 
 const CSP: &str = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; frame-ancestors *";
@@ -124,9 +125,12 @@ pub fn register<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
     builder.register_asynchronous_uri_scheme_protocol(SCHEME, |context, request, responder| {
         let root = context.app_handle().path().app_data_dir();
         let uri = request.uri().clone();
+        // wry hands the handler `shard-plugin://localhost/<id>/<path>` on Windows (it reverts the
+        // http://shard-plugin.localhost workaround), so the id is always the first path segment there.
+        let host = if cfg!(windows) { Some(WINDOWS_HOST.to_string()) } else { uri.host().map(str::to_string) };
         tauri::async_runtime::spawn_blocking(move || {
             let response = match root {
-                Ok(root) => serve(&root, uri.host(), uri.path()),
+                Ok(root) => serve(&root, host.as_deref(), uri.path()),
                 Err(_) => not_found(),
             };
             responder.respond(response);

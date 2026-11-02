@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { Search, type LucideIcon } from "lucide-react";
+import { Download, Palette, Search, type LucideIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { searchTools } from "@/utils/tool-search";
 import type { CatalogTool } from "@/app/catalog";
+import type { InstallableItem } from "@/hooks/usePaletteInstallables";
 
 /** An action the palette offers next to the tools (for example "Open Plugins"). */
 export interface PaletteCommand {
@@ -12,7 +13,7 @@ export interface PaletteCommand {
   run: () => void;
 }
 
-type PaletteItem = { kind: "tool"; tool: CatalogTool } | { kind: "command"; command: PaletteCommand };
+type PaletteItem = { kind: "tool"; tool: CatalogTool } | { kind: "command"; command: PaletteCommand } | { kind: "install"; item: InstallableItem };
 
 interface CommandPaletteProps {
   open: boolean;
@@ -23,11 +24,14 @@ interface CommandPaletteProps {
   onSelectTool: (tool: CatalogTool) => void;
   /** Actions that match the query by label. Not shown while the field is empty. */
   commands?: readonly PaletteCommand[];
+  /** Plugins and themes of the repositories that are not installed yet. Found by name, category or description; not shown while the field is empty. */
+  installables?: readonly InstallableItem[];
   /** Text to put in the search field when the palette opens, for example from a link. */
   initialQuery?: string;
 }
 
 const MAX_RESULTS = 10;
+const MAX_INSTALLABLES = 5;
 
 function buildDefaultResults(
   tools: CatalogTool[],
@@ -63,6 +67,7 @@ export function CommandPalette({
   onClose,
   onSelectTool,
   commands = [],
+  installables = [],
   initialQuery = "",
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
@@ -79,11 +84,18 @@ export function CommandPalette({
     const matching = commands.filter((command) => words.every((word) => command.label.toLowerCase().includes(word)));
     return [
       ...searchTools(tools, query).slice(0, MAX_RESULTS).map((tool): PaletteItem => ({ kind: "tool", tool })),
+      ...searchTools([...installables], query).slice(0, MAX_INSTALLABLES).map((item): PaletteItem => ({ kind: "install", item })),
       ...matching.map((command): PaletteItem => ({ kind: "command", command })),
     ];
-  }, [commands, pinned, query, recents, tools]);
+  }, [commands, installables, pinned, query, recents, tools]);
 
-  const choose = (item: PaletteItem) => (item.kind === "tool" ? onSelectTool(item.tool) : item.command.run());
+  const choose = (item: PaletteItem) => {
+    if (item.kind === "tool") onSelectTool(item.tool);
+    else if (item.kind === "install") {
+      onClose();
+      item.item.run();
+    } else item.command.run();
+  };
 
   useEffect(() => {
     if (!open) {
@@ -188,8 +200,10 @@ export function CommandPalette({
             <div className="space-y-1" id="palette-results" role="listbox" aria-label="Tools">
               {results.map((item, index) => {
                 const isActive = index === activeIndex;
-                const Icon = item.kind === "tool" ? item.tool.icon : item.command.icon;
-                const key = item.kind === "tool" ? item.tool.id : `command:${item.command.id}`;
+                const Icon = item.kind === "tool" ? item.tool.icon : item.kind === "install" ? (item.item.kind === "theme" ? Palette : Download) : item.command.icon;
+                const key = item.kind === "tool" ? item.tool.id : item.kind === "install" ? item.item.id : `command:${item.command.id}`;
+                const title = item.kind === "tool" ? item.tool.name : item.kind === "install" ? `Install ${item.item.name}` : item.command.label;
+                const subtitle = item.kind === "tool" ? item.tool.category : item.kind === "install" ? item.item.subtitle : "Command";
 
                 return (
                   <button
@@ -208,8 +222,8 @@ export function CommandPalette({
                       <Icon className="h-4 w-4 text-primary" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{item.kind === "tool" ? item.tool.name : item.command.label}</p>
-                      <p className="truncate text-xs text-muted-foreground">{item.kind === "tool" ? item.tool.category : "Command"}</p>
+                      <p className="truncate font-medium">{title}</p>
+                      <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
                     </div>
                   </button>
                 );

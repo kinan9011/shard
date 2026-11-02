@@ -64,9 +64,8 @@
     }
   }
 
-  const PNG_HEADER = "89504e47";
-  const SAMPLE_PNG =
-    "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP8z8DAwMDAxMDAwMDAAAANHQEDasKb6QAAAABJRU5ErkJggg==";
+  // "diff": the first four bytes of the file the Diff & Merge step saves.
+  const SAVED_HEADER = "64696666";
 
   const PLUGIN_IDS = ["hello", "hash-wasm", "e2e-ipc-spike"];
   const isWindows = navigator.userAgent.includes("Windows");
@@ -80,7 +79,7 @@
     const version = await invoke("plugin:app|version");
     const isMac = navigator.platform.toLowerCase().includes("mac");
 
-    // From 3.0.0 a fresh profile opens the first-run wizard instead of the app. Mark it done so the flows below start on Home.
+    // A fresh profile opens the first-run wizard instead of the app. Mark it done so the flows below start on Home.
     // The app may already have read the old state, so if the wizard is up, reload once (the keys stay in localStorage).
     localStorage.setItem("shard-first-run-done", "true");
     localStorage.setItem("shard-plugins-intro-seen", "true");
@@ -135,7 +134,7 @@
 
     await step("opens every tool", async () => {
       const toolNames = await invoke("e2e_tool_names");
-      if (toolNames.length < 20) {
+      if (toolNames.length < 9) {
         throw new Error(`Expected the full tool list, found ${toolNames.length} tools`);
       }
       for (const name of toolNames) {
@@ -144,10 +143,13 @@
       }
     });
 
-    await step("encodes text to Base64", async () => {
-      await openTool("Base64");
-      setValue(document.querySelector('textarea[placeholder="Enter text to encode to Base64..."]'), "hello");
-      await waitFor(() => text().includes("aGVsbG8="), "Base64 output");
+    await step("decodes a JWT", async () => {
+      await openTool("JWT Decoder");
+      setValue(
+        document.querySelector("#jwt-input"),
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.signature",
+      );
+      await waitFor(() => text(toolContent()).includes("John Doe"), "decoded JWT payload");
     });
 
     await step("formats JSON", async () => {
@@ -160,45 +162,30 @@
       await waitFor(() => text(toolContent()).includes('"b": ['), "formatted JSON");
     });
 
-    await step("saves a QR code PNG through the save_file command", async () => {
-      await openTool("QR Generator");
-      setValue(document.querySelector("#qr-text"), "https://example.com");
-      (await waitFor(() => buttons("Save PNG")[0], "download button")).click();
-      await waitFor(async () => {
-        const files = await invoke("e2e_saved_files");
-        return files.some(([name, header]) => /^qr-code-\d+\.png$/.test(name) && header === PNG_HEADER);
-      }, "saved QR code PNG");
-    });
-
-    await step("compresses and saves an image", async () => {
-      await openTool("Image Converter");
-      const bytes = Uint8Array.from(atob(SAMPLE_PNG), (char) => char.charCodeAt(0));
+    await step("opens a file in Diff & Merge and saves it", async () => {
+      await openTool("Diff & Merge");
       const transfer = new DataTransfer();
-      transfer.items.add(new File([bytes], "sample-image.png", { type: "image/png" }));
+      transfer.items.add(new File(["diff and save check\n"], "sample-notes.txt", { type: "text/plain" }));
       // Other open tools stay mounted in hidden panels and can have their own file inputs.
-      const input = toolContent().querySelector('input[type="file"]');
+      const input = await waitFor(
+        () => toolContent().querySelector('input[type="file"][aria-label="Open file into Original"]'),
+        "the Original pane file input",
+      );
       input.files = transfer.files;
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      const download = await waitFor(
-        () => buttons("Download Image").find((button) => !button.disabled),
-        "image download button",
-      );
-      download.click();
+      const save = await waitFor(() => toolContent().querySelector('button[aria-label="Save Original"]'), "the Save Original button");
+      save.click();
       await waitFor(async () => {
         const files = await invoke("e2e_saved_files");
-        return files.some(([name, header]) => name.startsWith("sample-image") && header === PNG_HEADER);
-      }, "saved compressed image");
+        return files.some(([name, header]) => name.startsWith("sample-notes") && header === SAVED_HEADER);
+      }, "the saved file");
     });
 
     await step("toggles the theme", async () => {
       const before = document.documentElement.classList.contains("dark");
-      // Settings → Appearance: the header's Appearance button opens it, and the Theme control picks the opposite mode.
-      document.querySelector('button[aria-label="Appearance"]').click();
-      const mode = await waitFor(
-        () => [...document.querySelectorAll('[role="group"][aria-label="Theme"] button')].find((button) => button.innerText.trim() === (before ? "Light" : "Dark")),
-        "theme button",
-      );
-      mode.click();
+      // The header button switches straight to the opposite mode.
+      const toggle = await waitFor(() => document.querySelector(`button[aria-label="Switch to ${before ? "light" : "dark"} mode"]`), "theme button");
+      toggle.click();
       await waitFor(() => document.documentElement.classList.contains("dark") !== before, "theme change");
     });
 

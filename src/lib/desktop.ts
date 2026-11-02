@@ -6,6 +6,8 @@ import { platform as getOsPlatform } from "@tauri-apps/plugin-os";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
+import { isMobileApp } from "@/lib/platform";
+import type { UserTheme } from "@/utils/theme";
 import type { ToolManifest } from "@/utils/tool-manifest";
 
 export type UpdateStatus =
@@ -356,7 +358,8 @@ export async function writeClipboardText(text: string): Promise<void> {
  * Returns false when the user cancels the save dialog.
  */
 export async function saveFile(data: Blob, fileName: string): Promise<boolean> {
-  if (!isTauri()) {
+  // A phone has no save dialog: the webview downloads the file.
+  if (!isTauri() || isMobileApp()) {
     const downloadUrl = URL.createObjectURL(data);
     const anchor = document.createElement("a");
     anchor.href = downloadUrl;
@@ -455,6 +458,82 @@ export async function undoFolderMerge(journal: string): Promise<FolderUndoReport
 export async function revealPath(path: string): Promise<void> {
   requireDesktop();
   await revealItemInDir(path);
+}
+
+export interface UserThemeList {
+  themes: UserTheme[];
+  /** `file.json: reason`, one per file in the themes folder that is not usable. */
+  errors: string[];
+}
+
+/** The theme files of the user. Empty in the browser preview, which has no folder. */
+export async function listThemes(): Promise<UserThemeList> {
+  return isTauri() ? invoke<UserThemeList>("theme_list") : { themes: [], errors: [] };
+}
+
+/** Asks for a theme file and adds it. Resolves to null when the user cancels; rejects with the reason a file is refused. */
+export async function importTheme(): Promise<UserTheme | null> {
+  if (!isTauri()) {
+    throw new Error("Custom themes need the desktop app.");
+  }
+  return invoke<UserTheme | null>("theme_import");
+}
+
+/** A theme a repository lists, as `theme_catalog` returns it. */
+export interface ThemeCatalogEntry {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  repo: string;
+  repoName: string;
+}
+
+/** The themes of the enabled repositories, from their last sync. Empty in the browser preview. */
+export async function themeCatalog(): Promise<ThemeCatalogEntry[]> {
+  return isTauri() ? invoke<ThemeCatalogEntry[]>("theme_catalog") : [];
+}
+
+/** Downloads, checks and adds a repository's theme. Installing an installed one updates it. Rejects with the reason. */
+export async function installTheme(repo: string, id: string): Promise<UserTheme> {
+  return invoke<UserTheme>("theme_install", { repo, id });
+}
+
+/** A repository's theme as it would be installed, checked but not saved: for the swatches. */
+export async function previewTheme(repo: string, id: string): Promise<UserTheme> {
+  return invoke<UserTheme>("theme_preview", { repo, id });
+}
+
+/** Saves a theme made in the app. `overwrite` replaces the user's own file of that id, never one a repository installed. */
+export async function saveTheme(theme: UserTheme, overwrite: boolean): Promise<UserTheme> {
+  return invoke<UserTheme>("theme_save", { theme, overwrite });
+}
+
+export async function removeTheme(id: string): Promise<void> {
+  await invoke("theme_remove", { id });
+}
+
+/** Shows the themes folder in the system file manager. */
+export async function openThemesFolder(): Promise<void> {
+  requireDesktop();
+  await invoke("theme_open_dir");
+}
+
+/** Wipes all Shard data and restarts. The browser preview clears its storage and reloads. */
+export async function resetAppData(): Promise<void> {
+  if (isTauri()) {
+    // Files first: if this fails nothing has been cleared and the caller can say why.
+    await invoke("reset_app_data");
+  }
+  // The webview's own storage goes last, so it is empty even where Rust could not delete a locked file.
+  localStorage.clear();
+  sessionStorage.clear();
+  // A phone has no restart command: reloading the webview starts the app over from the empty storage.
+  if (isTauri() && !isMobileApp()) {
+    await relaunch();
+  } else {
+    location.reload();
+  }
 }
 
 /** Opens http(s) and mailto links in the system browser instead of the app window. */

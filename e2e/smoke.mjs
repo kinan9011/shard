@@ -62,6 +62,7 @@ async function startSession() {
       hostname: "127.0.0.1",
       port: 4444,
       logLevel: "warn",
+      connectionRetryCount: 0,
       capabilities: {
         browserName: "webview2",
         "wdio:enforceWebDriverClassic": true,
@@ -76,6 +77,7 @@ async function startSession() {
     hostname: "127.0.0.1",
     port: 4444,
     logLevel: "warn",
+    connectionRetryCount: 0,
     capabilities: {
       browserName: "wry",
       "wdio:enforceWebDriverClassic": true,
@@ -107,12 +109,14 @@ async function openTool(name) {
 
 /** Calls a Tauri command from the page, through the same internals the app's own code uses. */
 async function invokeCommand(command, args = {}) {
-  const outcome = await browser.executeAsync(
-    (name, params, done) => {
-      window.__TAURI_INTERNALS__.invoke(name, params).then(
-        (value) => done({ value }),
-        (error) => done({ error: String(error) }),
-      );
+  // webdriverio 10 has no executeAsync; execute waits for a returned promise.
+  const outcome = await browser.execute(
+    async (name, params) => {
+      try {
+        return { value: await window.__TAURI_INTERNALS__.invoke(name, params) };
+      } catch (error) {
+        return { error: String(error) };
+      }
     },
     command,
     args,
@@ -149,14 +153,13 @@ async function waitForSavedFile(pattern) {
   return fs.readFileSync(path.join(saveDir, match));
 }
 
-async function uploadFile(inputSelector, filePath) {
-  // File inputs in the app are hidden behind buttons. Show the input so WebDriver can use it.
-  await browser.execute((selector) => {
-    const input = document.querySelector(selector);
-    input.classList.remove("hidden");
-    input.style.display = "block";
-  }, inputSelector);
-  await (await browser.$(inputSelector)).addValue(filePath);
+/** Saves a screenshot for the CI artifact. A hung WebKitWebDriver capture must not fail the run, so give it 15 seconds. */
+async function screenshot(name) {
+  const done = await Promise.race([
+    browser?.saveScreenshot(path.join(screenshotDir, `${name}.png`)).then(() => true, () => false),
+    delay(15000).then(() => false),
+  ]);
+  if (!done) console.log(`(screenshot ${name} skipped: driver did not answer) `);
 }
 
 async function step(name, run) {
@@ -165,31 +168,26 @@ async function step(name, run) {
     await run();
     console.log("ok");
   } catch (error) {
-    console.log("FAILED");
-    await browser?.saveScreenshot(path.join(screenshotDir, "failure.png")).catch(() => {});
+    console.log(`FAILED: ${error.message}`);
+    await screenshot("failure");
     throw error;
   }
 }
-
-// A 2x2 PNG for the image converter.
-const SAMPLE_PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP8z8DAwMDAxMDAwMDAAAANHQEDasKb6QAAAABJRU5ErkJggg==",
-  "base64",
-);
-const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
 try {
   browser = await startSession();
 
   await step("records uncaught errors in the page", recordErrors);
 
-  // From 3.0.0 a fresh profile opens the first-run wizard instead of the app. Mark it done and reload, so What's New and the
+  // A fresh profile opens the first-run wizard instead of the app. Mark it done and reload, so What's New and the
   // flows below start on Home. Done unconditionally, so it does not depend on how fast the app read its state.
   await step("skips the first-run wizard", async () => {
     await browser.execute(() => {
       localStorage.setItem("shard-first-run-done", "true");
       localStorage.setItem("shard-plugins-intro-seen", "true");
       localStorage.removeItem("shard-first-run-started");
+      // A profile that already dismissed What's New for this version would never show the dialog again.
+      localStorage.removeItem("shard-whats-new-seen-version");
     });
     await browser.refresh();
     await recordErrors();
@@ -203,18 +201,18 @@ try {
     const dialog = await browser.$('[role="dialog"]');
     await dialog.waitForDisplayed({ timeout: 20000 });
     await waitForText(dialog, `Shard v${expectedVersion}`);
-    await browser.saveScreenshot(path.join(screenshotDir, "whats-new.png"));
+    await screenshot("whats-new");
     await (await browser.$("button=Got it")).click();
     await dialog.waitForDisplayed({ reverse: true, timeout: 5000 });
   });
 
   await step("shows the app version in the sidebar footer", async () => {
     await waitForText(await browser.$("body"), `v${expectedVersion}`);
-    await browser.saveScreenshot(path.join(screenshotDir, "home.png"));
+    await screenshot("home");
   });
 
   await step(`opens all ${toolNames.length} tools`, async () => {
-    if (toolNames.length < 20) {
+    if (toolNames.length < 9) {
       throw new Error(`Expected the full tool list, found ${toolNames.length} tools.`);
     }
 
@@ -230,14 +228,21 @@ try {
     }
   });
 
-  await step("encodes text to Base64", async () => {
-    await openTool("Base64");
-    await (await browser.$('textarea[placeholder="Enter text to encode to Base64..."]')).setValue("hello");
-    const output = await browser.$("#b64-encode-output");
-    await browser.waitUntil(async () => (await output.isExisting()) && (await output.getValue()) === "aGVsbG8=", {
-      timeout: 5000,
-      timeoutMsg: "Base64 output did not match",
+  await step("decodes a JWT", async () => {
+    await openTool("JWT Decoder");
+    await browser.execute(() => {
+      const input = document.querySelector("#jwt-input");
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set.call(
+        input,
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.signature",
+      );
+      input.dispatchEvent(new Event("input", { bubbles: true }));
     });
+    await browser.waitUntil(
+      () =>
+        browser.execute(() => document.querySelector("section.tool-panel:not([hidden])").innerText.includes("John Doe")),
+      { timeout: 5000, timeoutMsg: "Decoded JWT payload did not show" },
+    );
   });
 
   await step("formats JSON", async () => {
@@ -262,39 +267,34 @@ try {
     );
   });
 
-  await step("saves a QR code PNG through the save_file command", async () => {
-    await openTool("QR Generator");
-    await (await browser.$("#qr-text")).setValue("https://example.com");
-    // Other open tools, such as the Mermaid Renderer, stay mounted in hidden panels with their own Save PNG button.
-    await (await browser.$("section.tool-panel:not([hidden])").$("button*=Save PNG")).click();
-    const png = await waitForSavedFile(/^qr-code-\d+\.png$/);
-    if (!png.subarray(0, 4).equals(PNG_SIGNATURE)) {
-      throw new Error("The saved QR code is not a PNG file.");
-    }
-  });
-
-  await step("compresses and saves an image", async () => {
-    const samplePath = path.join(saveDir, "..", `sample-${Date.now()}.png`);
-    fs.writeFileSync(samplePath, SAMPLE_PNG);
-    await openTool("Image Converter");
+  await step("opens a file in Diff & Merge and saves it", async () => {
+    await openTool("Diff & Merge");
+    // Hand the page a File directly: a WebDriver file upload into the hidden input hangs WebKitGTK.
     // Other open tools stay mounted in hidden panels and can have their own file inputs.
-    await uploadFile('section.tool-panel:not([hidden]) input[type="file"]', samplePath);
-    const download = await browser.$("button*=Download Image");
-    await download.waitForClickable({ timeout: 15000 });
-    await download.click();
-    const image = await waitForSavedFile(new RegExp(`^sample-\\d+.*\\.png$`));
-    if (!image.subarray(0, 4).equals(PNG_SIGNATURE)) {
-      throw new Error("The saved image is not a PNG file.");
+    await browser.execute(() => {
+      const input = document.querySelector('section.tool-panel:not([hidden]) input[type="file"][aria-label="Open file into Original"]');
+      const transfer = new DataTransfer();
+      transfer.items.add(new File(["diff and save check\n"], "sample-notes.txt", { type: "text/plain" }));
+      input.files = transfer.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    const saveSelector = 'section.tool-panel:not([hidden]) button[aria-label="Save Original"]';
+    await browser.waitUntil(() => browser.execute((selector) => Boolean(document.querySelector(selector)), saveSelector), {
+      timeout: 15000,
+      timeoutMsg: "The Save Original button did not appear",
+    });
+    await browser.execute((selector) => document.querySelector(selector).click(), saveSelector);
+    const saved = await waitForSavedFile(/^sample-notes.*\.txt$/);
+    if (saved.toString("utf8") !== "diff and save check\n") {
+      throw new Error("The saved file does not match the opened file.");
     }
-    await browser.saveScreenshot(path.join(screenshotDir, "image-converter.png"));
   });
 
   await step("toggles the theme", async () => {
     const isDark = () => browser.execute(() => document.documentElement.classList.contains("dark"));
     const before = await isDark();
-    // Settings → Appearance: the header's Appearance button opens it, and the Theme control picks the opposite mode.
-    await (await browser.$('button[aria-label="Appearance"]')).click();
-    await (await browser.$(`[role="group"][aria-label="Theme"] button=${before ? "Light" : "Dark"}`)).click();
+    // The header button switches straight to the opposite mode.
+    await (await browser.$(`button[aria-label="Switch to ${before ? "light" : "dark"} mode"]`)).click();
     await browser.waitUntil(async () => (await isDark()) !== before, {
       timeout: 5000,
       timeoutMsg: "The theme did not change",
@@ -302,7 +302,8 @@ try {
   });
 
   await step("opens a tool from the command palette shortcut", async () => {
-    await (await browser.$("body")).click();
+    // Clicking body lands in whatever tool fills the page (an editor ignores app shortcuts), so drop focus instead.
+    await browser.execute(() => document.activeElement?.blur());
     await browser.keys(["Control", "k"]);
     const paletteInput = await browser.$('input[placeholder="Search tools..."]');
     await paletteInput.waitForDisplayed({ timeout: 5000 });
@@ -314,7 +315,7 @@ try {
       const selected = await browser.$('[role="tab"][aria-selected="true"][id^="tab-"]');
       return await selected.isExisting() && (await selected.getProperty("textContent")) === "JWT Decoder";
     }, { timeout: 10000, timeoutMsg: "The command palette did not open JWT Decoder" });
-    await browser.saveScreenshot(path.join(screenshotDir, "command-palette.png"));
+    await screenshot("command-palette");
   });
 
   // The hello plugin is a sideload, which the app refuses unless "Allow installs from outside these repositories" is on.
@@ -345,7 +346,7 @@ try {
         () => browser.execute(() => document.querySelector("section.tool-panel:not([hidden]) [data-state]")?.dataset.state === "ready"),
         { timeout: 15000, timeoutMsg: "The plugin did not finish its handshake" },
       );
-      await browser.saveScreenshot(path.join(screenshotDir, "hello-plugin.png"));
+      await screenshot("hello-plugin");
     });
 
     await step("uninstalls the hello plugin from the Plugins page", async () => {
@@ -358,7 +359,10 @@ try {
       await click("#plugins-tab-installed");
       await click('button[aria-label="Actions for Hello Plugin"]');
       await click('[role="menuitem"]=Uninstall');
-      await click('[role="alertdialog"] button=Uninstall');
+      // Chained lookup: "css button=text" is not a valid WebDriver selector, so find the dialog first.
+      const confirm = await browser.$('[role="alertdialog"]').$("button=Uninstall");
+      await confirm.waitForClickable({ timeout: 10000 });
+      await confirm.click();
       await browser.waitUntil(async () => !(await invokeCommand("plugins_list")).some((plugin) => plugin.id === "hello"), {
         timeout: 10000,
         timeoutMsg: "The hello plugin is still installed",

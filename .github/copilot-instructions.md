@@ -2,30 +2,30 @@
 
 ## Project Architecture
 
-Shard is an offline-first desktop app. The UI is React, TypeScript, Vite, Tailwind CSS, and shadcn/ui. The desktop runtime is Tauri 2.
+Shard is an offline-first desktop app, a fork of DevTools (me-shaon/devtools, MIT) with a sandboxed plugin system. The UI is React, TypeScript, Vite, Tailwind CSS, and shadcn/ui. The desktop runtime is Tauri 2.
 
 ```
 src/
 ├── app/
-│   ├── Shard.tsx     # App shell: sidebar, search, command palette, updates
-│   └── toolRegistry.ts     # Tool definitions and lazy-loaded tool components
-├── components/tools/       # One React component per tool
+│   ├── Shard.tsx           # App shell: sidebar, search, command palette, updates
+│   └── toolRegistry.ts     # The 9 built-in tools and their lazy-loaded components
+├── components/tools/       # Built-in tool components
 ├── lib/desktop.ts          # Bridge to the Tauri runtime
 └── utils/                  # Pure tool logic, covered by unit tests
 
 src-tauri/
-├── src/main.rs             # Tauri entry point and the save_file command
+├── src/lib.rs              # Tauri entry point (`run`), shared by the desktop `main.rs` and Android, and the save_file command
 ├── tauri.conf.json         # Window, bundle, and updater configuration
 └── capabilities/           # Permissions for the app window
 ```
 
 ## Adding a Tool
 
-1. Put the pure logic in `src/utils/<tool>.ts`.
-2. Create the component in `src/components/tools/<Tool>.tsx`.
-3. Add the tool to `ALL_TOOLS` in `src/app/toolRegistry.ts`.
-4. Register the lazy-loaded component in `TOOL_COMPONENTS` in the same file.
-5. Add tests in `tests/tools/`.
+New tools are plugins, not built-in tools. The registry in `src/app/toolRegistry.ts` stays at the 9 core tools.
+
+1. Start from the template in `packages/plugin-sdk/template`.
+2. Put the plugin in the official repository, `kinan9011/shard-plugins`.
+3. Add tests for non-trivial logic and run `npm run build` and `npm test` in the plugin folder.
 
 ## Desktop Runtime Rules
 

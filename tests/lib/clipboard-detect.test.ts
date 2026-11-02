@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ALL_TOOLS } from "@/app/toolRegistry";
 import { detectPastedContent } from "@/utils/clipboard-detect";
 
-const ids = new Set<string>([...ALL_TOOLS.map((tool) => tool.id), "certificate-decoder", "curl-to-code", "svg-to-css", "uuid-generator", "cron-calculator", "color-palette"]);
+const ids = new Set<string>([...ALL_TOOLS.map((tool) => tool.id), "certificate-decoder", "curl-to-code", "svg-to-css", "uuid-generator", "password-generator", "lorem-generator", "qr-generator", "bcrypt-generator", "random-string", "key-generator", "base64", "case-converter", "number-base", "url-encoder", "csv-json", "yaml-json", "escape-tools", "html-to-jsx", "php-tools", "compression", "html-preview", "code-formatter", "semver", "xml-inspector", "asn1-inspector", "mermaid-renderer", "cron-calculator", "color-palette", "har-viewer", "ip-cidr", "chmod-calculator", "timestamp"]);
 const first = (text: string) => detectPastedContent(text, ids)[0]?.toolId;
 
 describe("detectPastedContent", () => {
@@ -115,8 +115,8 @@ describe("detectPastedContent", () => {
 
   describe("tools that are plugins", () => {
     const without = new Set(ids);
-    for (const id of ["uuid-generator", "cron-calculator", "color-palette"]) without.delete(id);
-    const installable = new Set(["uuid-generator", "cron-calculator", "color-palette", "hash-generator", "markdown"]);
+    for (const id of ["uuid-generator", "html-preview", "code-formatter", "semver", "xml-inspector", "asn1-inspector", "mermaid-renderer", "cron-calculator", "color-palette"]) without.delete(id);
+    const installable = new Set(["uuid-generator", "html-preview", "code-formatter", "semver", "xml-inspector", "asn1-inspector", "mermaid-renderer", "cron-calculator", "color-palette", "hash-generator", "markdown"]);
 
     it("suggests installing a plugin that is not installed, marked as an install", () => {
       expect(detectPastedContent("*/5 * * * *", without, installable)).toEqual([{ toolId: "cron-calculator", label: "a cron expression", score: 85, install: true }]);

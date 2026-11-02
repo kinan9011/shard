@@ -34,6 +34,10 @@ pub(super) fn hex(bytes: &[u8]) -> String {
 /// changes. A zip can not be much bigger than what it unpacks to, so the size limit also stops a
 /// huge or endless file (a device, a pipe) from being read.
 fn stage_zip(path: &Path, staging: &Path, limits: Limits) -> Result<(PathBuf, String), String> {
+    // Checked before opening: Windows refuses to open a folder, which would hide this message.
+    if !fs::metadata(path).map_err(io_err)?.is_file() {
+        return Err("The zip path is not a file.".into());
+    }
     let mut input = fs::File::open(path).map_err(io_err)?;
     if !input.metadata().map_err(io_err)?.is_file() {
         return Err("The zip path is not a file.".into());

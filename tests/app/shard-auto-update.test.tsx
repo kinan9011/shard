@@ -9,6 +9,8 @@ const desktopMock = vi.hoisted(() => ({ bridge: null as DesktopBridge | null }))
 vi.mock("@/lib/desktop", () => ({
   getDesktopBridge: () => desktopMock.bridge,
   saveFile: vi.fn(async () => true),
+  listThemes: vi.fn(async () => ({ themes: [], errors: [] })),
+  themeCatalog: vi.fn(async () => []),
 }));
 
 /** The update controls live in Settings → General. */
@@ -27,6 +29,7 @@ beforeEach(() => {
     })),
   });
   localStorage.setItem("shard-whats-new-seen-version", "2.1.1");
+  localStorage.setItem("shard-first-run-done", "true");
   const idle = { status: "idle" as const, currentVersion: "2.1.1" };
   desktopMock.bridge = {
     platform: "darwin",

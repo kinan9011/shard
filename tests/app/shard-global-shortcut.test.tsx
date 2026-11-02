@@ -8,6 +8,8 @@ const desktopMock = vi.hoisted(() => ({ bridge: null as DesktopBridge | null }))
 vi.mock("@/lib/desktop", () => ({
   getDesktopBridge: () => desktopMock.bridge,
   saveFile: vi.fn(async () => true),
+  listThemes: vi.fn(async () => ({ themes: [], errors: [] })),
+  themeCatalog: vi.fn(async () => []),
 }));
 
 let openPalette: () => void = () => {};
@@ -21,6 +23,7 @@ beforeEach(() => {
     })),
   });
   localStorage.setItem("shard-whats-new-seen-version", "2.0.0");
+  localStorage.setItem("shard-first-run-done", "true");
   const idle = { status: "idle" as const, currentVersion: "2.0.0" };
   setGlobalShortcut = vi.fn(async () => null);
   desktopMock.bridge = {

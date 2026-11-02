@@ -15,6 +15,8 @@ const api = vi.hoisted(() => ({
   setRepoSettings: vi.fn(),
 }));
 vi.mock("@/plugins/api", () => api);
+const desktop = vi.hoisted(() => ({ themeCatalog: vi.fn() }));
+vi.mock("@/lib/desktop", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/desktop")>()), themeCatalog: desktop.themeCatalog }));
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast: toastMock }));
 
@@ -76,6 +78,7 @@ beforeEach(() => {
   resetPlugins();
   Object.values(api).forEach((mock) => mock.mockReset());
   Object.values(toastMock).forEach((mock) => mock.mockReset());
+  desktop.themeCatalog.mockReset().mockResolvedValue([]);
 });
 afterEach(() => {
   vi.restoreAllMocks();
@@ -94,6 +97,20 @@ describe("syncedAgo", () => {
 
   it("drops the scheme from a repository address", () => {
     expect(repoAddress(OFFICIAL_URL)).toBe("github.com/kinan9011/shard-plugins");
+  });
+});
+
+describe("Repositories tab: themes", () => {
+  it("counts the themes of a repository that lists themes, and says nothing of plugins it does not have", async () => {
+    const THEMES_URL = "https://github.com/kinan9011/shard-themes";
+    arrange([...REPOS, { url: THEMES_URL, name: "Shard Themes", type: "index", enabled: true, official: true, lastSync: NOW - MIN }]);
+    desktop.themeCatalog.mockResolvedValue(["nord", "dracula", "gruvbox"].map((id) => ({ id, name: id, version: "1.0.0", description: "", repo: THEMES_URL, repoName: "Shard Themes" })));
+    renderTab();
+    const row = await tableRow("Shard Themes");
+    expect(await within(row).findByText("3 themes")).toBeInTheDocument();
+    expect(within(row).queryByText(/plugin/)).not.toBeInTheDocument();
+    // A repository without themes still reads as before.
+    expect(within(await tableRow("Acme internal")).getByText("0 plugins")).toBeInTheDocument();
   });
 });
 

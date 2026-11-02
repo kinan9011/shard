@@ -4,13 +4,8 @@ import { buildToolManifest } from "@/utils/tool-manifest";
 import { parseDeepLink } from "@/utils/deep-link";
 describe("tool registration", () => {
   it.each([
-    "xml-inspector",
-    "checksum",
-    "asn1-inspector",
-    "stopwatch",
-    "time-zone-converter",
-    "mermaid-renderer",
     "diff-merge",
+    "jwt-decoder",
   ] as const)("registers %s for discovery and lazy loading", (id) => {
     expect(ALL_TOOLS.find((t) => t.id === id)?.keywords.length).toBeGreaterThan(
       0,

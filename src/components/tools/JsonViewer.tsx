@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { AlignLeft, CheckCircle2, Columns2, Clipboard, Rows2, ShieldCheck } from "lucide-react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { describeJsonValue, getJsonPaths, renderJsonView, type JsonViewMode } from "@/utils/json";
@@ -47,7 +48,10 @@ function JsonCode({ value }: { value: string }) {
 export function JsonViewer() {
   const [input, setInput] = useState("");
   const [indent, setIndent] = useState("2");
-  const [layout, setLayout] = useState(readLayout);
+  const [chosen, setLayout] = useState(readLayout);
+  // A phone is too narrow for two panes side by side: the result goes below, and the choice is not offered.
+  const phone = useIsMobile();
+  const layout: "side" | "below" = phone ? "below" : chosen;
   const [mode, setMode] = useState<JsonViewMode>("format");
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -101,7 +105,7 @@ export function JsonViewer() {
         </div>
         <label className="indent-control">Indent <select aria-label="Indentation" value={indent} onChange={(event) => setIndent(event.target.value)}><option value="2">2 spaces</option><option value="4">4 spaces</option><option value="tab">Tab</option></select></label>
       </div>
-      <div className="layout-switch" role="group" aria-label="Result layout">
+      <div className="layout-switch hidden sm:flex" role="group" aria-label="Result layout">
         <button type="button" aria-pressed={layout === "side"} onClick={() => changeLayout("side")}><Columns2 size={14} />Side</button>
         <button type="button" aria-pressed={layout === "below"} onClick={() => changeLayout("below")}><Rows2 size={14} />Below</button>
       </div>

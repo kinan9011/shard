@@ -3659,8 +3659,10 @@ dependencies = [
 
 [[package]]
 name = "shard"
-version = "3.0.0"
+version = "1.0.0"
 dependencies = [
+ "base64 0.22.1",
+ "minisign-verify",
  "percent-encoding",
  "reqwest",
  "rustls",

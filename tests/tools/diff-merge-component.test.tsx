@@ -313,6 +313,15 @@ describe("Panels", () => {
     expect(stored().wrap).toBe(false);
   });
 
+  it("renders the panel in <body>, outside the clipping content area, above the sidebar", () => {
+    const { container } = render(<DiffMerge />);
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    const panel = screen.getByRole("dialog");
+    expect(container.contains(panel)).toBe(false);
+    expect(panel.parentElement).toBe(document.body);
+    expect(panel).toHaveClass("fixed", "z-[90]");
+  });
+
   it("lists every setting from the design", () => {
     render(<DiffMerge />);
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
