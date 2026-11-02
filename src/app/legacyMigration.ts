@@ -25,6 +25,9 @@ export const PORTED_TOOLS: readonly PortedTool[] = [
   { oldId: "date-format", pluginId: "date-format", name: "Date Format Translator" },
   { oldId: "stopwatch", pluginId: "stopwatch", name: "Stopwatch" },
   { oldId: "time-zone-converter", pluginId: "time-zone-converter", name: "Time Zone Converter" },
+  { oldId: "api-formatter", pluginId: "api-formatter", name: "API Formatter" },
+  { oldId: "string-inspector", pluginId: "string-inspector", name: "String Inspector" },
+  { oldId: "line-tools", pluginId: "line-tools", name: "Line Tools" },
 ];
 
 /** The plugin ids of the ported tools. A stored pin or recent entry with one of these is kept while the plugin is not installed. */

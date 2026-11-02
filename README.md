@@ -99,7 +99,7 @@ From a terminal on macOS, run `open "shard://open/hash-generator"`. On Linux, ru
 - **Random String** - Generate Nano IDs, hex and Base64URL tokens, and strings from a custom alphabet
 - **Key Pair Generator** - Generate RSA, ECDSA, and Ed25519 key pairs as PEM, JWK, and OpenSSH keys with fingerprints, or convert a key you paste
 
-The **Hash Generator** (MD5, SHA-1, SHA-2, SHA-3, Keccak-256, HMAC and file hashing), the **UUID Generator** (UUIDs v1 to v7, ULIDs, and an inspector), the **Cron Calculator** (plain-English explanations, a field breakdown, the next runs, and a visual builder), **Markdown** (live, sanitized preview and HTML export), the **Color Palette** (color conversion, palettes, WCAG contrast, color blindness, and CSS gradients), the **Unit Converter**, the **chmod Calculator**, **Checksum** (CRC variants and Luhn check digits), the **IP / CIDR Calculator**, the **HAR Viewer**, **Timestamp**, **Date Difference**, the **Date Format Translator**, the **Stopwatch**, and the **Time Zone Converter** are plugins now. Install them from Plugins in the app. Their sources are in [`kinan9011/shard-plugins`](https://github.com/kinan9011/shard-plugins).
+The **Hash Generator** (MD5, SHA-1, SHA-2, SHA-3, Keccak-256, HMAC and file hashing), the **UUID Generator** (UUIDs v1 to v7, ULIDs, and an inspector), the **Cron Calculator** (plain-English explanations, a field breakdown, the next runs, and a visual builder), **Markdown** (live, sanitized preview and HTML export), the **Color Palette** (color conversion, palettes, WCAG contrast, color blindness, and CSS gradients), the **Unit Converter**, the **chmod Calculator**, **Checksum** (CRC variants and Luhn check digits), the **IP / CIDR Calculator**, the **HAR Viewer**, **Timestamp**, **Date Difference**, the **Date Format Translator**, the **Stopwatch**, the **Time Zone Converter**, **API Formatter**, **String Inspector**, and **Line Tools** are plugins now. Install them from Plugins in the app. Their sources are in [`kinan9011/shard-plugins`](https://github.com/kinan9011/shard-plugins).
 
 ### Converters
 
@@ -126,9 +126,6 @@ The **Hash Generator** (MD5, SHA-1, SHA-2, SHA-3, Keccak-256, HMAC and file hash
 - **Text Compare** - Aligned line, word and character diff with change navigation that can ignore whitespace and case
 - **Diff & Merge** - JetBrains-style side-by-side diff with one-click merge arrows, word highlights, unified view and folder compare (desktop)
 - **JWT Decoder** - Decode JWTs with expiry status, verify HS, RS, PS, ES, and EdDSA signatures with a secret, PEM, JWK, or JWKS, and sign test tokens
-- **API Formatter** - Format REST and GraphQL responses with tree view and search
-- **String Inspector** - Count characters, words, lines, and bytes, find hidden Unicode characters, and check Unicode normalization (NFC, NFD, NFKC, NFKD)
-- **Line Tools** - Filter, sort, reverse, dedupe, trim, and shuffle lines, and compare two lists. Split, join, wrap, replace, sum, or multiply lines in Transform mode
 
 ### AI Tools
 
