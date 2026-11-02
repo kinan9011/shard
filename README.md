@@ -74,7 +74,11 @@ From a terminal on macOS, run `open "shard://open/hash-generator"`. On Linux, ru
 
 ## Tools
 
-### Development Tools
+Shard has 9 built-in tools. Every other tool is an official plugin: install it from Plugins in the app. Plugins run in a sandbox and ask for permissions in plain words.
+
+### Built-in tools
+
+#### Development Tools
 
 - **JSON Viewer** - Format, minify, sort, and query JSON live, convert it to YAML or XML, and repair JSON5, NDJSON, and Python, Ruby, or JavaScript literals
 - **Code Playground** - Experiment with JavaScript, HTML, and CSS
@@ -83,28 +87,92 @@ From a terminal on macOS, run `open "shard://open/hash-generator"`. On Linux, ru
 - **JSON Schema Validator** - Check JSON or YAML against a JSON Schema as you type, and click each error to find the failing value
 - **JSON Diff** - Compare two JSON or YAML documents by value, list changes by path, match array items by key, and copy the changes as a JSON Patch
 
-### Generators
-
-
-The **Hash Generator** (MD5, SHA-1, SHA-2, SHA-3, Keccak-256, HMAC and file hashing), the **UUID Generator** (UUIDs v1 to v7, ULIDs, and an inspector), the **Cron Calculator** (plain-English explanations, a field breakdown, the next runs, and a visual builder), **Markdown** (live, sanitized preview and HTML export), the **Color Palette** (color conversion, palettes, WCAG contrast, color blindness, and CSS gradients), the **Unit Converter**, the **chmod Calculator**, **Checksum** (CRC variants and Luhn check digits), the **IP / CIDR Calculator**, the **HAR Viewer**, **Timestamp**, **Date Difference**, the **Date Format Translator**, the **Stopwatch**, the **Time Zone Converter**, **API Formatter**, **String Inspector**, **Line Tools**, the **Password Generator**, **Lorem Ipsum**, the **QR Generator**, the **Bcrypt Generator**, **Random String**, and the **Key Pair Generator**, **Base64**, the **Case Converter**, **Number Base**, the **URL Encoder**, **CSV to JSON**, the **Config Converter**, **Escape Tools**, **HTML to JSX**, **SVG to CSS**, **PHP Tools**, **Compression**, **cURL to Code**, the **X.509 Certificate Decoder**, **HTML Preview**, the **Code Formatter**, the **Semver Calculator**, the **XML Inspector**, the **ASN.1 Inspector**, the **Mermaid Renderer**, the **Image Converter**, the **QR Reader**, the **Image Metadata Cleaner**, the **Video Metadata Cleaner**, the **Secret & PII Redactor**, the **Token Counter**, and the **AI Text Cleaner** are plugins now. Install them from Plugins in the app. Their sources are in [`kinan9011/shard-plugins`](https://github.com/kinan9011/shard-plugins).
-
-### Converters
-
-
-### Media
-
-
-### Text Tools
+#### Text Tools
 
 - **Text Compare** - Aligned line, word and character diff with change navigation that can ignore whitespace and case
 - **Diff & Merge** - JetBrains-style side-by-side diff with one-click merge arrows, word highlights, unified view and folder compare (desktop)
 - **JWT Decoder** - Decode JWTs with expiry status, verify HS, RS, PS, ES, and EdDSA signatures with a secret, PEM, JWK, or JWKS, and sign test tokens
 
-### AI Tools
+### Official plugins
 
+Their sources are in [`kinan9011/shard-plugins`](https://github.com/kinan9011/shard-plugins).
 
-### Utilities
+#### AI Tools
 
+- **AI Text Cleaner** - Remove hidden characters, citation markers, and Markdown from AI-written text, and straighten quotes and dashes.
+- **Image Metadata Cleaner** - Remove AI prompts, Content Credentials (C2PA), AI-generated labels, GPS, and camera data from JPEG, PNG, and WebP images. Keep the original pixels, or save a clean copy as JPG, PNG, WebP, or AVIF.
+- **Secret & PII Redactor** - Mask API keys, tokens, passwords, emails, and other personal data before you paste text into an AI chat, and restore the values in the reply.
+- **Token Counter** - Count GPT tokens exactly, estimate Claude, Gemini, and Llama tokens, check the context window, and estimate cost from your own price table.
+- **Video Metadata Cleaner** - Remove AI labels (C2PA, XMP), GPS, device data, dates, and telemetry tracks from MP4, MOV, MKV, and WebM videos without re-encoding. The audio and video data do not change.
+
+#### Converters
+
+- **Base64** - Encode and decode Base64 and Base32 text, files, and data URIs, with a URL-safe mode.
+- **Case Converter** - Convert names to camelCase, snake_case, kebab-case, and 8 more cases live, one name per line, and make URL slugs.
+- **Compression** - Decompress GZIP, zlib, and raw deflate from Base64, hex, or a .gz file, and compress text back, with format detection.
+- **CSV to JSON** - Bidirectional CSV and JSON conversion with custom delimiters and nested key flattening.
+- **cURL to Code** - Convert a cURL command to fetch, Node, Python, Go, PHP, Rust, or HTTPie code.
+- **Escape Tools** - Escape and unescape HTML entities, backslash strings, Unicode, and hex, and convert domain names to and from Punycode.
+- **HTML to JSX** - Convert HTML markup into React JSX.
+- **Markdown** - Write Markdown and see a live, sanitized HTML preview.
+- **Number Base** - See a number in binary, octal, decimal, hex, any base to 36, and Roman numerals as you type, with two's complement views, integer expressions, and a clickable bit grid.
+- **PHP Tools** - Convert serialize() data, session data, and PHP arrays to JSON and back, and repair broken string lengths.
+- **SVG to CSS** - Turn an SVG into a small data URI and ready CSS for backgrounds and masks.
+- **URL Encoder** - Encode and decode URLs, and parse a URL into editable parts and query parameters.
+- **Config Converter** - Convert between JSON, YAML, TOML, .env, Java .properties, and TOON files, including multi-document YAML, and see how many LLM tokens TOON saves against JSON.
+
+#### Development Tools
+
+- **ASN.1 Inspector** - Show definite-length DER or BER data from PEM, Base64, hex, or a file as a tree of tags, offsets, lengths, and values.
+- **X.509 Certificate Decoder** - Read PEM and DER certificates and CSRs, check validity and fingerprints, and verify a chain offline.
+- **Code Formatter** - Beautify or minify HTML, CSS, JavaScript, XML, and SQL.
+- **HTML Preview** - Render HTML in a sandbox that cannot reach the network or the app.
+- **Mermaid Renderer** - Render Mermaid flowcharts and sequence, class, ER, state, Gantt, and other diagrams as you type, and save them as SVG or PNG.
+- **Semver Calculator** - Check versions against npm, Cargo, Composer, or Python ranges, see the range as plain comparators, and compare two versions.
+- **XML Inspector** - Format or minify XML, and query nodes or values with XPath 1.0 and namespace prefixes.
+
+#### Generators
+
+- **Bcrypt Generator** - Generate bcrypt hashes locally.
+- **Hash Generator** - MD5, SHA-1, SHA-2, SHA-3 and Keccak-256 hashes, HMAC and file hashing.
+- **Key Pair Generator** - Generate RSA, ECDSA, and Ed25519 key pairs as PEM, JWK, and OpenSSH keys with fingerprints, or convert a key you paste.
+- **Lorem Ipsum** - Generate placeholder text and fake names, emails, URLs, and titles as text or a JSON array.
+- **Password Generator** - Generate secure passwords and passphrases with strength analysis.
+- **QR Generator** - Make QR codes for text, Wi-Fi, contacts, email, phone, SMS, locations and events, with an optional logo, and save them as PNG or SVG.
+- **Random String** - Generate Nano IDs, hex and Base64URL tokens, and strings from a custom alphabet.
+- **UUID Generator** - Generate v1/v3/v4/v5/v6/v7 UUIDs and ULIDs, and inspect existing IDs.
+
+#### Media
+
+- **Color Palette** - Convert CSS colors, build palettes and gradients, check WCAG contrast and color blindness.
+- **Image Converter** - Convert and compress single images or batches locally to JPEG (MozJPEG), PNG (OxiPNG), WebP, or AVIF. Resize with Lanczos3 and other filters, and reduce the color palette. Crop, rotate, and flip an image in the Edit Image tab.
+- **QR Reader** - Read a QR code from an image file, a dropped image, or a pasted screenshot.
+
+#### Network
+
+- **HAR Viewer** - Filter, sort, and inspect the requests in a .har file from the browser, copy a request as cURL, and save a sanitized copy without credentials and cookies.
+- **IP / CIDR Calculator** - Get the network, broadcast, host range, masks, and address type for IPv4 and IPv6 blocks, and split, merge, or check ranges.
+
+#### Text Tools
+
+- **API Formatter** - Format or minify JSON API responses, and turn URL-encoded data and query strings into JSON.
+- **Line Tools** - Filter, sort, reverse, dedupe, trim, and shuffle lines, and compare two lists. Split, join, wrap, replace, sum, or multiply lines in Transform mode.
+- **String Inspector** - Count characters, words, lines, and bytes, find hidden Unicode characters, and check Unicode normalization (NFC, NFD, NFKC, NFKD).
+
+#### Time & Date
+
+- **Cron Calculator** - Explain any cron expression in plain English, with a field breakdown and the next runs.
+- **Date Difference** - Calculate the difference between two dates.
+- **Date Format Translator** - Translate date format strings between Go, strftime, Java, date-fns, Moment.js, PHP, and .NET, with a live preview.
+- **Stopwatch** - Record laps and split times, and copy or export them as CSV. The stopwatch keeps running while you use other tools.
+- **Time Zone Converter** - Convert a date and time from one time zone to UTC, local time, and other zones. It handles daylight saving time changes and shows when the date changes.
+- **Timestamp** - Convert Unix timestamps (seconds to nanoseconds) and date strings as you type, with offsets such as now - 1d and extra time zones.
+
+#### Utilities
+
+- **Checksum** - Calculate six common CRC variants from text, hex bytes, or a file, and validate or append Luhn check digits.
+- **chmod Calculator** - Set file permissions with checkboxes, octal, or rwx text, apply expressions such as u+x, and see the chmod commands, a plain-English summary, and umask defaults.
+- **Unit Converter** - Convert length, weight, temperature, and data units.
 
 ## Development
 
@@ -184,10 +252,11 @@ Built with Tauri 2, React 18, TypeScript, Vite, Tailwind CSS, and shadcn/ui. Tau
 
 ### Add a tool
 
-1. Create the interface in `src/components/tools/YourTool.tsx` and put reusable logic in `src/utils/`.
-2. Add its name, unique ID, category, icon, and search keywords to `ALL_TOOLS` in [toolRegistry.ts](src/app/toolRegistry.ts).
-3. Register its lazy-loaded component in `TOOL_COMPONENTS` in the same file. The registry supplies sidebar navigation and tool search.
-4. Add tests for non-trivial behavior, run the relevant checks, and update the tool list in this README.
+New tools should be plugins, not built-in tools. The 9 built-in tools are the core of the app and the registry in [toolRegistry.ts](src/app/toolRegistry.ts) stays at that size.
+
+1. Start from the plugin SDK in [`packages/plugin-sdk`](packages/plugin-sdk) (it has a template).
+2. Put the plugin in the official repository, [`kinan9011/shard-plugins`](https://github.com/kinan9011/shard-plugins). Its README explains the layout, the build and test commands, and how to add a row to its plugin table.
+3. Add tests for non-trivial behavior and run `npm run build` and `npm test` in the plugin folder.
 
 ## Contributing
 
