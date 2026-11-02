@@ -74,7 +74,9 @@ beforeEach(() => {
   api.setPluginGrants.mockResolvedValue({});
   api.onInstallProgress.mockResolvedValue(() => {});
   api.onPluginUpdates.mockResolvedValue(() => {});
-  // 2.x: no first-run wizard or intro banner to get in the way.
+  // Done and dismissed: no first-run wizard or intro banner to get in the way.
+  localStorage.setItem("shard-first-run-done", "true");
+  localStorage.setItem("shard-plugins-intro-seen", "true");
   const idle = { status: "idle" as const, currentVersion: "2.9.0" };
   desktopMock.bridge = {
     platform: "linux",

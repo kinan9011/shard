@@ -176,7 +176,7 @@ try {
 
   await step("records uncaught errors in the page", recordErrors);
 
-  // From 3.0.0 a fresh profile opens the first-run wizard instead of the app. Mark it done and reload, so What's New and the
+  // A fresh profile opens the first-run wizard instead of the app. Mark it done and reload, so What's New and the
   // flows below start on Home. Done unconditionally, so it does not depend on how fast the app read its state.
   await step("skips the first-run wizard", async () => {
     await browser.execute(() => {

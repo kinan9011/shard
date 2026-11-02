@@ -79,7 +79,7 @@
     const version = await invoke("plugin:app|version");
     const isMac = navigator.platform.toLowerCase().includes("mac");
 
-    // From 3.0.0 a fresh profile opens the first-run wizard instead of the app. Mark it done so the flows below start on Home.
+    // A fresh profile opens the first-run wizard instead of the app. Mark it done so the flows below start on Home.
     // The app may already have read the old state, so if the wizard is up, reload once (the keys stay in localStorage).
     localStorage.setItem("shard-first-run-done", "true");
     localStorage.setItem("shard-plugins-intro-seen", "true");

@@ -36,7 +36,7 @@ const KAFKA = entry("kafka-inspector", "Kafka Inspector", {
   sha256: "9c41f2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabe07a",
   size: 2516582,
   released: "2026-10-18",
-  minAppVersion: "3.0.0",
+  minAppVersion: "1.0.0",
   changelog: "Adds Avro decoding.",
   permissions: [
     { name: "network", hosts: ["localhost:9092"], reason: "Connect to localhost:9092 and brokers you add" },
@@ -128,7 +128,7 @@ describe("Plugin detail pane", () => {
     expect(detail.getByText("0.3.1, released 18 Oct 2026")).toBeInTheDocument();
     expect(detail.getByText("2.4 MB")).toBeInTheDocument();
     expect(detail.getByText("Web UI + WASM backend")).toBeInTheDocument();
-    expect(detail.getByText("Shard 3.0 or later")).toBeInTheDocument();
+    expect(detail.getByText("Shard 1.0 or later")).toBeInTheDocument();
     expect(detail.getByRole("link", { name: "github.com/kinan9011/kafka-inspector" })).toHaveAttribute("href", KAFKA_REPO);
     expect(detail.getByText("SHA-256 9c41f2…be07a")).toBeInTheDocument();
     expect(detail.getByText("matches release")).toBeInTheDocument();

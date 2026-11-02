@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Shard from "@/app/Shard";
 import type { DesktopBridge } from "@/lib/desktop";
 
@@ -14,6 +14,12 @@ afterEach(() => {
   document.documentElement.classList.remove("dark");
   localStorage.clear();
   desktopMock.bridge = null;
+});
+
+beforeEach(() => {
+  localStorage.clear();
+  localStorage.setItem("shard-first-run-done", "true");
+  localStorage.setItem("shard-plugins-intro-seen", "true");
 });
 
 const createBridge = (version: string, updateState: Awaited<ReturnType<DesktopBridge["getUpdateState"]>>) => {
@@ -94,29 +100,29 @@ describe("Shard updates", () => {
   it("shows what's new on first launch after a version bump and persists dismissal", async () => {
     setupMatchMedia();
 
-    createBridge("1.1.0", { status: "not-available", currentVersion: "1.1.0" });
+    createBridge("1.0.0", { status: "not-available", currentVersion: "1.0.0" });
 
     const { unmount } = render(<Shard />);
 
-    const dialog = await screen.findByRole("dialog", { name: "Shard v1.1.0" });
+    const dialog = await screen.findByRole("dialog", { name: "Shard v1.0.0" });
 
     expect(dialog).toBeInTheDocument();
     expect(screen.getByText("Highlights")).toBeInTheDocument();
-    expect(dialog).toHaveTextContent("Text Compare now offers richer diff views");
+    expect(dialog).toHaveTextContent("Shard now has plugins");
 
     fireEvent.click(screen.getByRole("button", { name: "Got it" }));
 
     await waitFor(() => {
-      expect(screen.queryByRole("dialog", { name: "Shard v1.1.0" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("dialog", { name: "Shard v1.0.0" })).not.toBeInTheDocument();
     });
 
-    expect(localStorage.getItem("shard-whats-new-seen-version")).toBe("1.1.0");
+    expect(localStorage.getItem("shard-whats-new-seen-version")).toBe("1.0.0");
 
     unmount();
     render(<Shard />);
 
     await waitFor(() => {
-      expect(screen.queryByRole("dialog", { name: "Shard v1.1.0" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("dialog", { name: "Shard v1.0.0" })).not.toBeInTheDocument();
     });
 
     expect(screen.getByRole("button", { name: "What's new" })).toBeInTheDocument();

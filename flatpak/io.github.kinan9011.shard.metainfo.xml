@@ -9,7 +9,7 @@
   <url type="homepage">https://github.com/kinan9011/shard</url>
   <url type="bugtracker">https://github.com/kinan9011/shard/issues</url>
   <description>
-    <p>A set of local developer tools in one app: JSON, text and folder diff and merge, encoders, converters and more. Everything is processed on your machine.</p>
+    <p>Local developer tools in one app: JSON, text and folder diff and merge, JWT and regex tools, plus sandboxed plugins for encoders, converters and more. Everything is processed on your machine. Shard is a fork of DevTools by Ahmed Shamim.</p>
   </description>
   <launchable type="desktop-id">io.github.kinan9011.shard.desktop</launchable>
   <categories>
@@ -21,6 +21,7 @@
     <binary>Shard</binary>
   </provides>
   <releases>
+    <release version="1.0.0" date="2026-11-02" />
     <release version="2.8.0" date="2026-11-01" />
   </releases>
 </component>

@@ -330,7 +330,7 @@ const Shard = () => {
     }
   }, [seenWhatsNewVersion, releaseNotes]);
 
-  // The wizard (new user) or the "Plugins are here" banner (upgrade) from 3.0.0 on. Needs the version, so it waits for it.
+  // The wizard (new user) or the "Plugins are here" banner (upgrade) from the first release. Needs the version, so it waits for it.
   useEffect(() => {
     if (!appVersion) return;
     try {

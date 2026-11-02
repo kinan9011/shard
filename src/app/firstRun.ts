@@ -41,11 +41,11 @@ export type FirstRun = "wizard" | "intro" | null;
 
 /**
  * What to show at start-up: the wizard (a new user, or one who did not finish it), the one-time "Plugins are here"
- * banner (a user upgrading from 2.x), or nothing. Only for 3.0.0 and later.
+ * banner (an existing user), or nothing.
  */
 export function startFirstRun(storage: Store, version: string, existingUser: boolean): FirstRun {
   const parsed = parse(version);
-  if (!parsed || parsed.major < 3) return null;
+  if (!parsed) return null;
   if (read(storage, FIRST_RUN_STORAGE_KEY)) return read(storage, PLUGINS_INTRO_STORAGE_KEY) ? null : "intro";
   if (read(storage, FIRST_RUN_STARTED_KEY)) return "wizard";
   if (existingUser) {

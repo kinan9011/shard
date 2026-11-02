@@ -24,7 +24,7 @@ function formatDate(date: string): string {
   return match && month ? `${Number(match[3])} ${month} ${match[1]}` : date;
 }
 
-/** `3.0.0` → `Shard 3.0 or later`. */
+/** `1.0.0` → `Shard 1.0 or later`. */
 function formatRequires(minAppVersion: string | undefined): string {
   const match = minAppVersion ? /^(\d+)\.(\d+)/.exec(minAppVersion) : null;
   return match ? `Shard ${match[1]}.${match[2]} or later` : "Any version";

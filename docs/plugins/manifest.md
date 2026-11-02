@@ -22,7 +22,7 @@ manifests still load on older apps.
     { "name": "files:open", "reason": "Read files you open in the tool" },
     { "name": "clipboard:write", "reason": "Copy decoded messages", "optional": true }
   ],
-  "minAppVersion": "3.0.0",
+  "minAppVersion": "1.0.0",
   "license": "MIT",
   "source": "https://github.com/kinan9011/kafka-inspector",
   "screenshots": ["shot1.png"],

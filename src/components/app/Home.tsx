@@ -76,7 +76,7 @@ interface HomeProps {
   empty: boolean;
   onBrowsePlugins: () => void;
   onInstallFromFile: () => void;
-  /** An upgrade from 2.x: the one-time "Plugins are here" banner. */
+  /** An existing user: the one-time "Plugins are here" banner. */
   pluginsIntro: boolean;
   onDismissPluginsIntro: () => void;
   /** Tools that moved out of the app and that the user had pinned or used: "X is now a plugin. Install". */

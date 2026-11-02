@@ -83,7 +83,7 @@ beforeEach(() => {
   api.setPluginGrants.mockResolvedValue({});
   api.onInstallProgress.mockResolvedValue(() => {});
   api.onPluginUpdates.mockResolvedValue(() => {});
-  setVersion("3.0.0");
+  setVersion("1.0.0");
   Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: vi.fn().mockImplementation(() => ({ matches: false, media: "", addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn(), dispatchEvent: vi.fn() })),
@@ -335,16 +335,9 @@ describe("Plugins are here banner", () => {
     expect(localStorage.getItem("shard-plugins-intro-seen")).toBe("true");
   });
 
-  it("stays away before 3.0.0 and after it was dismissed", async () => {
+  it("stays away after it was dismissed", async () => {
     localStorage.setItem("shard-recent-tools", "[]");
-    setVersion("2.8.0");
-    const { unmount } = render(<Shard />);
-    await waitFor(() => expect(desktopMock.bridge?.getVersion).toHaveBeenCalled());
-    expect(screen.queryByText("Plugins are here.")).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Pick your starter tools" })).not.toBeInTheDocument();
-    unmount();
-
-    setVersion("3.0.0");
+    setVersion("1.0.0");
     localStorage.setItem("shard-first-run-done", "true");
     localStorage.setItem("shard-plugins-intro-seen", "true");
     render(<Shard />);

@@ -1,6 +1,8 @@
 # Shard brand assets
 
-The brand name is **Shard**, with a capital D and T and no space. The folded D combines a code bracket and forward chevron. Two diagonal cuts separate the pieces while preserving a single compact silhouette.
+The brand name is **Shard**.
+
+> **TODO: replace the logo.** The current mark, wordmark, app icons, favicons and social image are inherited from [DevTools](https://github.com/me-shaon/devtools) by Ahmed Shamim (MIT) and still read "DevTools". Replace the two SVG masters in `source/` and the social card in `social/`, then run `npm run brand:build`, which regenerates the logos, `public/` icons and `src-tauri/icons/`. Check `public/favicon.svg`, which the script may not touch. Remove this note when done.
 
 ## Files
 
@@ -13,7 +15,7 @@ The brand name is **Shard**, with a capital D and T and no space. The folded D c
 | `social/` | 1200 × 630 social preview in SVG and PNG. |
 | `reference/` | The approved generated concept, retained as design reference. |
 
-The production artwork is a vector reconstruction of the approved concept, with consistent geometry and flat colors. The wordmark uses outlined Avenir Next Heavy letterforms; no font file or installed font is required to display or regenerate the assets. Use the supplied wordmark artwork rather than retyping it. Interface copy continues to use the app's system font stack.
+The artwork is vector with flat colors, and the wordmark is outlined, so no font file is required to display or regenerate the assets. Use the supplied wordmark artwork rather than retyping it. Interface copy continues to use the app's system font stack.
 
 ## Colors
 

@@ -15,7 +15,7 @@ A repository that lists many plugins has an `index.json` at the root of its defa
       "category": "Development",
       "runtime": "web",
       "permissions": [{ "name": "files:open", "reason": "Read files you open in the tool" }],
-      "minAppVersion": "3.0.0",
+      "minAppVersion": "1.0.0",
       "url": "https://github.com/…/releases/download/…/kafka-inspector-0.3.1.zip",
       "sha256": "<64 lowercase hex characters>",
       "size": 2516582,
