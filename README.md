@@ -2,7 +2,6 @@
 
 **An offline desktop workspace for developers.** Nine built-in tools for JSON, text and diffs, plus a sandboxed plugin system for everything else. Runs on macOS, Windows, and Linux. Your data never leaves your computer.
 
-<!-- TODO: add screenshot: assets/screenshots/hero.png (about 1600x900) - main window with JSON Viewer and two open tabs, light mode -->
 ![Shard main window with JSON Viewer, formatted output, and open tool tabs](assets/screenshots/hero.png)
 
 [Download](#download) · [Features](#features) · [Plugins](#plugins) · [Tools](#tools) · [Development](#development) · [License](#license-and-credits)
@@ -25,8 +24,6 @@ Shard builds on DevTools and changes the shape of the app:
 | Integration | n/a | `shard://` links for Raycast, Alfred, and scripts |
 
 ## Screenshots
-
-<!-- TODO: add each screenshot below. Filenames and sizes are listed in assets/screenshots/README.md -->
 
 | | |
 |---|---|
