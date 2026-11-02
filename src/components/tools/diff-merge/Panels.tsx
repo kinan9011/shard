@@ -42,8 +42,14 @@ export function AnchoredPanel({ open, onClose, anchorRef, width, align = "end", 
       const maxRight = (area?.right ?? window.innerWidth) - MARGIN;
       const wanted = align === "start" ? anchor.right + MARGIN : anchor.right - width;
       const left = Math.max(minLeft, Math.min(wanted, maxRight - width));
-      const top = anchor.bottom + 6;
-      setPos({ top, left, maxHeight: Math.max(120, window.innerHeight - top - MARGIN) });
+      const below = window.innerHeight - anchor.bottom - 6 - MARGIN;
+      const above = anchor.top - 6 - MARGIN;
+      // Open upward when the content does not fit below and there is more room above.
+      if ((panel.current?.scrollHeight ?? 0) > below && above > below) {
+        setPos({ bottom: window.innerHeight - anchor.top + 6, left, maxHeight: above });
+      } else {
+        setPos({ top: anchor.bottom + 6, left, maxHeight: Math.max(120, below) });
+      }
     };
     place();
     window.addEventListener("resize", place);

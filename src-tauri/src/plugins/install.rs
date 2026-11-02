@@ -177,7 +177,7 @@ impl Installer {
         let mut response = client.get(&entry.url).send().await.map_err(describe)?;
         let status = response.status();
         if status == reqwest::StatusCode::NOT_FOUND {
-            return Err("The package was not found (404).".into());
+            return Err(format!("The package was not found (404): {}. The repository lists a download it has not published.", entry.url));
         }
         if !status.is_success() {
             return Err(format!("HTTP {}", status.as_u16()));

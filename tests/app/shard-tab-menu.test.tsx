@@ -64,4 +64,12 @@ describe("Tab context menu", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     expect(tabNames()).toEqual(TOOLS);
   });
+
+  it("hides a built-in tool from its tab, closes the tab, and remembers it", () => {
+    openTools();
+    expect(tabNames()).toContain("Regex Tester");
+    fireEvent.click(within(openMenu("Regex Tester")).getByRole("menuitem", { name: "Hide this tool" }));
+    expect(tabNames()).not.toContain("Regex Tester");
+    expect(JSON.parse(localStorage.getItem("shard-hidden-tools") ?? "[]")).toContain("regex-generator");
+  });
 });

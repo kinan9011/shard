@@ -51,6 +51,9 @@ export const manifestSchema = {
   },
 } as const;
 
+/** https, or plain http to the machine itself. Mirrors `valid_download_url` in repos.rs. */
+const HTTPS_OR_LOCAL = "^(https://|http://(localhost|127\\.0\\.0\\.1|\\[::1\\])([:/]|$))";
+
 export const indexSchema = {
   type: "object",
   required: ["schema", "name", "plugins"],
@@ -81,7 +84,7 @@ export const indexSchema = {
           name: str,
           version,
           description: { type: "string" },
-          url: { type: "string", format: "uri" },
+          url: { type: "string", format: "uri", pattern: HTTPS_OR_LOCAL },
           sha256: { type: "string", pattern: "^[0-9a-f]{64}$" },
           size: { type: "integer", minimum: 1, maximum: 65536 },
         },
@@ -101,7 +104,7 @@ export const indexSchema = {
           runtime,
           permissions,
           minAppVersion: version,
-          url: { type: "string", format: "uri" },
+          url: { type: "string", format: "uri", pattern: HTTPS_OR_LOCAL },
           sha256: { type: "string", pattern: "^[0-9a-f]{64}$" },
           size: { type: "integer", minimum: 0 },
           released: { type: "string", format: "date" },

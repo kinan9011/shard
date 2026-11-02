@@ -455,6 +455,14 @@ fn backups_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     Ok(app.path().app_data_dir().map_err(|error| error.to_string())?.join("diff-merge-backups"))
 }
 
+/// A phone's file picker cannot pick a folder, so there it answers like a cancelled dialog.
+#[cfg(mobile)]
+#[tauri::command]
+pub async fn pick_folder(_app: tauri::AppHandle) -> Option<String> {
+    None
+}
+
+#[cfg(desktop)]
 #[tauri::command]
 pub async fn pick_folder(app: tauri::AppHandle) -> Option<String> {
     use tauri_plugin_dialog::DialogExt;

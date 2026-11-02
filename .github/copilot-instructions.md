@@ -14,7 +14,7 @@ src/
 └── utils/                  # Pure tool logic, covered by unit tests
 
 src-tauri/
-├── src/main.rs             # Tauri entry point and the save_file command
+├── src/lib.rs              # Tauri entry point (`run`), shared by the desktop `main.rs` and Android, and the save_file command
 ├── tauri.conf.json         # Window, bundle, and updater configuration
 └── capabilities/           # Permissions for the app window
 ```

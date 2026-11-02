@@ -94,6 +94,23 @@ describe("Settings page", () => {
   });
 });
 
+describe("Accent color", () => {
+  afterEach(() => document.getElementById("shard-accent")?.remove());
+
+  it("applies an accent over the scheme, stores it, and goes back to the scheme's own", async () => {
+    render(<Shard />);
+    openSettings();
+    const accent = within(within(main()).getByRole("group", { name: "Accent color" }));
+    expect(accent.getByRole("button", { name: "Scheme" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(accent.getByRole("button", { name: "Orange" }));
+    expect(localStorage.getItem("shard-accent")).toBe("orange");
+    expect(document.getElementById("shard-accent")?.textContent).toContain("--primary:24 90%");
+    fireEvent.click(accent.getByRole("button", { name: "Scheme" }));
+    expect(localStorage.getItem("shard-accent")).toBeNull();
+    expect(document.getElementById("shard-accent")?.textContent).toBe("");
+  });
+});
+
 describe("Settings sections", () => {
   const openSection = (name: string) => {
     openSettings();

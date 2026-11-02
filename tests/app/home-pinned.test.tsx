@@ -94,7 +94,9 @@ describe("Home pinned tools", () => {
   });
 
   it("stops at 12 pinned tools", async () => {
-    // The 9 built-in tools and 3 ported tools (kept in the list while their plugin is not installed) fill the 12 slots.
+    // The 9 built-in tools and 3 installed plugins fill the 12 slots.
+    const installed = (id: string) => ({ id, enabled: true, source: { kind: "zip" }, manifest: { name: id, category: "Development", keywords: [], entry: "index.html" } }) as never;
+    api.listPlugins.mockResolvedValue(["base64", "qr-reader", "token-counter"].map(installed));
     const entry = (id: string, name: string) => ({ id, name, version: "1.0.0", description: "Test.", category: "Development", runtime: "web", url: "https://example.test/p.zip", sha256: "0".repeat(64), repo: "https://github.com/kinan9011/shard-plugins", repoName: "Shard Official", permissions: [] });
     const extra = entry("extra-tool", "Extra Tool");
     api.repoCatalog.mockResolvedValue([extra]);

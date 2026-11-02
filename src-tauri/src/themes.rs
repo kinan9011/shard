@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
 use crate::paths::io_err;
-use crate::plugins::repos::{repos, ThemeCatalogEntry};
+use crate::plugins::repos::{repos, ThemeCatalogEntry, ThemeEntry};
 
 pub const MAX_BYTES: u64 = 64 * 1024;
 
@@ -149,6 +149,14 @@ pub fn theme_dir(app: AppHandle) -> Result<String, String> {
     Ok(themes_dir(&app)?.to_string_lossy().into_owned())
 }
 
+/// Opens the themes folder in the system file manager. Done here, not by the webview, so no permission scope has to name the folder.
+#[tauri::command]
+pub fn theme_open_dir(app: AppHandle) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let dir = themes_dir(&app)?;
+    app.opener().open_path(dir.to_string_lossy(), None::<&str>).map_err(|error| error.to_string())
+}
+
 /// Asks for a theme file, checks it and copies it in. `None` when the user cancels.
 #[tauri::command]
 pub async fn theme_import(app: AppHandle) -> Result<Option<Theme>, String> {
@@ -158,10 +166,41 @@ pub async fn theme_import(app: AppHandle) -> Result<Option<Theme>, String> {
         .await
         .map_err(|error| error.to_string())?;
     let Some(path) = picked.and_then(|file| file.into_path().ok()) else { return Ok(None) };
-    let theme = read_file(&path)?;
-    let json = serde_json::to_vec_pretty(&theme).map_err(|error| error.to_string())?;
-    std::fs::write(themes_dir(&app)?.join(format!("{}.json", theme.id)), json).map_err(io_err)?;
+    let theme = import_into(&themes_dir(&app)?, read_file(&path)?)?;
     Ok(Some(theme))
+}
+
+/// Saves a theme the user made or imported. It never claims to come from a repository. A file that is already there is
+/// replaced only when `overwrite` is set, and then only a file of the user's own, never one a repository installed.
+fn save_into(dir: &Path, mut theme: Theme, overwrite: bool) -> Result<Theme, String> {
+    // Everything a file must satisfy is checked here too, so a theme made in the app can never be one the app refuses to read.
+    theme.repo = None;
+    let json = serde_json::to_vec_pretty(&theme).map_err(|error| error.to_string())?;
+    if json.len() as u64 > MAX_BYTES {
+        return Err("The theme is larger than 64 KB".into());
+    }
+    let theme = parse_theme(std::str::from_utf8(&json).map_err(|error| error.to_string())?)?;
+    let path = dir.join(format!("{}.json", theme.id));
+    if path.exists() {
+        if !overwrite {
+            return Err(format!("A theme \"{}\" is already in the themes folder. Remove it first to import this one.", theme.id));
+        }
+        if read_file(&path).is_ok_and(|existing| existing.repo.is_some()) {
+            return Err(format!("The theme \"{}\" came from a repository. Pick another id to save your own.", theme.id));
+        }
+    }
+    std::fs::write(path, json).map_err(io_err)?;
+    Ok(theme)
+}
+
+fn import_into(dir: &Path, theme: Theme) -> Result<Theme, String> {
+    save_into(dir, theme, false)
+}
+
+/// Saves a theme made in the app. With `overwrite` it replaces the user's own file of that id, never a repository's.
+#[tauri::command]
+pub fn theme_save(app: AppHandle, theme: Theme, overwrite: bool) -> Result<Theme, String> {
+    save_into(&themes_dir(&app)?, theme, overwrite)
 }
 
 /// The themes the repositories list, from their last sync.
@@ -170,16 +209,28 @@ pub fn theme_catalog(app: AppHandle) -> Result<Vec<ThemeCatalogEntry>, String> {
     repos(&app)?.theme_catalog()
 }
 
-/// Downloads a theme of a repository, checks it against the index and adds it. Installing again updates it.
-#[tauri::command]
-pub async fn theme_install(app: AppHandle, repo: String, id: String) -> Result<Theme, String> {
-    let repos = repos(&app)?;
-    let (url, entry) = repos.theme_entry(&repo, &id)?;
+/// Downloads a theme of a repository and checks it against the index: size, checksum and id.
+async fn fetch_listed(app: &AppHandle, repo: &str, id: &str) -> Result<(String, ThemeEntry, Theme), String> {
+    let repos = repos(app)?;
+    let (url, entry) = repos.theme_entry(repo, id)?;
     let body = repos.theme_file(&entry).await?;
-    let mut theme = parse_theme(std::str::from_utf8(&body).map_err(|_| "The theme file is not text.")?)?;
+    let theme = parse_theme(std::str::from_utf8(&body).map_err(|_| "The theme file is not text.")?)?;
     if theme.id != entry.id {
         return Err(format!("The file is the theme \"{}\", but the repository lists \"{}\".", theme.id, entry.id));
     }
+    Ok((url, entry, theme))
+}
+
+/// A theme of a repository as it would be installed, without installing it: for the swatches of the Themes tab.
+#[tauri::command]
+pub async fn theme_preview(app: AppHandle, repo: String, id: String) -> Result<Theme, String> {
+    Ok(fetch_listed(&app, &repo, &id).await?.2)
+}
+
+/// Downloads a theme of a repository, checks it against the index and adds it. Installing again updates it.
+#[tauri::command]
+pub async fn theme_install(app: AppHandle, repo: String, id: String) -> Result<Theme, String> {
+    let (url, entry, mut theme) = fetch_listed(&app, &repo, &id).await?;
     // Only a theme that came from this repository is replaced, never one the user made or imported.
     let path = themes_dir(&app)?.join(format!("{}.json", theme.id));
     if read_file(&path).is_ok_and(|existing| existing.repo.as_deref() != Some(url.as_str())) {
@@ -253,6 +304,50 @@ mod tests {
         ] {
             assert!(parse_theme(text).is_err(), "{text}");
         }
+    }
+
+    #[test]
+    fn an_import_never_replaces_a_file_and_never_claims_a_repository() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut theme = parse_theme(GOOD).unwrap();
+        theme.repo = Some("https://github.com/acme/themes".into());
+        assert_eq!(import_into(dir.path(), theme.clone()).unwrap().repo, None);
+        assert_eq!(read_dir(dir.path()).themes[0].repo, None);
+        let error = import_into(dir.path(), theme).unwrap_err();
+        assert!(error.contains("already in the themes folder"), "{error}");
+    }
+
+    #[test]
+    fn a_saved_theme_replaces_only_the_users_own_file_and_only_when_asked() {
+        let dir = tempfile::tempdir().unwrap();
+        let theme = parse_theme(GOOD).unwrap();
+        save_into(dir.path(), theme.clone(), false).unwrap();
+        assert!(save_into(dir.path(), theme.clone(), false).unwrap_err().contains("already in the themes folder"));
+        let mut edited = theme.clone();
+        edited.name = "Nord 2".into();
+        assert_eq!(save_into(dir.path(), edited, true).unwrap().name, "Nord 2");
+        assert_eq!(read_dir(dir.path()).themes[0].name, "Nord 2");
+
+        // A repository's file is never replaced by a save, even with overwrite.
+        let mut from_repo = theme.clone();
+        from_repo.repo = Some("https://github.com/acme/themes".into());
+        std::fs::write(dir.path().join("nord.json"), serde_json::to_vec(&from_repo).unwrap()).unwrap();
+        assert!(save_into(dir.path(), theme, true).unwrap_err().contains("came from a repository"));
+    }
+
+    #[test]
+    fn a_saved_theme_must_be_one_the_app_can_read_back() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut theme = parse_theme(GOOD).unwrap();
+        theme.id = "adwaita".into();
+        assert!(save_into(dir.path(), theme.clone(), false).unwrap_err().contains("built-in"));
+        theme.id = "nord".into();
+        theme.dark.as_mut().unwrap().insert("--radius".into(), "0 0% 0%".into());
+        assert!(save_into(dir.path(), theme.clone(), false).unwrap_err().contains("unknown token"));
+        theme.dark.as_mut().unwrap().remove("--radius");
+        theme.description = "x".repeat(70_000);
+        assert!(save_into(dir.path(), theme, false).unwrap_err().contains("64 KB"));
+        assert!(read_dir(dir.path()).themes.is_empty());
     }
 
     #[test]

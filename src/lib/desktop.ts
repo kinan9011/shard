@@ -6,6 +6,7 @@ import { platform as getOsPlatform } from "@tauri-apps/plugin-os";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
+import { isMobileApp } from "@/lib/platform";
 import type { UserTheme } from "@/utils/theme";
 import type { ToolManifest } from "@/utils/tool-manifest";
 
@@ -357,7 +358,8 @@ export async function writeClipboardText(text: string): Promise<void> {
  * Returns false when the user cancels the save dialog.
  */
 export async function saveFile(data: Blob, fileName: string): Promise<boolean> {
-  if (!isTauri()) {
+  // A phone has no save dialog: the webview downloads the file.
+  if (!isTauri() || isMobileApp()) {
     const downloadUrl = URL.createObjectURL(data);
     const anchor = document.createElement("a");
     anchor.href = downloadUrl;
@@ -497,6 +499,16 @@ export async function installTheme(repo: string, id: string): Promise<UserTheme>
   return invoke<UserTheme>("theme_install", { repo, id });
 }
 
+/** A repository's theme as it would be installed, checked but not saved: for the swatches. */
+export async function previewTheme(repo: string, id: string): Promise<UserTheme> {
+  return invoke<UserTheme>("theme_preview", { repo, id });
+}
+
+/** Saves a theme made in the app. `overwrite` replaces the user's own file of that id, never one a repository installed. */
+export async function saveTheme(theme: UserTheme, overwrite: boolean): Promise<UserTheme> {
+  return invoke<UserTheme>("theme_save", { theme, overwrite });
+}
+
 export async function removeTheme(id: string): Promise<void> {
   await invoke("theme_remove", { id });
 }
@@ -504,19 +516,24 @@ export async function removeTheme(id: string): Promise<void> {
 /** Shows the themes folder in the system file manager. */
 export async function openThemesFolder(): Promise<void> {
   requireDesktop();
-  await revealItemInDir(await invoke<string>("theme_dir"));
+  await invoke("theme_open_dir");
 }
 
 /** Wipes all Shard data and restarts. The browser preview clears its storage and reloads. */
 export async function resetAppData(): Promise<void> {
-  // Clear the webview first: it is empty even where Rust cannot delete a locked file.
+  if (isTauri()) {
+    // Files first: if this fails nothing has been cleared and the caller can say why.
+    await invoke("reset_app_data");
+  }
+  // The webview's own storage goes last, so it is empty even where Rust could not delete a locked file.
   localStorage.clear();
   sessionStorage.clear();
-  if (!isTauri()) {
+  // A phone has no restart command: reloading the webview starts the app over from the empty storage.
+  if (isTauri() && !isMobileApp()) {
+    await relaunch();
+  } else {
     location.reload();
-    return;
   }
-  await invoke("reset_app_data");
 }
 
 /** Opens http(s) and mailto links in the system browser instead of the app window. */

@@ -3,6 +3,8 @@ import { ArrowRight, Ellipsis, FolderOpen, Lock, Puzzle, RefreshCw, ShieldCheck,
 import { toast } from "sonner";
 import { BuiltInToolSwitches } from "@/components/app/BuiltInToolSwitches";
 import { useDialogFocus } from "@/components/app/useDialogFocus";
+import { isMobileApp } from "@/lib/platform";
+import { ConfirmUninstall } from "./ConfirmUninstall";
 import { AnchoredPanel } from "@/components/tools/diff-merge/Panels";
 import { Switch } from "@/components/ui/switch";
 import { ALL_TOOLS } from "@/app/toolRegistry";
@@ -55,34 +57,6 @@ interface InstalledTabProps {
 interface MenuState {
   plugin: InstalledPlugin;
   anchor: HTMLElement;
-}
-
-function ConfirmUninstall({ plugin, onCancel, onConfirm }: { plugin: InstalledPlugin; onCancel: () => void; onConfirm: () => void }) {
-  const ref = useDialogFocus(true, onCancel);
-  const title = `Uninstall ${plugin.manifest.name}?`;
-  return (
-    <div
-      className="modal-backdrop fixed inset-0 z-[75] grid place-items-center p-4"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onCancel();
-      }}
-    >
-      <div ref={ref} role="alertdialog" aria-modal="true" aria-label={title} className="modal-surface flex w-[400px] max-w-full flex-col" onMouseDown={(event) => event.stopPropagation()}>
-        <div className="flex flex-col gap-1 px-5 pb-4 pt-5">
-          <h2 className="text-base font-semibold text-foreground">{title}</h2>
-          <p className="text-sm text-muted-foreground">Its files and the data it stored are removed.</p>
-        </div>
-        <div className="flex justify-end gap-2 border-t border-border px-5 py-3">
-          <button type="button" onClick={onCancel} className={cn(BUTTON, "border-input bg-secondary text-secondary-foreground")}>
-            Cancel
-          </button>
-          <button type="button" onClick={onConfirm} className={cn(BUTTON, "border-destructive bg-destructive text-destructive-foreground")}>
-            Uninstall
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function MenuItem({ icon, children, destructive, onClick }: { icon: ReactNode; children: string; destructive?: boolean; onClick: () => void }) {
@@ -431,16 +405,18 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
             >
               Permissions…
             </MenuItem>
-            <MenuItem
-              icon={<FolderOpen size={14} aria-hidden="true" />}
-              onClick={() => {
-                const { plugin } = menu;
-                setMenu(null);
-                void revealPluginFolder(plugin.id).catch((error) => toast.error("Couldn't open the folder", { description: asMessage(error) }));
-              }}
-            >
-              Show in folder
-            </MenuItem>
+            {!isMobileApp() && (
+              <MenuItem
+                icon={<FolderOpen size={14} aria-hidden="true" />}
+                onClick={() => {
+                  const { plugin } = menu;
+                  setMenu(null);
+                  void revealPluginFolder(plugin.id).catch((error) => toast.error("Couldn't open the folder", { description: asMessage(error) }));
+                }}
+              >
+                Show in folder
+              </MenuItem>
+            )}
             <div className="-mx-1 my-1 h-px bg-border" />
             <MenuItem
               destructive

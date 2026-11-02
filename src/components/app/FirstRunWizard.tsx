@@ -7,7 +7,7 @@ import { PermissionDialog } from "@/components/plugins/PermissionDialog";
 import { PickerBody } from "@/components/app/PinnedEditor";
 import { LayoutChoice } from "@/components/app/settings/LayoutChoice";
 import { CORE_NAMES } from "@/app/firstRun";
-import { OFFICIAL_REPO_URL } from "@/app/legacyMigration";
+import { OFFICIAL_REPO_URL } from "@/app/installableTools";
 import { MAX_PINNED, pickerItems, pinLimitMessage, type PickerItem } from "@/app/pinned";
 import type { CatalogTool } from "@/app/catalog";
 import { listRepos, repoBundles, syncRepos, type Repo } from "@/plugins/api";
@@ -300,7 +300,7 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
   // 08 B: the Launcher's first run has no step list, a centered column of bundles.
   if (showBundles) {
     return (
-      <div className="relative flex h-screen flex-col items-center gap-[26px] overflow-hidden bg-background pt-12 text-foreground" data-platform={platform}>
+      <div className="relative flex h-[100dvh] flex-col items-center gap-[26px] overflow-hidden bg-background pt-12 text-foreground" data-platform={platform}>
         <div data-tauri-drag-region className="absolute inset-x-0 top-0 z-10 h-7" />
         <div className={cn("flex flex-col items-center gap-2.5 text-center", mac && "pt-4")}>
           <span className="mb-2 scale-[1.6]">
@@ -338,9 +338,9 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
   }
 
   return (
-    <div className="relative flex h-screen bg-background text-foreground" data-platform={platform}>
+    <div className="relative flex h-[100dvh] flex-col bg-background text-foreground sm:flex-row" data-platform={platform}>
       <div data-tauri-drag-region className="absolute inset-x-0 top-0 z-10 h-7" />
-      <aside className={cn("flex w-[300px] shrink-0 flex-col gap-7 border-r border-border p-7", mac && "pt-14")}>
+      <aside className={cn("flex w-full shrink-0 flex-col gap-4 border-b border-border p-5 sm:w-[300px] sm:gap-7 sm:border-b-0 sm:border-r sm:p-7", mac && "pt-14")}>
         <div className="flex items-center gap-2.5">
           <span className="grid size-[22px] place-items-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground" aria-hidden="true">D</span>
           <span className="font-semibold">Shard</span>
@@ -380,7 +380,7 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
                   <p className="text-muted-foreground">Plugins come from the Shard Official repository. The {CORE_NAMES.length} built-in tools are included; hide any you don't need in Settings → Built-in tools.</p>
                 </div>
                 {load.phase === "ready" && (
-                  <div className="flex h-8 w-[260px] shrink-0 items-center gap-[9px] rounded-[7px] border border-border bg-background px-2.5 text-muted-foreground focus-within:border-ring focus-within:shadow-[0_0_0_3px_hsl(var(--ring)/.16)]">
+                  <div className="flex h-8 w-full shrink-0 items-center sm:w-[260px] gap-[9px] rounded-[7px] border border-border bg-background px-2.5 text-muted-foreground focus-within:border-ring focus-within:shadow-[0_0_0_3px_hsl(var(--ring)/.16)]">
                     <Search size={15} className="shrink-0" aria-hidden="true" />
                     <input
                       value={query}

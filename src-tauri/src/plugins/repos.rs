@@ -216,6 +216,21 @@ fn valid_sha256(text: &str) -> bool {
 }
 
 /// Mirrors `validateIndex` in `src/plugins/schema.ts`. Returns every problem.
+/// A download link must be https. Plain http is accepted only for the machine itself, which is what the tests serve from.
+pub(crate) fn valid_download_url(text: &str) -> bool {
+    let Ok(url) = Url::parse(text) else { return false };
+    match url.scheme() {
+        "https" => true,
+        "http" => match url.host() {
+            Some(url::Host::Domain(domain)) => domain == "localhost",
+            Some(url::Host::Ipv4(ip)) => ip.is_loopback(),
+            Some(url::Host::Ipv6(ip)) => ip.is_loopback(),
+            None => false,
+        },
+        _ => false,
+    }
+}
+
 pub fn validate_index(index: &Index) -> Vec<String> {
     let mut errors = Vec::new();
     if index.schema != 1 {
@@ -244,8 +259,8 @@ pub fn validate_index(index: &Index) -> Vec<String> {
         if let Some(min) = plugin.min_app_version.as_deref().filter(|m| !valid_version(m)) {
             errors.push(format!("{at}.minAppVersion: \"{min}\" is not a valid semver version"));
         }
-        if !Url::parse(&plugin.url).is_ok_and(|u| matches!(u.scheme(), "http" | "https")) {
-            errors.push(format!("{at}.url: \"{}\" must be an http(s) URL", plugin.url));
+        if !valid_download_url(&plugin.url) {
+            errors.push(format!("{at}.url: \"{}\" must be an https URL", plugin.url));
         }
         if !valid_sha256(&plugin.sha256) {
             errors.push(format!("{at}.sha256: \"{}\" must be 64 lowercase hex characters", plugin.sha256));
@@ -300,8 +315,8 @@ pub fn validate_index(index: &Index) -> Vec<String> {
         if !valid_version(&theme.version) {
             errors.push(format!("{at}.version: \"{}\" is not a valid semver version", theme.version));
         }
-        if !Url::parse(&theme.url).is_ok_and(|u| matches!(u.scheme(), "http" | "https")) {
-            errors.push(format!("{at}.url: \"{}\" must be an http(s) URL", theme.url));
+        if !valid_download_url(&theme.url) {
+            errors.push(format!("{at}.url: \"{}\" must be an https URL", theme.url));
         }
         if !valid_sha256(&theme.sha256) {
             errors.push(format!("{at}.sha256: \"{}\" must be 64 lowercase hex characters", theme.sha256));
@@ -381,16 +396,24 @@ pub struct Repos {
     root: PathBuf,
     raw_base: String,
     github_base: String,
+    /// The key the built-in repositories' indexes must be signed with. Empty: not checked.
+    index_key: String,
 }
 
 impl Repos {
     pub fn new(root: PathBuf) -> Self {
-        Repos { root, raw_base: RAW_BASE.into(), github_base: GITHUB_BASE.into() }
+        Repos { root, raw_base: RAW_BASE.into(), github_base: GITHUB_BASE.into(), index_key: super::signing::INDEX_PUBLIC_KEY.into() }
     }
 
     #[cfg(test)]
     pub(super) fn with_bases(root: PathBuf, raw_base: String, github_base: String) -> Self {
-        Repos { root, raw_base, github_base }
+        Repos { root, raw_base, github_base, index_key: String::new() }
+    }
+
+    #[cfg(test)]
+    pub(super) fn with_index_key(mut self, key: &str) -> Self {
+        self.index_key = key.into();
+        self
     }
 
     fn state_path(&self) -> PathBuf {
@@ -559,6 +582,7 @@ impl Repos {
 
     async fn fetch_index(&self, owner: &str, repo: &str) -> Result<Option<Index>, String> {
         let Some(body) = self.get(&format!("{}/{owner}/{repo}/HEAD/index.json", self.raw_base)).await? else { return Ok(None) };
+        self.check_signature(owner, repo, &body).await?;
         let index: Index = serde_json::from_slice(&body).map_err(|error| format!("index.json: {error}"))?;
         let errors = validate_index(&index);
         if errors.is_empty() {
@@ -566,6 +590,18 @@ impl Repos {
         } else {
             Err(format!("index.json: {}", errors.join("; ")))
         }
+    }
+
+    /// A built-in repository's index must carry a valid signature of exactly these bytes, once the app has a key for it.
+    /// A repository the user added is not signed by anyone the app knows, so it is not checked.
+    async fn check_signature(&self, owner: &str, repo: &str, body: &[u8]) -> Result<(), String> {
+        if self.index_key.is_empty() || !BUILT_IN.iter().any(|(url, _)| *url == canonical(owner, repo)) {
+            return Ok(());
+        }
+        let sig = self.get(&format!("{}/{owner}/{repo}/HEAD/index.json.sig", self.raw_base)).await?;
+        let sig = sig.ok_or("index.json.sig not found (404): the index is not signed")?;
+        let sig = std::str::from_utf8(&sig).map_err(|_| "index.json.sig is not text")?;
+        super::signing::verify(body, sig, &self.index_key).map_err(|error| format!("index.json: {error}"))
     }
 
     /// The latest release's `plugin.json` and `plugin.zip.sha256`, as a one-plugin index.
@@ -604,6 +640,15 @@ impl Repos {
 
     /// A known `kind` is fetched as that kind. Otherwise detect: index first, then releases.
     async fn fetch(&self, owner: &str, repo: &str, kind: Option<RepoKind>) -> Result<(RepoKind, Index), String> {
+        let (kind, index) = self.fetch_any(owner, repo, kind).await?;
+        // The themes repository is built in, and so trusted, for color themes only. A plugin it listed would pass as an official one.
+        if canonical(owner, repo) == THEMES_URL && !index.plugins.is_empty() {
+            return Err("Shard Themes lists themes only, not plugins".into());
+        }
+        Ok((kind, index))
+    }
+
+    async fn fetch_any(&self, owner: &str, repo: &str, kind: Option<RepoKind>) -> Result<(RepoKind, Index), String> {
         match kind {
             Some(RepoKind::Index) => self.fetch_index(owner, repo).await?.map(|i| (RepoKind::Index, i)).ok_or_else(|| "index.json not found (404)".into()),
             Some(RepoKind::Releases) => {
@@ -1094,6 +1139,76 @@ mod tests {
         assert!(tauri::async_runtime::block_on(repos.theme_file(&entry)).unwrap_err().contains("bytes"));
         entry.url = mock.url("/t/missing.json");
         assert!(tauri::async_runtime::block_on(repos.theme_file(&entry)).unwrap_err().contains("404"));
+    }
+
+    fn signed_themes_repo(body: &str, sig: Option<&str>, key: &str) -> (tempfile::TempDir, Repos, Vec<Repo>) {
+        let mock = Mock::start();
+        mock.set("/raw/kinan9011/shard-themes/HEAD/index.json", 200, body.to_string());
+        if let Some(sig) = sig {
+            mock.set("/raw/kinan9011/shard-themes/HEAD/index.json.sig", 200, sig.to_string());
+        }
+        let (dir, repos) = mock.repos();
+        let repos = repos.with_index_key(key);
+        let all = sync(&repos, Some(THEMES_URL));
+        (dir, repos, all)
+    }
+
+    #[test]
+    fn a_built_in_index_is_read_only_when_its_signature_checks_out() {
+        use crate::plugins::signing::fixtures::*;
+        let error_of = |all: &[Repo]| all.iter().find(|repo| repo.url == THEMES_URL).unwrap().last_error.clone();
+
+        let (_dir, repos, all) = signed_themes_repo(BODY, Some(SIGNATURE), PUBLIC_KEY);
+        assert_eq!(error_of(&all), None);
+        assert!(repos.cached_index(THEMES_URL).is_some());
+
+        for (body, sig, key, expect) in [
+            (BODY.replace("Fixture", "Evil"), Some(SIGNATURE), PUBLIC_KEY, "does not match"),
+            (BODY.to_string(), None, PUBLIC_KEY, "not signed"),
+            (BODY.to_string(), Some(SIGNATURE), OTHER_PUBLIC_KEY, "does not match"),
+        ] {
+            let (_dir, repos, all) = signed_themes_repo(&body, sig, key);
+            let error = error_of(&all).unwrap_or_default();
+            assert!(error.contains(expect), "{error}");
+            assert!(repos.cached_index(THEMES_URL).is_none(), "nothing is cached from an index that failed the check");
+        }
+    }
+
+    #[test]
+    fn an_added_repository_and_an_unconfigured_key_are_not_checked() {
+        use crate::plugins::signing::fixtures::*;
+        // No key yet: an unsigned built-in index is fine.
+        let (_dir, repos, all) = signed_themes_repo(BODY, None, "");
+        assert!(all.iter().find(|repo| repo.url == THEMES_URL).unwrap().last_error.is_none());
+        assert!(repos.cached_index(THEMES_URL).is_some());
+        // A key, but the repository is the user's own.
+        let mock = Mock::start();
+        mock.set("/raw/acme/tools/HEAD/index.json", 200, BODY.to_string());
+        let (_dir, repos) = mock.repos();
+        let repos = repos.with_index_key(PUBLIC_KEY);
+        add(&repos, URL).unwrap();
+    }
+
+    #[test]
+    fn the_themes_repository_may_not_list_plugins() {
+        let mock = Mock::start();
+        let with_plugin = json!({ "schema": 1, "name": "Themes", "plugins": [entry("evil")], "themes": [] });
+        mock.set("/raw/kinan9011/shard-themes/HEAD/index.json", 200, with_plugin.to_string());
+        let (_dir, repos) = mock.repos();
+        let all = sync(&repos, Some(THEMES_URL));
+        let themes = all.iter().find(|repo| repo.url == THEMES_URL).unwrap();
+        assert!(themes.last_error.as_deref().is_some_and(|error| error.contains("themes only")), "{:?}", themes.last_error);
+        assert!(repos.catalog().unwrap().is_empty());
+    }
+
+    #[test]
+    fn downloads_must_be_https_except_from_the_machine_itself() {
+        for good in ["https://example.com/a.zip", "http://127.0.0.1:8080/a.zip", "http://localhost/a.zip", "http://[::1]/a.zip"] {
+            assert!(valid_download_url(good), "{good}");
+        }
+        for bad in ["http://example.com/a.zip", "ftp://example.com/a.zip", "file:///etc/passwd", "not a url", "http://127.0.0.1.example.com/a.zip"] {
+            assert!(!valid_download_url(bad), "{bad}");
+        }
     }
 
     #[test]

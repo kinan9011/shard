@@ -23,6 +23,8 @@ interface BrowseTabProps {
   loading: boolean;
   error: string | null;
   onInstall: (row: CatalogRow) => void;
+  /** Uninstalls a plugin after the detail has confirmed it. */
+  onUninstall?: (row: CatalogRow) => void;
   /** The plugins being installed: id → percent, or null when the size is unknown. */
   progress: Readonly<Record<string, number | null>>;
   /** "cards" is the Launcher layout: a card grid with category chips, and the detail opens as a page (`onOpen`). */
@@ -135,7 +137,7 @@ function FilterTitle({ children, id }: { children: string; id: string }) {
   );
 }
 
-export function BrowseTab({ rows, repos, loading, error, onInstall, progress, variant = "list", onOpen }: BrowseTabProps) {
+export function BrowseTab({ rows, repos, loading, error, onInstall, onUninstall, progress, variant = "list", onOpen }: BrowseTabProps) {
   const [selectedRepo, setRepo] = useState("");
   // A repository that was removed or turned off must not leave an empty list behind.
   const repo = repos.some((item) => item.url === selectedRepo) ? selectedRepo : "";
@@ -271,7 +273,7 @@ export function BrowseTab({ rows, repos, loading, error, onInstall, progress, va
             {!notice && shown.map((row) => <CompactRow key={rowKey(row)} row={row} selected={row === selected} onSelect={() => select(row)} />)}
           </div>
         </div>
-        <PluginDetail key={rowKey(selected)} row={selected} progress={progress[selected.entry.id]} onInstall={() => onInstall(selected)} official={repos.some((item) => item.url === selected.entry.repo && item.official)} />
+        <PluginDetail key={rowKey(selected)} row={selected} progress={progress[selected.entry.id]} onInstall={() => onInstall(selected)} onUninstall={onUninstall && (() => onUninstall(selected))} official={repos.some((item) => item.url === selected.entry.repo && item.official)} />
       </div>
     );
   }

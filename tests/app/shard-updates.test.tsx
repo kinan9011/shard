@@ -21,7 +21,6 @@ afterEach(() => {
 beforeEach(() => {
   localStorage.clear();
   localStorage.setItem("shard-first-run-done", "true");
-  localStorage.setItem("shard-plugins-intro-seen", "true");
 });
 
 const createBridge = (version: string, updateState: Awaited<ReturnType<DesktopBridge["getUpdateState"]>>) => {

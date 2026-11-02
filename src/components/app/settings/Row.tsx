@@ -13,7 +13,7 @@ export function Heading({ title, hint }: { title: string; hint?: string }) {
 export function Row({ title, hint, children, htmlFor }: { title: string; hint?: ReactNode; children?: ReactNode; htmlFor?: string }) {
   const Title = htmlFor ? "label" : "span";
   return (
-    <div className="flex items-center gap-6 border-t border-border py-4">
+    <div className="flex flex-col items-start gap-2 border-t border-border py-4 sm:flex-row sm:items-center sm:gap-6">
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <Title {...(htmlFor ? { htmlFor } : {})} className="font-medium text-foreground">{title}</Title>
         {hint && <span className="text-xs text-muted-foreground">{hint}</span>}

@@ -331,27 +331,18 @@ describe("first run in the Launcher layout (08 B)", () => {
   });
 });
 
-describe("Plugins are here banner", () => {
-  it("shows once to a user upgrading from 2.x, with no wizard", async () => {
+describe("a user with saved settings", () => {
+  it("still gets the wizard until it is finished", async () => {
     localStorage.setItem("shard-recent-tools", "[]");
     render(<Shard />);
-
-    const banner = await screen.findByText("Plugins are here.");
-    expect(screen.queryByRole("heading", { name: "Pick your starter tools" })).not.toBeInTheDocument();
-    expect(banner.parentElement).toHaveTextContent("Add tools from the Shard Official repository, a zip file, a folder or a repo URL.");
-
-    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
-    expect(screen.queryByText("Plugins are here.")).not.toBeInTheDocument();
-    expect(localStorage.getItem("shard-plugins-intro-seen")).toBe("true");
+    expect(await screen.findByRole("radio", { name: /Launcher/ })).toBeInTheDocument();
   });
 
-  it("stays away after it was dismissed", async () => {
-    localStorage.setItem("shard-recent-tools", "[]");
+  it("does not see it again once it is done", async () => {
     setVersion("1.0.0");
     localStorage.setItem("shard-first-run-done", "true");
-    localStorage.setItem("shard-plugins-intro-seen", "true");
     render(<Shard />);
     await waitFor(() => expect(desktopMock.bridge?.getVersion).toHaveBeenCalled());
-    expect(screen.queryByText("Plugins are here.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Welcome to Shard" })).not.toBeInTheDocument();
   });
 });

@@ -32,7 +32,8 @@ const setupMatchMedia = (initialMatches: boolean): MatchMediaController => {
 
   Object.defineProperty(window, "matchMedia", {
     writable: true,
-    value: vi.fn().mockImplementation(() => mediaQueryList),
+    // Only the color-scheme query follows `matches`; the phone-width query is off.
+    value: vi.fn().mockImplementation((query: string) => (query.includes("prefers-color-scheme") ? mediaQueryList : { matches: false, media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
   });
 
   return {

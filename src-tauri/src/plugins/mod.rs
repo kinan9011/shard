@@ -11,6 +11,7 @@ pub mod manifest;
 mod mock;
 pub mod protocol;
 pub mod repos;
+pub mod signing;
 pub mod storage;
 pub mod store;
 pub mod zip;

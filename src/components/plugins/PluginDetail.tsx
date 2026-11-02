@@ -7,6 +7,7 @@ import type { PluginRuntime } from "@/plugins/types";
 import type { CatalogRow } from "@/plugins/usePluginCatalog";
 import { pluginUrl } from "@/plugins/url";
 import { DASH, formatSize } from "@/plugins/format";
+import { ConfirmUninstall } from "./ConfirmUninstall";
 import { PermissionList } from "./PermissionList";
 import { RuntimeBadge } from "./RuntimeBadge";
 import { TabButton } from "./TabButton";
@@ -109,6 +110,8 @@ interface PluginDetailProps {
   /** Percent while the plugin is being installed, null when the size is unknown, undefined otherwise. */
   progress: number | null | undefined;
   onInstall: () => void;
+  /** Uninstalls the plugin after the confirm step. Without it the detail offers no Uninstall. */
+  onUninstall?: () => void;
   /** "page" is the Launcher layout: a full page with a back link and an aside (Details, Asks for). */
   variant?: "pane" | "page";
   onBack?: () => void;
@@ -129,8 +132,9 @@ function Screenshot({ row }: { row: CatalogRow }) {
 }
 
 /** The detail of a plugin: header with the action, then Overview, Permissions and Changelog. Remount per plugin (key) to reset the tab. */
-export function PluginDetail({ row, official, progress, onInstall, variant = "pane", onBack }: PluginDetailProps) {
+export function PluginDetail({ row, official, progress, onInstall, onUninstall, variant = "pane", onBack }: PluginDetailProps) {
   const [tab, setTab] = useState<DetailTab>("overview");
+  const [confirming, setConfirming] = useState(false);
   const { entry, installed } = row;
   const page = variant === "page";
   const rows = permissionRows(entry);
@@ -192,10 +196,25 @@ export function PluginDetail({ row, official, progress, onInstall, variant = "pa
             <span className="inline-flex h-5 items-center rounded-[5px] border border-input bg-secondary px-[7px] text-2xs font-medium text-muted-foreground">{`v${entry.version}`}</span>
           </div>
         </div>
-        <PrimaryAction action={row.action} progress={progress} onInstall={onInstall} />
+        <div className="flex shrink-0 items-center gap-2">
+          {row.installed && progress === undefined && onUninstall && (
+            <button
+              type="button"
+              aria-label={`Uninstall ${entry.name}`}
+              onClick={() => setConfirming(true)}
+              className="inline-flex h-8 items-center whitespace-nowrap rounded-md border border-input bg-secondary px-3 text-sm font-medium text-destructive"
+            >
+              Uninstall
+            </button>
+          )}
+          <PrimaryAction action={row.action} progress={progress} onInstall={onInstall} />
+        </div>
+        {confirming && row.installed && onUninstall && (
+          <ConfirmUninstall plugin={row.installed} onCancel={() => setConfirming(false)} onConfirm={() => { setConfirming(false); onUninstall(); }} />
+        )}
       </div>
       {page ? (
-        <div className="grid grid-cols-[minmax(0,1fr)_320px] gap-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_320px]">
           <div className="flex min-w-0 flex-col gap-4">
             {tabs}
             <div id={panel} role="tabpanel" aria-labelledby={`plugin-detail-tab-${tab}`} className="flex flex-col gap-4">

@@ -1,0 +1,24 @@
+# The signing step for the workflow of each built-in repository (see docs/signing.md).
+# Each repository uses the same step, but commits the signature differently.
+#
+# shard-plugins: .github/workflows/release.yml, between "Update index.json" and "Create the release".
+#   Add `if: steps.changed.outputs.dirs != ''` to the step, and change the commit step to
+#   `git add index.json index.json.sig`, so the signature is committed with the index.
+#
+# shard-themes: .github/workflows/check.yml. index.json is committed by hand there, and check.yml only
+#   checks it, so the step goes into a second job `sign` that runs on push to main only (pull requests
+#   from forks get no secrets), has `permissions: contents: write`, and commits index.json.sig:
+#     git add index.json.sig
+#     git diff --cached --quiet || git commit -m "chore: sign index.json"
+#     git pull --rebase origin main && git push origin main
+#   A push made with GITHUB_TOKEN does not start the workflow again, so there is no loop.
+#   Until that commit lands (about a minute), index.json and its signature do not match.
+
+      - name: Sign index.json
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.INDEX_SIGNING_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.INDEX_SIGNING_PASSWORD }}
+        run: |
+          # Writes index.json.sig. The bytes of index.json must not change after this step.
+          npx --yes @tauri-apps/cli@2 signer sign index.json
+          test -s index.json.sig

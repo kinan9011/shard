@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 
-const api = vi.hoisted(() => ({ listPlugins: vi.fn(), listRepos: vi.fn(), repoCatalog: vi.fn(), pluginUpdates: vi.fn(), installFromRepo: vi.fn(), setPluginGrants: vi.fn(), onInstallProgress: vi.fn(async () => () => {}) }));
+const api = vi.hoisted(() => ({ listPlugins: vi.fn(), listRepos: vi.fn(), repoCatalog: vi.fn(), pluginUpdates: vi.fn(), installFromRepo: vi.fn(), setPluginGrants: vi.fn(), uninstallPlugin: vi.fn(), onInstallProgress: vi.fn(async () => () => {}) }));
 vi.mock("@/plugins/api", () => api);
 
 import { PluginsPage } from "@/components/plugins/PluginsPage";
@@ -98,6 +98,19 @@ describe("Plugin detail pane", () => {
     expect(screen.getByRole("button", { name: /Kafka Inspector/ })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: /Cron Builder/ })).toHaveAttribute("aria-pressed", "false");
     expect(within(pane()).getByRole("heading", { name: "Kafka Inspector" })).toBeInTheDocument();
+  });
+
+  it("offers Uninstall for an installed plugin only, behind a confirm step", async () => {
+    arrange();
+    api.uninstallPlugin.mockResolvedValue(undefined);
+    await open("Kafka Inspector");
+    expect(within(pane()).queryByRole("button", { name: /^Uninstall/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Hash Generator/ }));
+    fireEvent.click(within(pane()).getByRole("button", { name: "Uninstall Hash Generator" }));
+    expect(api.uninstallPlugin).not.toHaveBeenCalled();
+    const dialog = screen.getByRole("alertdialog", { name: "Uninstall hash-generator?" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Uninstall" }));
+    await vi.waitFor(() => expect(api.uninstallPlugin).toHaveBeenCalledWith("hash-generator"));
   });
 
   it("shows the header: source, badges and the primary action", async () => {

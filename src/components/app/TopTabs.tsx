@@ -10,9 +10,11 @@ interface TopTabsProps {
   onClose: (tool: CatalogTool) => void;
   /** Close several tabs at once. When the selected tab closes, `fallback` or the nearest open tab is selected. */
   onCloseMany: (ids: ReadonlySet<string>, fallback?: CatalogTool) => void;
+  /** Hides a built-in tool or turns a plugin off. Without it the menu has no such item. */
+  onHide?: (tool: CatalogTool) => void;
 }
 
-export function TopTabs({ tools, selectedId, onSelect, onClose, onCloseMany }: TopTabsProps) {
+export function TopTabs({ tools, selectedId, onSelect, onClose, onCloseMany, onHide }: TopTabsProps) {
   const tabStripRef = useRef<HTMLDivElement>(null);
   const [tabsOverflow, setTabsOverflow] = useState(false);
   useEffect(() => {
@@ -48,6 +50,7 @@ export function TopTabs({ tools, selectedId, onSelect, onClose, onCloseMany }: T
       { label: "Close other tabs", disabled: others.length === 0, onSelect: () => onCloseMany(new Set(others.map((entry) => entry.id)), tool) },
       { label: "Close tabs to the right", disabled: toRight.length === 0, onSelect: () => onCloseMany(new Set(toRight.map((entry) => entry.id)), tool) },
       { label: "Close all tabs", onSelect: () => onCloseMany(new Set(tools.map((entry) => entry.id))) },
+      ...(onHide ? [{ label: tool.pluginId ? "Turn off this plugin" : "Hide this tool", onSelect: () => onHide(tool) }] : []),
     ];
   };
 

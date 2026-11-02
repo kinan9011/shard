@@ -1,11 +1,16 @@
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { exportBackup } from "@/lib/settingsBackup";
 import { Switch } from "@/components/ui/switch";
 import { resetAppData, type UpdateState } from "@/lib/desktop";
 import { COLOR_SCHEMES, type Layout, type OpenToolsIn, type SidebarCategoryMode, type ThemePreference } from "@/utils/theme";
 import type { GlobalShortcut } from "@/utils/global-shortcut";
 import type { ShortcutActionId, ShortcutBinding, ShortcutBindings } from "@/utils/shortcuts";
 import { BuiltInToolSwitches } from "../BuiltInToolSwitches";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { ACCENTS, type AccentId } from "@/utils/accent";
+import { BackupRows } from "./BackupRows";
 import { CustomThemesRow, type CustomThemes } from "./CustomThemes";
 import { LayoutChoice } from "./LayoutChoice";
 import { ActionButton, Heading, Row } from "./Row";
@@ -31,6 +36,11 @@ interface Props {
   onPreference(next: ThemePreference): void;
   scheme: string;
   onScheme(id: string): void;
+  /** The app runs natively: on a desktop or a phone. Differs from `isDesktop` on a phone, which has plugins and themes but no updater. Defaults to `isDesktop`. */
+  hasNative?: boolean;
+  /** The accent color picked over the scheme (null: the scheme's own). Omitted: no accent row. */
+  accent?: AccentId | null;
+  onAccent?(id: AccentId | null): void;
   /** The themes folder. Omitted in the browser preview, which has none. */
   customThemes?: CustomThemes;
   /** The mode in effect, after "system" is resolved. */
@@ -68,23 +78,26 @@ interface Props {
 
 /** Settings: a section nav on the left, the selected section on the right. Changes apply as they are made. */
 export function SettingsPage(props: Props) {
-  const current = SETTINGS_SECTIONS.find(([id]) => id === props.section) ?? SETTINGS_SECTIONS[1];
+  const phone = useIsMobile(props.platform);
+  // Key shortcuts are for a keyboard.
+  const sections = SETTINGS_SECTIONS.filter(([id]) => !(phone && id === "shortcuts"));
+  const current = sections.find(([id]) => id === props.section) ?? sections[1];
   return (
-    <div className="flex h-full min-h-0 bg-background">
-      <nav aria-label="Settings sections" className="flex w-[200px] shrink-0 flex-col gap-0.5 border-r border-border px-3 py-5">
-        {SETTINGS_SECTIONS.map(([id, name]) => (
+    <div className="flex h-full min-h-0 flex-col bg-background sm:flex-row">
+      <nav aria-label="Settings sections" className="flex w-full shrink-0 flex-row gap-1 overflow-x-auto border-b border-border px-3 py-2 sm:w-[200px] sm:flex-col sm:gap-0.5 sm:overflow-x-visible sm:border-b-0 sm:border-r sm:py-5">
+        {sections.map(([id, name]) => (
           <button
             key={id}
             type="button"
             aria-current={current[0] === id ? "page" : undefined}
             onClick={() => props.onSection(id)}
-            className="flex h-8 items-center rounded-md px-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-foreground/[.055] hover:text-foreground aria-[current=page]:bg-foreground/[.09] aria-[current=page]:font-medium aria-[current=page]:text-foreground"
+            className="flex h-10 shrink-0 items-center whitespace-nowrap rounded-md px-2.5 text-left text-sm sm:h-8 text-muted-foreground transition-colors hover:bg-foreground/[.055] hover:text-foreground aria-[current=page]:bg-foreground/[.09] aria-[current=page]:font-medium aria-[current=page]:text-foreground"
           >
             {name}
           </button>
         ))}
       </nav>
-      <div className="flex min-w-0 flex-1 flex-col gap-[18px] overflow-y-auto px-9 py-6">
+      <div className="flex min-w-0 flex-1 flex-col gap-[18px] overflow-y-auto px-4 py-4 sm:px-9 sm:py-6">
         {current[0] === "appearance" ? (
           <Appearance {...props} />
         ) : current[0] === "general" ? (
@@ -148,28 +161,30 @@ function General(p: Props) {
             paused={p.recordingPaused}
           />
         )}
-        <ResetRow />
+        <BackupRows native={p.hasNative ?? p.isDesktop} />
+        <ResetRow native={p.isDesktop} />
       </div>
     </>
   );
 }
 
 /** Wipes every trace of Shard. Two steps, so a stray click cannot do it. */
-function ResetRow() {
+function ResetRow({ native }: { native: boolean }) {
   const [confirming, setConfirming] = useState(false);
   return (
     <Row
       title="Reset Shard"
       hint={
         confirming
-          ? "This can't be undone. All settings, plugins, repositories, caches and backups are removed, then Shard restarts."
-          : "Remove all settings, plugins, repositories, caches and backups. Shard restarts as if newly installed."
+          ? "This can't be undone. All settings, plugins, themes, repositories, caches and backups are removed, then Shard restarts."
+          : "Remove all settings, plugins, themes, repositories, caches and backups. Shard restarts as if newly installed."
       }
     >
       {confirming ? (
         <div className="flex gap-2">
+          <ActionButton onClick={() => void exportBackup(native).then((saved) => saved && toast.success("Settings exported"), (error) => toast.error("Couldn't export the settings", { description: String(error) }))}>Export settings first…</ActionButton>
           <ActionButton onClick={() => setConfirming(false)}>Cancel</ActionButton>
-          <ActionButton onClick={() => void resetAppData()} className="text-destructive">Remove all data</ActionButton>
+          <ActionButton onClick={() => resetAppData().catch((error) => toast.error(`Reset failed: ${error instanceof Error ? error.message : String(error)}`))} className="text-destructive">Remove all data</ActionButton>
         </div>
       ) : (
         <ActionButton onClick={() => setConfirming(true)}>Reset…</ActionButton>
@@ -221,7 +236,7 @@ function About(p: Props) {
     <>
       <Heading title="About" />
       <div className="flex max-w-[820px] flex-col">
-        <Row title="Shard" hint={p.isDesktop ? (p.appVersion ? `Version ${p.appVersion}` : "Loading…") : "Browser preview"} />
+        <Row title="Shard" hint={p.appVersion ? `Version ${p.appVersion}` : (p.hasNative ?? p.isDesktop) ? "Loading…" : "Browser preview"} />
         {p.hasReleaseNotes && (
           <Row title="What's new" hint="The highlights of this version.">
             <ActionButton onClick={p.onWhatsNew}>What's new</ActionButton>
@@ -241,7 +256,7 @@ function Appearance(p: Props) {
   return (
     <>
       <Heading title="Appearance" hint="Changes apply right away." />
-      <div className="flex flex-col gap-2.5">
+      <div className="hidden flex-col gap-2.5 sm:flex">
         <span className="text-2xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Layout</span>
         <LayoutChoice layout={p.layout} onLayout={p.onLayout} />
       </div>
@@ -255,7 +270,7 @@ function Appearance(p: Props) {
           />
         </Row>
         <Row title="Color scheme" hint="Colors for the app and its editors.">
-          <div role="group" aria-label="Color scheme" className="grid w-[420px] grid-cols-3 gap-2">
+          <div role="group" aria-label="Color scheme" className="grid w-full grid-cols-2 gap-2 sm:w-[420px] sm:grid-cols-3">
             {schemes.map((s) => (
               <button
                 key={s.id}
@@ -282,7 +297,28 @@ function Appearance(p: Props) {
             ))}
           </div>
         </Row>
-        {p.customThemes && <CustomThemesRow themes={p.customThemes} onBrowse={() => p.onOpenPlugins("themes")} />}
+        {p.onAccent && (
+          <Row title="Accent color" hint="The color of buttons and focus rings. Applies over any color scheme.">
+            <div role="group" aria-label="Accent color" className="flex items-center gap-2">
+              <button type="button" aria-pressed={!p.accent} onClick={() => p.onAccent?.(null)} className={`h-7 rounded-md border px-2.5 text-xs ${!p.accent ? "border-primary" : "border-input"}`}>
+                Scheme
+              </button>
+              {ACCENTS.map((accent) => (
+                <button
+                  key={accent.id}
+                  type="button"
+                  aria-label={accent.name}
+                  aria-pressed={p.accent === accent.id}
+                  title={accent.name}
+                  onClick={() => p.onAccent?.(accent.id)}
+                  className={`size-7 rounded-full border-2 ${p.accent === accent.id ? "border-foreground" : "border-transparent"}`}
+                  style={{ background: `hsl(${accent.hue} ${accent.saturation}% ${p.dark ? 62 : 42}%)` }}
+                />
+              ))}
+            </div>
+          </Row>
+        )}
+        {p.customThemes && <CustomThemesRow themes={p.customThemes} onBrowse={() => p.onOpenPlugins("themes")} dark={p.dark} onApply={p.onScheme} />}
         <Row title="Sidebar categories" hint="Collapse categories you don’t use. Applies to the sidebar layout.">
           <Segmented
             label="Sidebar categories"

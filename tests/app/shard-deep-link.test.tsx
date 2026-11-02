@@ -26,7 +26,6 @@ beforeEach(() => {
   });
   localStorage.setItem("shard-whats-new-seen-version", "2.0.0");
   localStorage.setItem("shard-first-run-done", "true");
-  localStorage.setItem("shard-plugins-intro-seen", "true");
   const idle = { status: "idle" as const, currentVersion: "2.0.0" };
   desktopMock.bridge = {
     platform: "darwin",

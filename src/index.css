@@ -356,7 +356,6 @@ body:has(.workspace[data-platform="darwin"]) #root,
 /* A blue wash over the native glass. The blur still shows through, and the wash keeps sidebar text
    readable whatever is behind the window (vibrancy alone lightens over bright content). */
 .workspace[data-platform="darwin"] { background: linear-gradient(180deg, rgb(238 244 255 / .42), rgb(218 231 253 / .38)); }
-.dark .workspace[data-platform="darwin"] { background: linear-gradient(180deg, rgb(15 21 34 / .84), rgb(12 17 28 / .88)); }
 /* Linux: WebKitGTK blurs backdrops in software on every frame, so overlays drop it. The surfaces are
    already nearly opaque, so they look the same. */
 body:has(.workspace[data-platform="linux"]) :is(.workspace-sidebar, .command-surface, .modal-backdrop, .modal-surface, .desktop-menu, .desktop-tooltip) { backdrop-filter: none; -webkit-backdrop-filter: none; }
@@ -462,3 +461,23 @@ code, pre, kbd, samp, .font-mono { font-family: var(--font-code); font-feature-s
 .launcher-search kbd { font-family: var(--font-ui); font-size: 11px; padding: 2px 6px; border-radius: 4px; background: hsl(var(--muted)); border: 1px solid hsl(var(--border)); }
 .launcher-badge { position: absolute; top: 2px; right: 1px; display: grid; place-items: center; box-sizing: border-box; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 999px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-size: 10px; font-weight: 600; line-height: 1; }
 .launcher-tabs .workspace-tab-placeholder { display: none; }
+
+/* ---- Phone shell: one column, a top bar, a bottom bar, the content fills the screen. See src/components/app/PhoneShell.tsx. */
+.workspace[data-phone="true"] { height: 100dvh; flex-direction: column; }
+.workspace[data-phone="true"] > main { padding: 0; }
+.workspace[data-phone="true"] .workspace-content { border-radius: 0; box-shadow: none; }
+.phone-header { display: flex; flex-shrink: 0; align-items: center; gap: 4px; min-height: calc(52px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 8px 0 12px; background: var(--surface-chrome); border-bottom: 1px solid hsl(var(--border)); }
+.phone-nav { display: grid; flex-shrink: 0; grid-template-columns: repeat(4, 1fr); padding-bottom: env(safe-area-inset-bottom); background: var(--surface-chrome); border-top: 1px solid hsl(var(--border)); }
+.phone-nav-item { display: flex; min-height: 56px; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; color: hsl(var(--muted-foreground)); }
+.phone-nav-item[aria-current="page"] { color: hsl(var(--primary)); font-weight: 600; }
+/* Fingers: bigger targets, and nothing that only shows on hover. */
+@media (pointer: coarse) {
+  .chrome-button { min-width: 44px; min-height: 44px; }
+  .tab-close, .sidebar-favorite { opacity: 1; }
+}
+/* A text field under 16px makes iOS and some Android browsers zoom in on focus. */
+@media (max-width: 639px) { input, select, textarea { font-size: 16px; } }
+/* The result goes below on a phone, so there is nothing to choose. */
+@media (max-width: 639px) { .layout-switch[aria-label="Result layout"] { display: none; } }
+/* Key hints are for a keyboard. */
+@media (max-width: 639px) { .launcher-search kbd { display: none; } }

@@ -52,14 +52,13 @@ export function groupByCategory(tools: readonly CatalogTool[]): { name: string; 
 }
 
 /**
- * Keeps the stored ids that are still in the catalog (order kept, duplicates dropped). Anything else is dropped,
- * except the ids in `keep`: tools that are not installed yet but should keep their slot (see legacyMigration.ts).
+ * Keeps the stored ids that are still in the catalog (order kept, duplicates dropped). Anything else is dropped.
  */
-export function pruneToolIds(stored: unknown, known: ReadonlyMap<string, CatalogTool>, keep: ReadonlySet<string> = new Set()): string[] {
+export function pruneToolIds(stored: unknown, known: ReadonlyMap<string, CatalogTool>): string[] {
   if (!Array.isArray(stored)) return [];
   const seen = new Set<string>();
   for (const id of stored) {
-    if (typeof id === "string" && (known.has(id) || keep.has(id))) seen.add(id);
+    if (typeof id === "string" && (known.has(id))) seen.add(id);
   }
   return [...seen];
 }
