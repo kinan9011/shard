@@ -39,9 +39,7 @@ the theme wired up. Copy it, change `public/plugin.json` and `package.json`, and
 - `tailwind.preset.ts` carries the app's tokens (`bg-background`, `text-muted-foreground`, ...). The
   colors are CSS variables that the host sends in `theme.vars`: apply them to `:root` as the template does.
 
-`scripts/plugin-index.mjs` in the app's repository turns built zips into an `index.json`
-(see `docs/plugins/index-format.md`). The official plugin repository's sources and release workflow
-are in `plugins/`.
+The official plugin repository, [`kinan9011/shard-plugins`](https://github.com/kinan9011/shard-plugins), holds the official plugins' sources and the release workflow that builds `index.json` (see `docs/plugins/index-format.md`).
 
 ## API
 

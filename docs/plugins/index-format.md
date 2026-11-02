@@ -48,12 +48,7 @@ to the plugin-by-plugin list. A releases repository has no bundles.
 
 ## Building the index
 
-`node scripts/plugin-index.mjs --zips <dir> --base-url <url> [--index index.json] [--name <name>]` builds or
-updates an index from a folder of built plugin zips (`<id>-<version>.zip`, optionally with its `.sha256`
-file, as the plugin template's `npm run build` writes them). `url` is `<base-url>/<zip name>`; `sha256`
-and `size` are computed from the zip. Entries of plugins that are not in the folder, `name` and `bundles`
-stay as they are, and a plugin's version has to be newer than the listed one. The official repository's
-release workflow (`plugins/.github/workflows/release.yml`) runs it.
+The official repository, [`kinan9011/shard-plugins`](https://github.com/kinan9011/shard-plugins), builds its index from the plugin zips (`<id>-<version>.zip`, optionally with its `.sha256` file, as the plugin template's `npm run build` writes them) in its release workflow. `url` is `<base-url>/<zip name>`; `sha256` and `size` are computed from the zip.
 
 ## Verification
 
