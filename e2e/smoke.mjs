@@ -291,7 +291,8 @@ try {
   });
 
   await step("opens a tool from the command palette shortcut", async () => {
-    await (await browser.$("body")).click();
+    // Clicking body lands in whatever tool fills the page (an editor ignores app shortcuts), so drop focus instead.
+    await browser.execute(() => document.activeElement?.blur());
     await browser.keys(["Control", "k"]);
     const paletteInput = await browser.$('input[placeholder="Search tools..."]');
     await paletteInput.waitForDisplayed({ timeout: 5000 });
