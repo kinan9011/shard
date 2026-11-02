@@ -62,6 +62,8 @@ async function startSession() {
       hostname: "127.0.0.1",
       port: 4444,
       logLevel: "warn",
+      connectionRetryCount: 0,
+      connectionRetryTimeout: 30000,
       capabilities: {
         browserName: "webview2",
         "wdio:enforceWebDriverClassic": true,
@@ -76,6 +78,8 @@ async function startSession() {
     hostname: "127.0.0.1",
     port: 4444,
     logLevel: "warn",
+      connectionRetryCount: 0,
+      connectionRetryTimeout: 30000,
     capabilities: {
       browserName: "wry",
       "wdio:enforceWebDriverClassic": true,
@@ -107,12 +111,14 @@ async function openTool(name) {
 
 /** Calls a Tauri command from the page, through the same internals the app's own code uses. */
 async function invokeCommand(command, args = {}) {
-  const outcome = await browser.executeAsync(
-    (name, params, done) => {
-      window.__TAURI_INTERNALS__.invoke(name, params).then(
-        (value) => done({ value }),
-        (error) => done({ error: String(error) }),
-      );
+  // webdriverio 10 has no executeAsync; execute waits for a returned promise.
+  const outcome = await browser.execute(
+    async (name, params) => {
+      try {
+        return { value: await window.__TAURI_INTERNALS__.invoke(name, params) };
+      } catch (error) {
+        return { error: String(error) };
+      }
     },
     command,
     args,
@@ -149,6 +155,15 @@ async function waitForSavedFile(pattern) {
   return fs.readFileSync(path.join(saveDir, match));
 }
 
+/** Saves a screenshot for the CI artifact. A hung WebKitWebDriver capture must not fail the run, so give it 15 seconds. */
+async function screenshot(name) {
+  const done = await Promise.race([
+    browser?.saveScreenshot(path.join(screenshotDir, `${name}.png`)).then(() => true, () => false),
+    delay(15000).then(() => false),
+  ]);
+  if (!done) console.log(`(screenshot ${name} skipped: driver did not answer) `);
+}
+
 async function step(name, run) {
   process.stdout.write(`- ${name} ... `);
   try {
@@ -156,11 +171,7 @@ async function step(name, run) {
     console.log("ok");
   } catch (error) {
     console.log(`FAILED: ${error.message}`);
-    // A hung driver must not hide the error or eat the job: give the screenshot 10 seconds.
-    await Promise.race([
-      browser?.saveScreenshot(path.join(screenshotDir, "failure.png")).catch(() => {}),
-      delay(10000),
-    ]);
+    await screenshot("failure");
     throw error;
   }
 }
@@ -190,14 +201,14 @@ try {
     const dialog = await browser.$('[role="dialog"]');
     await dialog.waitForDisplayed({ timeout: 20000 });
     await waitForText(dialog, `Shard v${expectedVersion}`);
-    await browser.saveScreenshot(path.join(screenshotDir, "whats-new.png"));
+    await screenshot("whats-new");
     await (await browser.$("button=Got it")).click();
     await dialog.waitForDisplayed({ reverse: true, timeout: 5000 });
   });
 
   await step("shows the app version in the sidebar footer", async () => {
     await waitForText(await browser.$("body"), `v${expectedVersion}`);
-    await browser.saveScreenshot(path.join(screenshotDir, "home.png"));
+    await screenshot("home");
   });
 
   await step(`opens all ${toolNames.length} tools`, async () => {
@@ -304,7 +315,7 @@ try {
       const selected = await browser.$('[role="tab"][aria-selected="true"][id^="tab-"]');
       return await selected.isExisting() && (await selected.getProperty("textContent")) === "JWT Decoder";
     }, { timeout: 10000, timeoutMsg: "The command palette did not open JWT Decoder" });
-    await browser.saveScreenshot(path.join(screenshotDir, "command-palette.png"));
+    await screenshot("command-palette");
   });
 
   // The hello plugin is a sideload, which the app refuses unless "Allow installs from outside these repositories" is on.
@@ -335,7 +346,7 @@ try {
         () => browser.execute(() => document.querySelector("section.tool-panel:not([hidden]) [data-state]")?.dataset.state === "ready"),
         { timeout: 15000, timeoutMsg: "The plugin did not finish its handshake" },
       );
-      await browser.saveScreenshot(path.join(screenshotDir, "hello-plugin.png"));
+      await screenshot("hello-plugin");
     });
 
     await step("uninstalls the hello plugin from the Plugins page", async () => {
