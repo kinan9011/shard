@@ -1,27 +1,19 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 import {
   AlignLeft,
-  Braces,
-  Calculator,
   Code,
-  CodeXml,
   Coins,
-  FileBadge,
   FileCheck,
   FileDiff,
   FileJson,
-  FileSearch,
   GitMerge,
   FileVideo,
-  Workflow,
   Image as ImageIcon,
-  MonitorPlay,
   ScanLine,
   Shield,
   ShieldAlert,
   ShieldOff,
   Sparkles,
-  Tags,
   Terminal,
   Type,
 } from "lucide-react";
@@ -40,10 +32,6 @@ export const ALL_TOOLS = [
   { icon: Type, name: "JSON to Code", id: "json-typescript", category: "Development Tools", keywords: ["typescript", "ts", "interface", "types", "go", "golang", "struct", "rust", "serde", "python", "dataclass", "pydantic", "swift", "codable", "kotlin", "json schema", "codegen", "model"], kind: "core" },
   { icon: FileCheck, name: "JSON Schema Validator", id: "json-schema", category: "Development Tools", keywords: ["json schema", "validate", "validator", "ajv", "draft 2020-12", "draft-07", "openapi", "kubernetes", "yaml"], kind: "core" },
   { icon: FileDiff, name: "JSON Diff", id: "json-diff", category: "Development Tools", keywords: ["json diff", "compare", "difference", "json patch", "rfc 6902", "structural", "yaml", "jsonpath"], kind: "core" },
-  { icon: FileBadge, name: "X.509 Certificate Decoder", id: "certificate-decoder", category: "Development Tools", keywords: ["x509", "certificate", "pem", "der", "ssl", "tls", "csr", "fingerprint", "chain", "san"], kind: "legacy" },
-  { icon: MonitorPlay, name: "HTML Preview", id: "html-preview", category: "Development Tools", keywords: ["html", "preview", "render", "live", "sandbox", "iframe", "responsive", "viewport"], kind: "legacy" },
-  { icon: Braces, name: "Code Formatter", id: "code-formatter", category: "Development Tools", keywords: ["beautify", "prettify", "minify", "html", "css", "js", "xml", "sql"], kind: "legacy" },
-  { icon: Tags, name: "Semver Calculator", id: "semver", category: "Development Tools", keywords: ["semver", "version range", "caret", "tilde", "npm version", "cargo version", "pep 440", "composer", "satisfies", "compare versions"], kind: "legacy" },
   { icon: ImageIcon, name: "Image Converter", id: "image-converter", category: "Media", keywords: ["image", "png", "jpg", "webp", "avif", "mozjpeg", "oxipng", "palette", "compress", "resize", "crop", "rotate", "flip"], kind: "legacy" },
   { icon: ScanLine, name: "QR Reader", id: "qr-reader", category: "Media", keywords: ["qr", "scan", "decode", "read"], kind: "legacy" },
   { icon: GitMerge, name: "Diff & Merge", id: "diff-merge", category: "Text Tools", keywords: ["diff", "merge", "compare", "side by side", "jetbrains", "patch", "folder compare", "directory diff"], kind: "core" },
@@ -54,9 +42,6 @@ export const ALL_TOOLS = [
   { icon: ShieldAlert, name: "Secret & PII Redactor", id: "secret-redactor", category: "AI Tools", keywords: ["redact", "secrets", "api key", "token", "password", "pii", "mask", "sanitize", "chatgpt", "privacy"], kind: "legacy" },
   { icon: Coins, name: "Token Counter", id: "token-counter", category: "AI Tools", keywords: ["tokens", "tokenizer", "gpt", "openai", "o200k", "llm", "prompt", "cost", "context window", "claude"], kind: "legacy" },
   { icon: Sparkles, name: "AI Text Cleaner", id: "ai-text-cleaner", category: "AI Tools", keywords: ["clean text", "invisible characters", "zero width", "smart quotes", "em dash", "citations", "markdown", "chatgpt", "normalize"], kind: "legacy" },
-  { icon: CodeXml, name: "XML Inspector", id: "xml-inspector", category: "Development Tools", keywords: ["xml", "xpath", "namespace", "format", "minify"], kind: "legacy" },
-  { icon: FileSearch, name: "ASN.1 Inspector", id: "asn1-inspector", category: "Development Tools", keywords: ["asn1", "asn.1", "der", "ber", "pem", "oid", "binary"], kind: "legacy" },
-  { icon: Workflow, name: "Mermaid Renderer", id: "mermaid-renderer", category: "Development Tools", keywords: ["mermaid", "diagram", "flowchart", "sequence diagram", "class diagram", "er diagram", "gantt", "mind map", "svg", "png"], kind: "legacy" },
 ] as const;
 
 export type ToolDefinition = (typeof ALL_TOOLS)[number];
@@ -65,19 +50,12 @@ export type BuiltinToolId = ToolDefinition["id"];
 export type ToolId = BuiltinToolId;
 
 export const TOOL_COMPONENTS: Record<BuiltinToolId, LazyExoticComponent<ComponentType>> = {
-  "mermaid-renderer": lazyNamed(() => import("@/components/tools/MermaidRenderer"), "MermaidRenderer"),
-  "asn1-inspector": lazyNamed(() => import("@/components/tools/Asn1Inspector"), "Asn1Inspector"),
-  "xml-inspector": lazyNamed(() => import("@/components/tools/XmlInspector"), "XmlInspector"),
-  "certificate-decoder": lazyNamed(() => import("@/components/tools/CertificateDecoder"), "CertificateDecoder"),
-  "html-preview": lazyNamed(() => import("@/components/tools/HtmlPreview"), "HtmlPreview"),
   "json-schema": lazyNamed(() => import("@/components/tools/JsonSchemaValidator"), "JsonSchemaValidator"),
   "video-metadata": lazyNamed(() => import("@/components/tools/VideoMetadataCleaner"), "VideoMetadataCleaner"),
   "image-metadata": lazyNamed(() => import("@/components/tools/ImageMetadataCleaner"), "ImageMetadataCleaner"),
   "secret-redactor": lazyNamed(() => import("@/components/tools/SecretRedactor"), "SecretRedactor"),
   "token-counter": lazyNamed(() => import("@/components/tools/TokenCounter"), "TokenCounter"),
   "ai-text-cleaner": lazyNamed(() => import("@/components/tools/AiTextCleaner"), "AiTextCleaner"),
-  "code-formatter": lazyNamed(() => import("@/components/tools/CodeFormatter"), "CodeFormatter"),
-  semver: lazyNamed(() => import("@/components/tools/SemverCalculator"), "SemverCalculator"),
   "qr-reader": lazyNamed(() => import("@/components/tools/QrReader"), "QrReader"),
   "json-viewer": lazyNamed(() => import("@/components/tools/JsonViewer"), "JsonViewer"),
   "code-playground": lazyNamed(() => import("@/components/tools/CodePlayground"), "CodePlayground"),

@@ -135,7 +135,7 @@
 
     await step("opens every tool", async () => {
       const toolNames = await invoke("e2e_tool_names");
-      if (toolNames.length < 20) {
+      if (toolNames.length < 9) {
         throw new Error(`Expected the full tool list, found ${toolNames.length} tools`);
       }
       for (const name of toolNames) {

@@ -38,7 +38,7 @@ describe("buildCatalog", () => {
     const catalog = buildCatalog(ALL_TOOLS, [], new Set());
     expect(catalog.map((tool) => tool.id)).toEqual(ALL_TOOLS.map((tool) => tool.id));
     expect(catalog.find((tool) => tool.id === "json-viewer")?.source).toBe("core");
-    expect(catalog.find((tool) => tool.id === "semver")?.source).toBe("legacy");
+    expect(catalog.find((tool) => tool.id === "token-counter")?.source).toBe("legacy");
   });
 
   it("appends plugin tools and ignores one that reuses a builtin id", () => {
@@ -74,12 +74,12 @@ describe("pruneToolIds", () => {
   const known = new Map(buildCatalog(ALL_TOOLS, [], new Set()).map((tool) => [tool.id, tool]));
 
   it("keeps known ids in order and drops unknown, non-string and duplicate ones", () => {
-    expect(pruneToolIds(["semver", "gone", 4, "json-viewer", "semver", null], known)).toEqual(["semver", "json-viewer"]);
+    expect(pruneToolIds(["json-diff", "gone", 4, "json-viewer", "json-diff", null], known)).toEqual(["json-diff", "json-viewer"]);
   });
 
   it("returns an empty list for anything that is not an array", () => {
     expect(pruneToolIds(null, known)).toEqual([]);
-    expect(pruneToolIds({ 0: "semver" }, known)).toEqual([]);
-    expect(pruneToolIds("semver", known)).toEqual([]);
+    expect(pruneToolIds({ 0: "json-diff" }, known)).toEqual([]);
+    expect(pruneToolIds("json-diff", known)).toEqual([]);
   });
 });

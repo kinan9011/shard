@@ -214,7 +214,7 @@ try {
   });
 
   await step(`opens all ${toolNames.length} tools`, async () => {
-    if (toolNames.length < 20) {
+    if (toolNames.length < 9) {
       throw new Error(`Expected the full tool list, found ${toolNames.length} tools.`);
     }
 

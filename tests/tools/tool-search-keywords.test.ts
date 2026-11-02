@@ -7,14 +7,14 @@ const ids = (query: string) => searchTools([...ALL_TOOLS], query).map((tool) => 
 describe("searchTools keywords", () => {
   it("finds tools by keyword", () => {
     expect(ids("bearer")[0]).toBe("jwt-decoder");
-    expect(ids("tilde")[0]).toBe("semver");
-    expect(ids("mermaid")[0]).toBe("mermaid-renderer");
+    expect(ids("rfc 6902")[0]).toBe("json-diff");
+    expect(ids("redact")[0]).toBe("secret-redactor");
     expect(ids("diff")[0]).toBe("diff-merge");
     expect(ids("diff")).toContain("text-compare");
   });
 
   it("still ranks an exact name above a keyword match", () => {
-    expect(ids("semver")[0]).toBe("semver");
+    expect(ids("Text Compare")[0]).toBe("text-compare");
     expect(ids("JSON Viewer")[0]).toBe("json-viewer");
   });
 

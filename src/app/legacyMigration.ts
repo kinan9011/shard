@@ -46,6 +46,13 @@ export const PORTED_TOOLS: readonly PortedTool[] = [
   { oldId: "php-tools", pluginId: "php-tools", name: "PHP Tools" },
   { oldId: "compression", pluginId: "compression", name: "Compression" },
   { oldId: "curl-to-code", pluginId: "curl-to-code", name: "cURL to Code" },
+  { oldId: "certificate-decoder", pluginId: "certificate-decoder", name: "X.509 Certificate Decoder" },
+  { oldId: "html-preview", pluginId: "html-preview", name: "HTML Preview" },
+  { oldId: "code-formatter", pluginId: "code-formatter", name: "Code Formatter" },
+  { oldId: "semver", pluginId: "semver", name: "Semver Calculator" },
+  { oldId: "xml-inspector", pluginId: "xml-inspector", name: "XML Inspector" },
+  { oldId: "asn1-inspector", pluginId: "asn1-inspector", name: "ASN.1 Inspector" },
+  { oldId: "mermaid-renderer", pluginId: "mermaid-renderer", name: "Mermaid Renderer" },
 ];
 
 /** The plugin ids of the ported tools. A stored pin or recent entry with one of these is kept while the plugin is not installed. */
