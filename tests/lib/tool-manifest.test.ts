@@ -7,11 +7,11 @@ describe("buildToolManifest", () => {
     const manifest = buildToolManifest(ALL_TOOLS, "2.1.0");
     expect(manifest).toMatchObject({ version: 1, appVersion: "2.1.0", scheme: "shard" });
     expect(manifest.tools).toHaveLength(ALL_TOOLS.length);
-    expect(manifest.tools.find((tool) => tool.id === "checksum")).toEqual({
-      id: "checksum",
-      name: "Checksum",
-      category: "Utilities",
-      keywords: expect.arrayContaining(["crc32"]),
+    expect(manifest.tools.find((tool) => tool.id === "jwt-decoder")).toEqual({
+      id: "jwt-decoder",
+      name: "JWT Decoder",
+      category: "Text Tools",
+      keywords: expect.arrayContaining(["jwt"]),
     });
   });
 

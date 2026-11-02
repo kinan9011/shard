@@ -6,7 +6,7 @@ const ids = (query: string) => searchTools([...ALL_TOOLS], query).map((tool) => 
 
 describe("searchTools keywords", () => {
   it("finds tools by keyword", () => {
-    expect(ids("crc32")[0]).toBe("checksum");
+    expect(ids("bearer")[0]).toBe("jwt-decoder");
     expect(ids("yml")[0]).toBe("yaml-json");
     expect(ids("YAML to JSON")[0]).toBe("yaml-json");
     expect(ids("toml")[0]).toBe("yaml-json");

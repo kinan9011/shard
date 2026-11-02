@@ -5,7 +5,6 @@ import { parseDeepLink } from "@/utils/deep-link";
 describe("tool registration", () => {
   it.each([
     "xml-inspector",
-    "checksum",
     "asn1-inspector",
     "stopwatch",
     "time-zone-converter",

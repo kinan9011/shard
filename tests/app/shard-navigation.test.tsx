@@ -184,7 +184,7 @@ describe("Shard navigation", () => {
       JSON.stringify([
         "password-generator",
         "bcrypt-generator",
-        "checksum",
+        "json-diff",
         "json-typescript",
         "regex-generator",
         "code-playground",
@@ -213,7 +213,7 @@ describe("Shard navigation", () => {
     }
 
     const recentButtons = within(recentSection).getAllByRole("button", {
-      name: /code playground|regex tester|json to code|checksum|bcrypt generator|password generator/i,
+      name: /code playground|regex tester|json to code|json diff|bcrypt generator|password generator/i,
     });
 
     expect(recentButtons).toHaveLength(6);

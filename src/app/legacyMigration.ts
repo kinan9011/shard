@@ -15,6 +15,11 @@ export const PORTED_TOOLS: readonly PortedTool[] = [
   { oldId: "cron-calculator", pluginId: "cron-calculator", name: "Cron Calculator" },
   { oldId: "markdown", pluginId: "markdown", name: "Markdown" },
   { oldId: "color-palette", pluginId: "color-palette", name: "Color Palette" },
+  { oldId: "unit-converter", pluginId: "unit-converter", name: "Unit Converter" },
+  { oldId: "chmod-calculator", pluginId: "chmod-calculator", name: "chmod Calculator" },
+  { oldId: "checksum", pluginId: "checksum", name: "Checksum" },
+  { oldId: "ip-cidr", pluginId: "ip-cidr", name: "IP / CIDR Calculator" },
+  { oldId: "har-viewer", pluginId: "har-viewer", name: "HAR Viewer" },
 ];
 
 /** The plugin ids of the ported tools. A stored pin or recent entry with one of these is kept while the plugin is not installed. */

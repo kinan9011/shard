@@ -52,9 +52,9 @@ describe("Shard deep links", () => {
     render(<Shard />);
     await waitFor(() => expect(desktopMock.bridge?.onDeepLink).toHaveBeenCalled());
 
-    act(() => sendLink("shard://open/checksum"));
+    act(() => sendLink("shard://open/jwt-decoder"));
 
-    expect(await screen.findByRole("tab", { name: /Checksum/ })).toHaveAttribute("aria-selected", "true");
+    expect(await screen.findByRole("tab", { name: /JWT Decoder/ })).toHaveAttribute("aria-selected", "true");
   });
 
   it("opens the command palette with the query from a search link", async () => {

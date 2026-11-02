@@ -99,7 +99,7 @@ From a terminal on macOS, run `open "shard://open/hash-generator"`. On Linux, ru
 - **Random String** - Generate Nano IDs, hex and Base64URL tokens, and strings from a custom alphabet
 - **Key Pair Generator** - Generate RSA, ECDSA, and Ed25519 key pairs as PEM, JWK, and OpenSSH keys with fingerprints, or convert a key you paste
 
-The **Hash Generator** (MD5, SHA-1, SHA-2, SHA-3, Keccak-256, HMAC and file hashing), the **UUID Generator** (UUIDs v1 to v7, ULIDs, and an inspector), the **Cron Calculator** (plain-English explanations, a field breakdown, the next runs, and a visual builder), **Markdown** (live, sanitized preview and HTML export), and the **Color Palette** (color conversion, palettes, WCAG contrast, color blindness, and CSS gradients) are plugins now. Install them from Plugins in the app. Their sources are in [`plugins/`](plugins/).
+The **Hash Generator** (MD5, SHA-1, SHA-2, SHA-3, Keccak-256, HMAC and file hashing), the **UUID Generator** (UUIDs v1 to v7, ULIDs, and an inspector), the **Cron Calculator** (plain-English explanations, a field breakdown, the next runs, and a visual builder), **Markdown** (live, sanitized preview and HTML export), the **Color Palette** (color conversion, palettes, WCAG contrast, color blindness, and CSS gradients), the **Unit Converter**, the **chmod Calculator**, **Checksum** (CRC variants and Luhn check digits), the **IP / CIDR Calculator**, and the **HAR Viewer** are plugins now. Install them from Plugins in the app. Their sources are in [`kinan9011/shard-plugins`](https://github.com/kinan9011/shard-plugins).
 
 ### Converters
 
@@ -115,11 +115,6 @@ The **Hash Generator** (MD5, SHA-1, SHA-2, SHA-3, Keccak-256, HMAC and file hash
 - **PHP Tools** - Convert serialize() data, session data, and PHP arrays to JSON and back, and repair broken string lengths
 - **Compression** - Decompress GZIP, zlib, and raw deflate from Base64, hex, or a .gz file, and compress text back, with format detection
 - **cURL to Code** - Convert a cURL command to fetch, Node, Python, Go, PHP, Rust, or HTTPie code
-
-### Network
-
-- **IP / CIDR Calculator** - Get the network, broadcast, host range, masks, and address type for IPv4 and IPv6 blocks, and split, merge, or check ranges
-- **HAR Viewer** - Filter, sort, and inspect the requests in a .har file from the browser, copy a request as cURL, and save a sanitized copy without credentials and cookies
 
 ### Time & Date
 
@@ -153,9 +148,6 @@ The **Hash Generator** (MD5, SHA-1, SHA-2, SHA-3, Keccak-256, HMAC and file hash
 
 ### Utilities
 
-- **Unit Converter** - Convert length, weight, temperature, and data units
-- **chmod Calculator** - Set file permissions with checkboxes, octal, or `rwx` text, apply expressions such as `u+x`, and see the chmod commands, a plain-English summary, and umask defaults
-- **Checksum** - Calculate six common CRC variants from text, hex bytes, or a file, and validate or append Luhn check digits
 
 ## Development
 
