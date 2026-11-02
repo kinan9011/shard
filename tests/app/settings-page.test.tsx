@@ -163,7 +163,7 @@ describe("Sidebar categories setting", () => {
   it("opens or closes every category at once, and Remember restores what was open", () => {
     render(<Shard />);
     const total = categoryButtons().length;
-    expect(total).toBeGreaterThan(2);
+    expect(total).toBeGreaterThan(1);
     expect(within(sidebar()).queryAllByRole("button", { expanded: true })).toHaveLength(0);
 
     openSettings();

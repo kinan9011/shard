@@ -64,9 +64,8 @@
     }
   }
 
-  const PNG_HEADER = "89504e47";
-  const SAMPLE_PNG =
-    "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP8z8DAwMDAxMDAwMDAAAANHQEDasKb6QAAAABJRU5ErkJggg==";
+  // "diff": the first four bytes of the file the Diff & Merge step saves.
+  const SAVED_HEADER = "64696666";
 
   const PLUGIN_IDS = ["hello", "hash-wasm", "e2e-ipc-spike"];
   const isWindows = navigator.userAgent.includes("Windows");
@@ -163,24 +162,23 @@
       await waitFor(() => text(toolContent()).includes('"b": ['), "formatted JSON");
     });
 
-    await step("compresses and saves an image", async () => {
-      await openTool("Image Converter");
-      const bytes = Uint8Array.from(atob(SAMPLE_PNG), (char) => char.charCodeAt(0));
+    await step("opens a file in Diff & Merge and saves it", async () => {
+      await openTool("Diff & Merge");
       const transfer = new DataTransfer();
-      transfer.items.add(new File([bytes], "sample-image.png", { type: "image/png" }));
+      transfer.items.add(new File(["diff and save check\n"], "sample-notes.txt", { type: "text/plain" }));
       // Other open tools stay mounted in hidden panels and can have their own file inputs.
-      const input = toolContent().querySelector('input[type="file"]');
+      const input = await waitFor(
+        () => toolContent().querySelector('input[type="file"][aria-label="Open file into Original"]'),
+        "the Original pane file input",
+      );
       input.files = transfer.files;
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      const download = await waitFor(
-        () => buttons("Download Image").find((button) => !button.disabled),
-        "image download button",
-      );
-      download.click();
+      const save = await waitFor(() => toolContent().querySelector('button[aria-label="Save Original"]'), "the Save Original button");
+      save.click();
       await waitFor(async () => {
         const files = await invoke("e2e_saved_files");
-        return files.some(([name, header]) => name.startsWith("sample-image") && header === PNG_HEADER);
-      }, "saved compressed image");
+        return files.some(([name, header]) => name.startsWith("sample-notes") && header === SAVED_HEADER);
+      }, "the saved file");
     });
 
     await step("toggles the theme", async () => {

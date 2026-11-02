@@ -86,15 +86,13 @@ From a terminal on macOS, run `open "shard://open/hash-generator"`. On Linux, ru
 ### Generators
 
 
-The **Hash Generator** (MD5, SHA-1, SHA-2, SHA-3, Keccak-256, HMAC and file hashing), the **UUID Generator** (UUIDs v1 to v7, ULIDs, and an inspector), the **Cron Calculator** (plain-English explanations, a field breakdown, the next runs, and a visual builder), **Markdown** (live, sanitized preview and HTML export), the **Color Palette** (color conversion, palettes, WCAG contrast, color blindness, and CSS gradients), the **Unit Converter**, the **chmod Calculator**, **Checksum** (CRC variants and Luhn check digits), the **IP / CIDR Calculator**, the **HAR Viewer**, **Timestamp**, **Date Difference**, the **Date Format Translator**, the **Stopwatch**, the **Time Zone Converter**, **API Formatter**, **String Inspector**, **Line Tools**, the **Password Generator**, **Lorem Ipsum**, the **QR Generator**, the **Bcrypt Generator**, **Random String**, and the **Key Pair Generator**, **Base64**, the **Case Converter**, **Number Base**, the **URL Encoder**, **CSV to JSON**, the **Config Converter**, **Escape Tools**, **HTML to JSX**, **SVG to CSS**, **PHP Tools**, **Compression**, **cURL to Code**, the **X.509 Certificate Decoder**, **HTML Preview**, the **Code Formatter**, the **Semver Calculator**, the **XML Inspector**, the **ASN.1 Inspector**, and the **Mermaid Renderer** are plugins now. Install them from Plugins in the app. Their sources are in [`kinan9011/shard-plugins`](https://github.com/kinan9011/shard-plugins).
+The **Hash Generator** (MD5, SHA-1, SHA-2, SHA-3, Keccak-256, HMAC and file hashing), the **UUID Generator** (UUIDs v1 to v7, ULIDs, and an inspector), the **Cron Calculator** (plain-English explanations, a field breakdown, the next runs, and a visual builder), **Markdown** (live, sanitized preview and HTML export), the **Color Palette** (color conversion, palettes, WCAG contrast, color blindness, and CSS gradients), the **Unit Converter**, the **chmod Calculator**, **Checksum** (CRC variants and Luhn check digits), the **IP / CIDR Calculator**, the **HAR Viewer**, **Timestamp**, **Date Difference**, the **Date Format Translator**, the **Stopwatch**, the **Time Zone Converter**, **API Formatter**, **String Inspector**, **Line Tools**, the **Password Generator**, **Lorem Ipsum**, the **QR Generator**, the **Bcrypt Generator**, **Random String**, and the **Key Pair Generator**, **Base64**, the **Case Converter**, **Number Base**, the **URL Encoder**, **CSV to JSON**, the **Config Converter**, **Escape Tools**, **HTML to JSX**, **SVG to CSS**, **PHP Tools**, **Compression**, **cURL to Code**, the **X.509 Certificate Decoder**, **HTML Preview**, the **Code Formatter**, the **Semver Calculator**, the **XML Inspector**, the **ASN.1 Inspector**, the **Mermaid Renderer**, the **Image Converter**, the **QR Reader**, the **Image Metadata Cleaner**, the **Video Metadata Cleaner**, the **Secret & PII Redactor**, the **Token Counter**, and the **AI Text Cleaner** are plugins now. Install them from Plugins in the app. Their sources are in [`kinan9011/shard-plugins`](https://github.com/kinan9011/shard-plugins).
 
 ### Converters
 
 
 ### Media
 
-- **Image Converter** - Convert and compress single images or batches locally to JPEG (MozJPEG), PNG (OxiPNG), WebP, or AVIF. Resize with Lanczos3 and other filters, and reduce the color palette. Crop, rotate, and flip an image in the Edit Image tab
-- **QR Reader** - Read a QR code from an image file, a dropped image, or a pasted screenshot
 
 ### Text Tools
 
@@ -104,11 +102,6 @@ The **Hash Generator** (MD5, SHA-1, SHA-2, SHA-3, Keccak-256, HMAC and file hash
 
 ### AI Tools
 
-- **Image Metadata Cleaner** - Remove AI prompts, Content Credentials (C2PA), AI-generated labels, GPS, and camera data from JPEG, PNG, and WebP images. Keep the original pixels, or save a clean copy as JPG, PNG, WebP, or AVIF
-- **Video Metadata Cleaner** - Remove AI labels (C2PA, XMP), GPS, device data, dates, and telemetry tracks from MP4, MOV, MKV, and WebM videos without re-encoding. The audio and video data do not change
-- **Secret & PII Redactor** - Mask API keys, tokens, passwords, emails, and other personal data before you paste text into an AI chat, and restore the values in the reply
-- **Token Counter** - Count GPT tokens exactly, estimate Claude, Gemini, and Llama tokens, check the context window, and estimate cost from your own price table
-- **AI Text Cleaner** - Remove hidden characters, citation markers, and Markdown from AI-written text, and straighten quotes and dashes
 
 ### Utilities
 

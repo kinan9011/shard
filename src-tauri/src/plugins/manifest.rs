@@ -17,16 +17,9 @@ pub const BUILTIN_TOOL_IDS: &[&str] = &[
     "json-typescript",
     "json-schema",
     "json-diff",
-    "image-converter",
-    "qr-reader",
     "diff-merge",
     "text-compare",
     "jwt-decoder",
-    "image-metadata",
-    "video-metadata",
-    "secret-redactor",
-    "token-counter",
-    "ai-text-cleaner",
 ];
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]

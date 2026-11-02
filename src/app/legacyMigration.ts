@@ -53,6 +53,13 @@ export const PORTED_TOOLS: readonly PortedTool[] = [
   { oldId: "xml-inspector", pluginId: "xml-inspector", name: "XML Inspector" },
   { oldId: "asn1-inspector", pluginId: "asn1-inspector", name: "ASN.1 Inspector" },
   { oldId: "mermaid-renderer", pluginId: "mermaid-renderer", name: "Mermaid Renderer" },
+  { oldId: "image-converter", pluginId: "image-converter", name: "Image Converter" },
+  { oldId: "qr-reader", pluginId: "qr-reader", name: "QR Reader" },
+  { oldId: "image-metadata", pluginId: "image-metadata", name: "Image Metadata Cleaner" },
+  { oldId: "video-metadata", pluginId: "video-metadata", name: "Video Metadata Cleaner" },
+  { oldId: "secret-redactor", pluginId: "secret-redactor", name: "Secret & PII Redactor" },
+  { oldId: "token-counter", pluginId: "token-counter", name: "Token Counter" },
+  { oldId: "ai-text-cleaner", pluginId: "ai-text-cleaner", name: "AI Text Cleaner" },
 ];
 
 /** The plugin ids of the ported tools. A stored pin or recent entry with one of these is kept while the plugin is not installed. */

@@ -171,13 +171,6 @@ async function step(name, run) {
   }
 }
 
-// A 2x2 PNG for the image converter.
-const SAMPLE_PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP8z8DAwMDAxMDAwMDAAAANHQEDasKb6QAAAABJRU5ErkJggg==",
-  "base64",
-);
-const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
-
 try {
   browser = await startSession();
 
@@ -269,20 +262,19 @@ try {
     );
   });
 
-  await step("compresses and saves an image", async () => {
-    const samplePath = path.join(saveDir, "..", `sample-${Date.now()}.png`);
-    fs.writeFileSync(samplePath, SAMPLE_PNG);
-    await openTool("Image Converter");
+  await step("opens a file in Diff & Merge and saves it", async () => {
+    const samplePath = path.join(saveDir, "..", `sample-${Date.now()}.txt`);
+    fs.writeFileSync(samplePath, "diff and save check\n");
+    await openTool("Diff & Merge");
     // Other open tools stay mounted in hidden panels and can have their own file inputs.
-    await uploadFile('section.tool-panel:not([hidden]) input[type="file"]', samplePath);
-    const download = await browser.$("button*=Download Image");
-    await download.waitForClickable({ timeout: 15000 });
-    await download.click();
-    const image = await waitForSavedFile(new RegExp(`^sample-\\d+.*\\.png$`));
-    if (!image.subarray(0, 4).equals(PNG_SIGNATURE)) {
-      throw new Error("The saved image is not a PNG file.");
+    await uploadFile('section.tool-panel:not([hidden]) input[type="file"][aria-label="Open file into Original"]', samplePath);
+    const save = await browser.$('section.tool-panel:not([hidden]) button[aria-label="Save Original"]');
+    await save.waitForClickable({ timeout: 15000 });
+    await save.click();
+    const saved = await waitForSavedFile(new RegExp(`^sample-\\d+.*\\.txt$`));
+    if (saved.toString("utf8") !== "diff and save check\n") {
+      throw new Error("The saved file does not match the opened file.");
     }
-    await browser.saveScreenshot(path.join(screenshotDir, "image-converter.png"));
   });
 
   await step("toggles the theme", async () => {

@@ -8,7 +8,6 @@ describe("searchTools keywords", () => {
   it("finds tools by keyword", () => {
     expect(ids("bearer")[0]).toBe("jwt-decoder");
     expect(ids("rfc 6902")[0]).toBe("json-diff");
-    expect(ids("redact")[0]).toBe("secret-redactor");
     expect(ids("diff")[0]).toBe("diff-merge");
     expect(ids("diff")).toContain("text-compare");
   });

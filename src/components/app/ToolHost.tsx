@@ -15,7 +15,7 @@ const ToolPanel = memo(function ToolPanel({ id, name, source }: { id: string; na
 const INERT = { inert: "" } as Record<string, string>;
 
 // Tools that use the shared editor layout (toolbar, panes, status bar) and fill the panel.
-const WORKSPACE_TOOL_IDS = new Set<string>(["json-viewer", "text-compare", "diff-merge", "json-diff", "jwt-decoder", "qr-reader", "image-metadata", "video-metadata", "secret-redactor", "token-counter", "ai-text-cleaner", "json-typescript", "regex-generator", "json-schema"]);
+const WORKSPACE_TOOL_IDS = new Set<string>(["json-viewer", "text-compare", "diff-merge", "json-diff", "jwt-decoder", "json-typescript", "regex-generator", "json-schema"]);
 
 interface ToolHostProps {
   tools: CatalogTool[];

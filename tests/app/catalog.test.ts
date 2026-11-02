@@ -38,7 +38,8 @@ describe("buildCatalog", () => {
     const catalog = buildCatalog(ALL_TOOLS, [], new Set());
     expect(catalog.map((tool) => tool.id)).toEqual(ALL_TOOLS.map((tool) => tool.id));
     expect(catalog.find((tool) => tool.id === "json-viewer")?.source).toBe("core");
-    expect(catalog.find((tool) => tool.id === "token-counter")?.source).toBe("legacy");
+    const legacy = { ...ALL_TOOLS[0]!, id: "old-tool", kind: "legacy" as const };
+    expect(buildCatalog([legacy], [], new Set())[0]?.source).toBe("legacy");
   });
 
   it("appends plugin tools and ignores one that reuses a builtin id", () => {
