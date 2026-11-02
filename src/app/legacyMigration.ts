@@ -40,6 +40,12 @@ export const PORTED_TOOLS: readonly PortedTool[] = [
   { oldId: "url-encoder", pluginId: "url-encoder", name: "URL Encoder" },
   { oldId: "csv-json", pluginId: "csv-json", name: "CSV to JSON" },
   { oldId: "yaml-json", pluginId: "yaml-json", name: "Config Converter" },
+  { oldId: "escape-tools", pluginId: "escape-tools", name: "Escape Tools" },
+  { oldId: "html-to-jsx", pluginId: "html-to-jsx", name: "HTML to JSX" },
+  { oldId: "svg-to-css", pluginId: "svg-to-css", name: "SVG to CSS" },
+  { oldId: "php-tools", pluginId: "php-tools", name: "PHP Tools" },
+  { oldId: "compression", pluginId: "compression", name: "Compression" },
+  { oldId: "curl-to-code", pluginId: "curl-to-code", name: "cURL to Code" },
 ];
 
 /** The plugin ids of the ported tools. A stored pin or recent entry with one of these is kept while the plugin is not installed. */
