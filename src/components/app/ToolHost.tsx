@@ -15,7 +15,7 @@ const ToolPanel = memo(function ToolPanel({ id, name, source }: { id: string; na
 const INERT = { inert: "" } as Record<string, string>;
 
 // Tools that use the shared editor layout (toolbar, panes, status bar) and fill the panel.
-const WORKSPACE_TOOL_IDS = new Set<string>(["asn1-inspector", "xml-inspector", "json-viewer", "text-compare", "diff-merge", "json-diff", "jwt-decoder", "csv-json", "base64", "url-encoder", "code-formatter", "yaml-json", "string-inspector", "line-tools", "escape-tools", "random-string", "qr-reader", "image-metadata", "video-metadata", "secret-redactor", "token-counter", "ai-text-cleaner", "json-typescript", "certificate-decoder", "html-preview", "html-to-jsx", "svg-to-css", "curl-to-code", "php-tools", "compression", "lorem-generator", "case-converter", "regex-generator", "qr-generator", "date-format", "json-schema", "key-generator"]);
+const WORKSPACE_TOOL_IDS = new Set<string>(["asn1-inspector", "xml-inspector", "json-viewer", "text-compare", "diff-merge", "json-diff", "jwt-decoder", "csv-json", "base64", "url-encoder", "code-formatter", "yaml-json", "string-inspector", "line-tools", "escape-tools", "random-string", "qr-reader", "image-metadata", "video-metadata", "secret-redactor", "token-counter", "ai-text-cleaner", "json-typescript", "certificate-decoder", "html-preview", "html-to-jsx", "svg-to-css", "curl-to-code", "php-tools", "compression", "lorem-generator", "case-converter", "regex-generator", "qr-generator", "json-schema", "key-generator"]);
 
 interface ToolHostProps {
   tools: CatalogTool[];

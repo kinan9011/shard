@@ -39,9 +39,6 @@ pub const BUILTIN_TOOL_IDS: &[&str] = &[
     "php-tools",
     "compression",
     "curl-to-code",
-    "timestamp",
-    "date-difference",
-    "date-format",
     "image-converter",
     "qr-reader",
     "diff-merge",
@@ -57,8 +54,6 @@ pub const BUILTIN_TOOL_IDS: &[&str] = &[
     "ai-text-cleaner",
     "xml-inspector",
     "asn1-inspector",
-    "stopwatch",
-    "time-zone-converter",
     "mermaid-renderer",
 ];
 

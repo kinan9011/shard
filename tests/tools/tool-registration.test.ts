@@ -6,8 +6,6 @@ describe("tool registration", () => {
   it.each([
     "xml-inspector",
     "asn1-inspector",
-    "stopwatch",
-    "time-zone-converter",
     "mermaid-renderer",
     "diff-merge",
   ] as const)("registers %s for discovery and lazy loading", (id) => {

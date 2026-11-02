@@ -6,8 +6,6 @@ import {
   Binary,
   Braces,
   Calculator,
-  CalendarCog,
-  Clock,
   Code,
   Code2,
   CodeXml,
@@ -25,7 +23,6 @@ import {
   GitMerge,
   FileVideo,
   Globe,
-  Earth,
   Workflow,
   Image as ImageIcon,
   KeyRound,
@@ -82,9 +79,6 @@ export const ALL_TOOLS = [
   { icon: Brackets, name: "PHP Tools", id: "php-tools", category: "Converters", keywords: ["php", "serialize", "unserialize", "wordpress", "laravel", "session", "array", "var_export", "json"], kind: "legacy" },
   { icon: FileArchive, name: "Compression", id: "compression", category: "Converters", keywords: ["gzip", "gunzip", "zlib", "deflate", "inflate", "compress", "decompress", "helm", "gz"], kind: "legacy" },
   { icon: Terminal, name: "cURL to Code", id: "curl-to-code", category: "Converters", keywords: ["curl", "fetch", "python requests", "go", "php", "reqwest", "httpie", "http request"], kind: "legacy" },
-  { icon: Clock, name: "Timestamp", id: "timestamp", category: "Time & Date", keywords: ["unix", "epoch", "date", "time", "milliseconds", "iso 8601", "time zone", "utc"], kind: "legacy" },
-  { icon: Calculator, name: "Date Difference", id: "date-difference", category: "Time & Date", keywords: ["days", "between", "duration"], kind: "legacy" },
-  { icon: CalendarCog, name: "Date Format Translator", id: "date-format", category: "Time & Date", keywords: ["strftime", "golang time format", "go layout", "simpledateformat", "datetimeformatter", "moment format", "dayjs", "date-fns", "php date", "dotnet", "date format"], kind: "legacy" },
   { icon: ImageIcon, name: "Image Converter", id: "image-converter", category: "Media", keywords: ["image", "png", "jpg", "webp", "avif", "mozjpeg", "oxipng", "palette", "compress", "resize", "crop", "rotate", "flip"], kind: "legacy" },
   { icon: ScanLine, name: "QR Reader", id: "qr-reader", category: "Media", keywords: ["qr", "scan", "decode", "read"], kind: "legacy" },
   { icon: GitMerge, name: "Diff & Merge", id: "diff-merge", category: "Text Tools", keywords: ["diff", "merge", "compare", "side by side", "jetbrains", "patch", "folder compare", "directory diff"], kind: "core" },
@@ -100,8 +94,6 @@ export const ALL_TOOLS = [
   { icon: Sparkles, name: "AI Text Cleaner", id: "ai-text-cleaner", category: "AI Tools", keywords: ["clean text", "invisible characters", "zero width", "smart quotes", "em dash", "citations", "markdown", "chatgpt", "normalize"], kind: "legacy" },
   { icon: CodeXml, name: "XML Inspector", id: "xml-inspector", category: "Development Tools", keywords: ["xml", "xpath", "namespace", "format", "minify"], kind: "legacy" },
   { icon: FileSearch, name: "ASN.1 Inspector", id: "asn1-inspector", category: "Development Tools", keywords: ["asn1", "asn.1", "der", "ber", "pem", "oid", "binary"], kind: "legacy" },
-  { icon: Clock, name: "Stopwatch", id: "stopwatch", category: "Time & Date", keywords: ["stopwatch", "timer", "elapsed", "laps", "split"], kind: "legacy" },
-  { icon: Earth, name: "Time Zone Converter", id: "time-zone-converter", category: "Time & Date", keywords: ["timezone", "time zone", "convert", "utc to local", "local to utc", "world clock", "dst", "daylight saving", "meeting time"], kind: "legacy" },
   { icon: Workflow, name: "Mermaid Renderer", id: "mermaid-renderer", category: "Development Tools", keywords: ["mermaid", "diagram", "flowchart", "sequence diagram", "class diagram", "er diagram", "gantt", "mind map", "svg", "png"], kind: "legacy" },
 ] as const;
 
@@ -112,8 +104,6 @@ export type ToolId = BuiltinToolId;
 
 export const TOOL_COMPONENTS: Record<BuiltinToolId, LazyExoticComponent<ComponentType>> = {
   "mermaid-renderer": lazyNamed(() => import("@/components/tools/MermaidRenderer"), "MermaidRenderer"),
-  "time-zone-converter": lazyNamed(() => import("@/components/tools/TimeZoneConverter"), "TimeZoneConverter"),
-  stopwatch: lazyNamed(() => import("@/components/tools/Stopwatch"), "Stopwatch"),
   "asn1-inspector": lazyNamed(() => import("@/components/tools/Asn1Inspector"), "Asn1Inspector"),
   "xml-inspector": lazyNamed(() => import("@/components/tools/XmlInspector"), "XmlInspector"),
   "certificate-decoder": lazyNamed(() => import("@/components/tools/CertificateDecoder"), "CertificateDecoder"),
@@ -157,15 +147,6 @@ export const TOOL_COMPONENTS: Record<BuiltinToolId, LazyExoticComponent<Componen
   ),
   "url-encoder": lazyNamed(() => import("@/components/tools/UrlEncoder"), "UrlEncoder"),
   "csv-json": lazyNamed(() => import("@/components/tools/CsvToJsonConverter"), "CsvToJsonConverter"),
-  timestamp: lazyNamed(
-    () => import("@/components/tools/TimestampConverter"),
-    "TimestampConverter",
-  ),
-  "date-difference": lazyNamed(
-    () => import("@/components/tools/DateDifference"),
-    "DateDifference",
-  ),
-  "date-format": lazyNamed(() => import("@/components/tools/DateFormatTranslator"), "DateFormatTranslator"),
   "image-converter": lazyNamed(() => import("@/components/tools/ImageConverter"), "ImageConverter"),
   "text-compare": lazyNamed(() => import("@/components/tools/TextCompare"), "TextCompare"),
   "diff-merge": lazyNamed(() => import("@/components/tools/DiffMerge"), "DiffMerge"),

@@ -20,6 +20,11 @@ export const PORTED_TOOLS: readonly PortedTool[] = [
   { oldId: "checksum", pluginId: "checksum", name: "Checksum" },
   { oldId: "ip-cidr", pluginId: "ip-cidr", name: "IP / CIDR Calculator" },
   { oldId: "har-viewer", pluginId: "har-viewer", name: "HAR Viewer" },
+  { oldId: "timestamp", pluginId: "timestamp", name: "Timestamp" },
+  { oldId: "date-difference", pluginId: "date-difference", name: "Date Difference" },
+  { oldId: "date-format", pluginId: "date-format", name: "Date Format Translator" },
+  { oldId: "stopwatch", pluginId: "stopwatch", name: "Stopwatch" },
+  { oldId: "time-zone-converter", pluginId: "time-zone-converter", name: "Time Zone Converter" },
 ];
 
 /** The plugin ids of the ported tools. A stored pin or recent entry with one of these is kept while the plugin is not installed. */

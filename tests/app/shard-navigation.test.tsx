@@ -225,18 +225,17 @@ describe("Shard navigation", () => {
   });
 });
 
-it('keeps the stopwatch running while another tool is selected', async () => {
+it('keeps a tool open while another tool is selected, and closes it from its tab', async () => {
   setupMatchMedia();
   render(<Shard />);
-  fireEvent.change(screen.getByPlaceholderText('Search...'), {target:{value:'stopwatch'}});
-  fireEvent.click(screen.getByRole('button',{name:'Stopwatch'}));
-  await screen.findByRole('button',{name:'Start'});
-  fireEvent.click(screen.getByRole('button',{name:'Start'}));
+  fireEvent.change(screen.getByPlaceholderText('Search...'), {target:{value:'jwt decoder'}});
+  fireEvent.click(screen.getByRole('button',{name:'JWT Decoder'}));
+  await screen.findByRole('tab',{name:'JWT Decoder'});
   fireEvent.change(screen.getByPlaceholderText('Search...'), {target:{value:'json viewer'}});
   fireEvent.click(screen.getByRole('button',{name:'JSON Viewer'}));
   await screen.findByText('JSON Input');
-  fireEvent.click(screen.getByRole('tab',{name:'Stopwatch'}));
-  expect(screen.getByRole('button',{name:'Pause'})).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button',{name:'Close Stopwatch'}));
-  expect(screen.queryByRole('tab',{name:'Stopwatch'})).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('tab',{name:'JWT Decoder'}));
+  expect(screen.getByRole('tab',{name:'JWT Decoder'})).toHaveAttribute('aria-selected','true');
+  fireEvent.click(screen.getByRole('button',{name:'Close JWT Decoder'}));
+  expect(screen.queryByRole('tab',{name:'JWT Decoder'})).not.toBeInTheDocument();
 });
