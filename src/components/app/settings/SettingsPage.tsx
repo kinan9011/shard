@@ -282,7 +282,7 @@ function Appearance(p: Props) {
             ))}
           </div>
         </Row>
-        {p.customThemes && <CustomThemesRow themes={p.customThemes} />}
+        {p.customThemes && <CustomThemesRow themes={p.customThemes} onBrowse={() => p.onOpenPlugins("themes")} />}
         <Row title="Sidebar categories" hint="Collapse categories you don’t use. Applies to the sidebar layout.">
           <Segmented
             label="Sidebar categories"

@@ -11,8 +11,10 @@ import { PermissionDialog } from "./PermissionDialog";
 import { PluginDetail } from "./PluginDetail";
 import { RepositoriesTab } from "./RepositoriesTab";
 import { TabButton } from "./TabButton";
+import { ThemesTab } from "./ThemesTab";
+import type { CustomThemes } from "@/components/app/settings/CustomThemes";
 
-export const PLUGIN_TABS = ["browse", "installed", "repositories"] as const;
+export const PLUGIN_TABS = ["browse", "installed", "themes", "repositories"] as const;
 export type PluginsTab = (typeof PLUGIN_TABS)[number];
 
 interface PluginsPageProps {
@@ -24,16 +26,19 @@ interface PluginsPageProps {
   startInstall?: boolean;
   /** "cards" is the Launcher layout (screens 02 B – 05 B): the same data and dialogs, other chrome. */
   variant?: "list" | "cards";
+  /** The themes folder. Omitted in the browser preview, which has none and so no Themes tab. */
+  customThemes?: CustomThemes;
 }
 
-/** The Plugins destination: Browse, Installed and Repositories. */
-export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = false, variant = "list" }: PluginsPageProps) {
+/** The Plugins destination: Browse, Installed, Themes and Repositories. */
+export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = false, variant = "list", customThemes }: PluginsPageProps) {
   const catalog = usePluginCatalog();
   const { plugins } = usePlugins();
   const install = useInstallFlow({ onOpen: (id) => onOpenPlugin?.(id), refresh: catalog.refresh });
   const pending = install.pending;
   const [installOpen, setInstallOpen] = useState(startInstall);
-  const current: PluginsTab = PLUGIN_TABS.find((candidate) => candidate === tab) ?? "browse";
+  const found = PLUGIN_TABS.find((candidate) => candidate === tab) ?? "browse";
+  const current: PluginsTab = found === "themes" && !customThemes ? "browse" : found;
   const updateCount = catalog.updates.length;
   const cards = variant === "cards";
   // Cards: the detail is a page over the tabs. The tabs stay mounted (hidden), so Browse keeps its search and filters.
@@ -91,6 +96,11 @@ export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = fal
               </span>
             )}
           </TabButton>
+          {customThemes && (
+            <TabButton idPrefix="plugins-tab" controls="plugins-panel" id="themes" selected={current === "themes"} onSelect={onTabChange}>
+              Themes
+            </TabButton>
+          )}
           <TabButton idPrefix="plugins-tab" controls="plugins-panel" id="repositories" selected={current === "repositories"} onSelect={onTabChange}>
             Repositories
             {catalog.repos.length > 0 && <span className="font-normal text-muted-foreground">{catalog.repos.length}</span>}
@@ -111,6 +121,8 @@ export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = fal
             refresh={catalog.refresh}
             variant={variant}
           />
+        ) : current === "themes" && customThemes ? (
+          <ThemesTab themes={customThemes} />
         ) : (
           <RepositoriesTab repos={catalog.repos} rows={catalog.rows} refresh={catalog.refresh} variant={variant} />
         )}

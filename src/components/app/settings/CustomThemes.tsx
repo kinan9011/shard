@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { importTheme, installTheme, openThemesFolder, removeTheme, themeCatalog, type ThemeCatalogEntry } from "@/lib/desktop";
+import { useState } from "react";
+import { importTheme, openThemesFolder, removeTheme } from "@/lib/desktop";
 import type { ColorScheme, UserTheme } from "@/utils/theme";
 import { ActionButton, Row } from "./Row";
 
@@ -13,7 +13,7 @@ export interface CustomThemes {
 }
 
 /** Import, list and remove the theme files of the user. A theme is a JSON file: see docs/themes.md. */
-export function CustomThemesRow({ themes }: { themes: CustomThemes }) {
+export function CustomThemesRow({ themes, onBrowse }: { themes: CustomThemes; onBrowse(): void }) {
   const [problem, setProblem] = useState<string | null>(null);
   // Every action ends with a reload, so the list and the stylesheet follow the folder.
   const run = async (action: () => Promise<unknown>) => {
@@ -25,15 +25,12 @@ export function CustomThemesRow({ themes }: { themes: CustomThemes }) {
     }
     await themes.reload();
   };
-  const [catalog, setCatalog] = useState<ThemeCatalogEntry[]>([]);
-  useEffect(() => {
-    themeCatalog().then(setCatalog, () => setCatalog([]));
-  }, []);
   const problems = [...(problem ? [problem] : []), ...themes.errors];
   return (
     <>
-      <Row title="Custom themes" hint="Add a theme file, or edit the ones in the themes folder and reload.">
+      <Row title="Custom themes" hint="Add a theme file, get one from your repositories, or edit the ones in the themes folder and reload.">
         <div className="flex gap-2">
+          <ActionButton onClick={onBrowse}>Get themes…</ActionButton>
           <ActionButton onClick={() => void run(importTheme)}>Import…</ActionButton>
           <ActionButton onClick={() => void run(openThemesFolder)}>Open folder</ActionButton>
           <ActionButton onClick={() => void themes.reload()}>Reload</ActionButton>
@@ -45,26 +42,6 @@ export function CustomThemesRow({ themes }: { themes: CustomThemes }) {
           <ActionButton aria-label={`Remove ${scheme.name}`} onClick={() => void run(() => removeTheme(scheme.id))}>Remove</ActionButton>
         </div>
       ))}
-      {catalog.map((entry) => {
-        const installed = themes.themes.find((theme) => theme.id === entry.id);
-        // ponytail: any other version counts as an update. Compare semver if a repository ever lists older ones.
-        const update = installed?.repo === entry.repo && installed.version !== entry.version;
-        return (
-          <div key={`${entry.repo}/${entry.id}`} className="flex items-center justify-between gap-6 border-t border-border py-2 pl-4 text-sm">
-            <span className="flex min-w-0 flex-col">
-              <span className="text-foreground">{entry.name} <span className="text-xs text-muted-foreground">{entry.version} · {entry.repoName}</span></span>
-              {entry.description && <span className="text-xs text-muted-foreground">{entry.description}</span>}
-            </span>
-            <ActionButton
-              aria-label={`${installed ? (update ? "Update" : "Installed") : "Install"} ${entry.name}`}
-              disabled={Boolean(installed) && !update}
-              onClick={() => void run(() => installTheme(entry.repo, entry.id))}
-            >
-              {installed ? (update ? "Update" : "Installed") : "Install"}
-            </ActionButton>
-          </div>
-        );
-      })}
       {problems.length > 0 && (
         <ul role="alert" className="border-t border-border py-2 text-xs text-destructive">
           {problems.map((line) => <li key={line}>{line}</li>)}

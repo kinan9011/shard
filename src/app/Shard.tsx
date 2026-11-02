@@ -932,7 +932,7 @@ const Shard = () => {
               onWhatsNew={openWhatsNew}
             />
           ) : view.kind === "plugins" ? (
-            <PluginsPage variant={layout === "launcher" ? "cards" : "list"} startInstall={view.install} tab={view.tab} onTabChange={(tab) => setView({ kind: "plugins", tab })} onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }} />
+            <PluginsPage variant={layout === "launcher" ? "cards" : "list"} customThemes={desktop ? customThemes : undefined} startInstall={view.install} tab={view.tab} onTabChange={(tab) => setView({ kind: "plugins", tab })} onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }} />
           ) : !selectedTool && layout === "launcher" ? (
             <LauncherHome
               tools={catalogTools}

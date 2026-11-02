@@ -45,4 +45,4 @@ A plugin repository's `index.json` may also list themes. A repository can list o
 }
 ```
 
-Shard's own repository, [`kinan9011/shard-themes`](https://github.com/kinan9011/shard-themes), is built in. To use another one, add it in Plugins → Repositories. Its themes then show under Settings → Appearance → Custom themes, with Install and Update. Shard checks the size and SHA-256 and the theme's tokens before it saves the file, and it never replaces a theme file you made yourself.
+Shard's own repository, [`kinan9011/shard-themes`](https://github.com/kinan9011/shard-themes), is built in. To use another one, add it in Plugins → Repositories. Its themes then show under Plugins → Themes, with Install and Update (Settings → Appearance → Custom themes → Get themes… opens it). Shard checks the size and SHA-256 and the theme's tokens before it saves the file, and it never replaces a theme file you made yourself.
