@@ -113,7 +113,7 @@ describe("Shard theme", () => {
   it("picks a color scheme, keeps it across launches and only offers schemes that have the current mode", async () => {
     setupMatchMedia(false);
     const { unmount } = render(<Shard />);
-    await waitFor(() => expect(document.documentElement).toHaveAttribute("data-scheme", "default"));
+    await waitFor(() => expect(document.documentElement).toHaveAttribute("data-scheme", "adwaita"));
 
     fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
     const menu = within(screen.getByRole("main"));
@@ -141,10 +141,10 @@ describe("color scheme storage", () => {
   const storage = (value: string | null) => ({ getItem: () => value });
   it("reads a known scheme and falls back to default for anything else", () => {
     expect(getStoredColorScheme(storage("kate"))).toBe("kate");
-    expect(getStoredColorScheme(storage("nope"))).toBe("default");
-    expect(getStoredColorScheme(storage(null))).toBe("default");
-    expect(getStoredColorScheme(null)).toBe("default");
-    expect(getStoredColorScheme({ getItem: () => { throw new Error("blocked"); } })).toBe("default");
+    expect(getStoredColorScheme(storage("nope"))).toBe("adwaita");
+    expect(getStoredColorScheme(storage(null))).toBe("adwaita");
+    expect(getStoredColorScheme(null)).toBe("adwaita");
+    expect(getStoredColorScheme({ getItem: () => { throw new Error("blocked"); } })).toBe("adwaita");
   });
   it("every scheme has colors for at least one mode", () => {
     for (const scheme of COLOR_SCHEMES) expect(scheme.modes.length).toBeGreaterThan(0);

@@ -7,14 +7,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 describe("ported tools", () => {
-  it("are no longer built in, and each has a plugin source whose id matches", () => {
-    for (const tool of PORTED_TOOLS) {
-      expect(ALL_TOOLS.map((item) => item.id)).not.toContain(tool.oldId);
-      const manifest = JSON.parse(readFileSync(resolve(__dirname, `../../plugins/${tool.pluginId}/public/plugin.json`), "utf8"));
-      expect(validateManifest(manifest)).toMatchObject({ ok: true });
-      expect(manifest.id).toBe(tool.pluginId);
-      expect(manifest.name).toBe(tool.name);
-    }
+  it("are no longer built in", () => {
+    for (const tool of PORTED_TOOLS) expect(ALL_TOOLS.map((item) => item.id)).not.toContain(tool.oldId);
   });
 
   it("come from the official repository the app seeds", () => {

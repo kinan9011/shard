@@ -73,9 +73,9 @@ export const COLOR_SCHEMES: readonly ColorScheme[] = [
 export const getStoredColorScheme = (storage?: Pick<Storage, "getItem"> | null): string => {
   try {
     const stored = storage?.getItem(SCHEME_STORAGE_KEY);
-    return COLOR_SCHEMES.some((scheme) => scheme.id === stored) ? stored! : "default";
+    return COLOR_SCHEMES.some((scheme) => scheme.id === stored) ? stored! : "adwaita";
   } catch {
-    return "default";
+    return "adwaita";
   }
 };
 

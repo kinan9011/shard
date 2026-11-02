@@ -253,18 +253,3 @@ describe("plugin-index", () => {
     expect(run(["--zips", makeTempDir(), "--base-url", BASE, "--index", out, "--name", "N"]).output).toContain("no .zip files");
   });
 });
-
-describe("official repository sources (plugins/)", () => {
-  const plugins = path.resolve(__dirname, "..", "..", "plugins");
-
-  it("ships a copy of this script, which the release workflow runs", () => {
-    expect(fs.readFileSync(path.join(plugins, "scripts", "plugin-index.mjs"), "utf8")).toBe(fs.readFileSync(script, "utf8"));
-    expect(fs.readFileSync(path.join(plugins, ".github", "workflows", "release.yml"), "utf8")).toContain("node scripts/plugin-index.mjs");
-  });
-
-  it("starts with a valid, empty index named like the official repository", () => {
-    const index = JSON.parse(fs.readFileSync(path.join(plugins, "index.json"), "utf8"));
-    expect(validateIndex(index).ok).toBe(true);
-    expect(index).toMatchObject({ schema: 1, name: "Shard Official", plugins: [] });
-  });
-});

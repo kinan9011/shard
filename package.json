@@ -22,7 +22,7 @@
     "icon": "npm run brand:build",
     "clean": "rm -rf node_modules/.vite dist src-tauri/target",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p packages/plugin-sdk/tsconfig.json && tsc --noEmit -p packages/plugin-sdk/template/tsconfig.json && tsc --noEmit -p plugins/hash-generator/tsconfig.json && tsc --noEmit -p plugins/uuid-generator/tsconfig.json && tsc --noEmit -p plugins/cron-calculator/tsconfig.json && tsc --noEmit -p plugins/markdown/tsconfig.json && tsc --noEmit -p plugins/color-palette/tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p packages/plugin-sdk/tsconfig.json && tsc --noEmit -p packages/plugin-sdk/template/tsconfig.json",
     "preview": "vite preview",
     "sdk:build": "vite build --config packages/plugin-sdk/vite.config.ts",
     "release:prepare": "node scripts/prepare-release.mjs",

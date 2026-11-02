@@ -52,7 +52,7 @@ export function themeSnapshot(): ThemeSnapshot {
     const value = style.getPropertyValue(name).trim();
     if (value) vars[name] = value;
   }
-  return { isDark: root.classList.contains("dark"), scheme: root.getAttribute("data-scheme") ?? "default", vars };
+  return { isDark: root.classList.contains("dark"), scheme: root.getAttribute("data-scheme") ?? "adwaita", vars };
 }
 
 class BridgeError extends Error {
