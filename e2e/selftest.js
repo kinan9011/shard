@@ -183,13 +183,9 @@
 
     await step("toggles the theme", async () => {
       const before = document.documentElement.classList.contains("dark");
-      // Settings → Appearance: the header's Appearance button opens it, and the Theme control picks the opposite mode.
-      document.querySelector('button[aria-label="Appearance"]').click();
-      const mode = await waitFor(
-        () => [...document.querySelectorAll('[role="group"][aria-label="Theme"] button')].find((button) => button.innerText.trim() === (before ? "Light" : "Dark")),
-        "theme button",
-      );
-      mode.click();
+      // The header button switches straight to the opposite mode.
+      const toggle = await waitFor(() => document.querySelector(`button[aria-label="Switch to ${before ? "light" : "dark"} mode"]`), "theme button");
+      toggle.click();
       await waitFor(() => document.documentElement.classList.contains("dark") !== before, "theme change");
     });
 

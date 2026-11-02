@@ -149,24 +149,18 @@ async function waitForSavedFile(pattern) {
   return fs.readFileSync(path.join(saveDir, match));
 }
 
-async function uploadFile(inputSelector, filePath) {
-  // File inputs in the app are hidden behind buttons. Show the input so WebDriver can use it.
-  await browser.execute((selector) => {
-    const input = document.querySelector(selector);
-    input.classList.remove("hidden");
-    input.style.display = "block";
-  }, inputSelector);
-  await (await browser.$(inputSelector)).addValue(filePath);
-}
-
 async function step(name, run) {
   process.stdout.write(`- ${name} ... `);
   try {
     await run();
     console.log("ok");
   } catch (error) {
-    console.log("FAILED");
-    await browser?.saveScreenshot(path.join(screenshotDir, "failure.png")).catch(() => {});
+    console.log(`FAILED: ${error.message}`);
+    // A hung driver must not hide the error or eat the job: give the screenshot 10 seconds.
+    await Promise.race([
+      browser?.saveScreenshot(path.join(screenshotDir, "failure.png")).catch(() => {}),
+      delay(10000),
+    ]);
     throw error;
   }
 }
@@ -263,15 +257,23 @@ try {
   });
 
   await step("opens a file in Diff & Merge and saves it", async () => {
-    const samplePath = path.join(saveDir, "..", `sample-${Date.now()}.txt`);
-    fs.writeFileSync(samplePath, "diff and save check\n");
     await openTool("Diff & Merge");
+    // Hand the page a File directly: a WebDriver file upload into the hidden input hangs WebKitGTK.
     // Other open tools stay mounted in hidden panels and can have their own file inputs.
-    await uploadFile('section.tool-panel:not([hidden]) input[type="file"][aria-label="Open file into Original"]', samplePath);
-    const save = await browser.$('section.tool-panel:not([hidden]) button[aria-label="Save Original"]');
-    await save.waitForClickable({ timeout: 15000 });
-    await save.click();
-    const saved = await waitForSavedFile(new RegExp(`^sample-\\d+.*\\.txt$`));
+    await browser.execute(() => {
+      const input = document.querySelector('section.tool-panel:not([hidden]) input[type="file"][aria-label="Open file into Original"]');
+      const transfer = new DataTransfer();
+      transfer.items.add(new File(["diff and save check\n"], "sample-notes.txt", { type: "text/plain" }));
+      input.files = transfer.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    const saveSelector = 'section.tool-panel:not([hidden]) button[aria-label="Save Original"]';
+    await browser.waitUntil(() => browser.execute((selector) => Boolean(document.querySelector(selector)), saveSelector), {
+      timeout: 15000,
+      timeoutMsg: "The Save Original button did not appear",
+    });
+    await browser.execute((selector) => document.querySelector(selector).click(), saveSelector);
+    const saved = await waitForSavedFile(/^sample-notes.*\.txt$/);
     if (saved.toString("utf8") !== "diff and save check\n") {
       throw new Error("The saved file does not match the opened file.");
     }
@@ -280,9 +282,8 @@ try {
   await step("toggles the theme", async () => {
     const isDark = () => browser.execute(() => document.documentElement.classList.contains("dark"));
     const before = await isDark();
-    // Settings → Appearance: the header's Appearance button opens it, and the Theme control picks the opposite mode.
-    await (await browser.$('button[aria-label="Appearance"]')).click();
-    await (await browser.$(`[role="group"][aria-label="Theme"] button=${before ? "Light" : "Dark"}`)).click();
+    // The header button switches straight to the opposite mode.
+    await (await browser.$(`button[aria-label="Switch to ${before ? "light" : "dark"} mode"]`)).click();
     await browser.waitUntil(async () => (await isDark()) !== before, {
       timeout: 5000,
       timeoutMsg: "The theme did not change",
