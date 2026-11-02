@@ -125,6 +125,13 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
     const first = event.dataTransfer.items?.[0];
     const file = event.dataTransfer.files?.[0];
     if (first?.webkitGetAsEntry?.()?.isDirectory) return setError("Folders can't be dropped here. Use Choose folder.");
+    // Linux file managers often give the webview a file:// URI and no File. A URI has the real path: no copy, no size limit on the bytes sent.
+    // ponytail: the File branch below reads the whole zip into memory. Turn on Tauri's native drag-drop (real paths) if big drops hurt on Windows or macOS.
+    const uri = event.dataTransfer.getData?.("text/uri-list")?.split(/\r?\n/).find((line) => line.startsWith("file://"));
+    const path = uri ? decodeURIComponent(new URL(uri).pathname) : null;
+    if (path && /\.zip$/i.test(path)) {
+      return inspect(() => inspectZip(path), (preview) => ({ kind: "zip", path, name: baseName(path), dropped: false, preview }));
+    }
     if (!file || !/\.zip$/i.test(file.name)) return setError("Drop a plugin .zip file.");
     await inspect(
       async () => {

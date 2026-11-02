@@ -130,7 +130,7 @@ the self-test again. Do not work around it in later waves.
   a colon or a NUL. Finder and Explorer metadata (`__MACOSX/`, `.DS_Store`, `Thumbs.db`, `._*`) is ignored
   wherever it sits. Links and other non-regular entries are skipped with a warning.
 - **Root**: `plugin.json` at the top of the zip, or inside the one top folder (and nothing else at the top).
-- **Limits**: 100 MB, 5,000 files and 5,000 folders, counted from the bytes actually written (a zip bomb stops at
+- **Limits**: 1 GB, 50,000 files and 50,000 folders, counted from the bytes actually written (a zip bomb stops at
   the limit). Encrypted entries are refused.
 - **Checksum**: the SHA-256 of the zip file is the package's canonical checksum. It is stored as
   `sha256` and compared with `expectedSha` before anything is unpacked. The zip is first copied into
@@ -150,7 +150,7 @@ A pass over every layer a plugin touches, done for 3.0.0. Each line names where 
 | Bridge limits | Each call has a timeout (10 s, 35 s for `net.fetch`, none for file dialogs). A dialog allows one call at a time, and `net.fetch` six. | `bridge.ts` (`CALL_TIMEOUTS`, `limited`) |
 | Permissions | Checked in the bridge on every call, and again in Rust for the commands that take a plugin id (`plugin_fetch` for `network`, the file-open command for `files:open`). Clipboard calls are checked in the bridge, the only path a frame has to them. A revoke applies on the next call. | `bridge.ts` (`gated`), `src-tauri/src/plugins/fetch.rs`, `files.rs` |
 | Fetch allowlist | HTTP and HTTPS only. A host must be in the manifest's `network` hosts or granted by the user, with its port (default 80 or 443). Redirects are checked hop by hop (at most 5). `Host`, `Content-Length` and browser-identity headers cannot be set by a plugin. 30 s and 20 MB per request. | `src-tauri/src/plugins/fetch.rs` |
-| Zip packages | Entry names are checked (no absolute paths, `..`, backslashes, colons, NUL). Limits are 100 MB, 5,000 files and 5,000 folders, counted on the bytes written. Encrypted entries are refused. | `src-tauri/src/plugins/zip.rs`, see [Zip packages](#zip-packages-w9) |
+| Zip packages | Entry names are checked (no absolute paths, `..`, backslashes, colons, NUL). Limits are 1 GB, 50,000 files and 50,000 folders, counted on the bytes written. Encrypted entries are refused. | `src-tauri/src/plugins/zip.rs`, see [Zip packages](#zip-packages-w9) |
 | Symlinks | A folder or zip install skips links and warns. Served paths go through `resolve_inside`, which also refuses a link that leaves the package. A link that replaces the entry file is refused. | `store.rs` (`symlinks_are_skipped_with_a_warning`), `protocol.rs`, `paths.rs` |
 | Checksums | A repository install compares SHA-256 before anything is unpacked. A sideload is recorded as unverified and needs the "outside these repositories" setting. | `install.rs`, `zip.rs` |
 | Crash isolation | A frame that reports an uncaught error (the SDK sends it), or does not finish the `ready` handshake within 10 s shows "This plugin stopped working" with Reload and Disable (a plugin that was only slow recovers when it says `ready`). The rest of the app keeps running. | `PluginFrame.tsx`, `HANDSHAKE_TIMEOUT_MS` |

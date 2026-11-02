@@ -202,7 +202,7 @@ export interface RepoSettings {
 }
 
 /** The largest zip the app unpacks, in bytes (src-tauri/src/plugins/store.rs MAX_BYTES). */
-export const MAX_ZIP_BYTES = 100 * 1024 * 1024;
+export const MAX_ZIP_BYTES = 1024 * 1024 * 1024;
 
 /** The settings. `allowOutside` is false in the browser build, which cannot install. */
 export async function repoSettings(): Promise<RepoSettings> {
