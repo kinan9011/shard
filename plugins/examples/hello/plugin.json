@@ -1,0 +1,12 @@
+{
+  "id": "hello",
+  "name": "Hello Plugin",
+  "version": "1.0.0",
+  "description": "A static example plugin. It shows how a plugin page is served and sandboxed.",
+  "category": "Plugins",
+  "keywords": ["example", "hello"],
+  "icon": "lucide:Hand",
+  "entry": "index.html",
+  "runtime": "web",
+  "license": "MIT"
+}

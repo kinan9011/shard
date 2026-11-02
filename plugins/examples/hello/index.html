@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hello Plugin</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <h1 id="greeting">Hello from a plugin</h1>
+      <p>This page runs in a sandboxed frame with no access to the app. It talks to the app only through the plugin SDK.</p>
+      <p><button id="say-hello" type="button">Say hello</button></p>
+      <p id="status" class="muted"></p>
+      <p id="origin" class="muted"></p>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

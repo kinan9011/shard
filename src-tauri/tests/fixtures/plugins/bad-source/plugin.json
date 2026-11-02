@@ -1,0 +1,1 @@
+{"id":"hello-tool","name":"Hello","version":"1.0.0+build.5","description":"d","entry":"index.html","runtime":"web","source":"javascript:alert(1)"}

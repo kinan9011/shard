@@ -1,0 +1,17 @@
+[package]
+name = "hash-wasm"
+version = "1.0.0"
+edition = "2021"
+publish = false
+
+# No wasm-bindgen: the module exports plain functions over linear memory (see src/lib.rs).
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = "s"
+lto = true
+panic = "abort"
+strip = true
+
+[workspace]

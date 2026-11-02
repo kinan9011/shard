@@ -1,0 +1,9 @@
+{
+  "id": "e2e-ipc-spike",
+  "name": "IPC Spike",
+  "version": "1.0.0",
+  "description": "End-to-end fixture. It probes whether a plugin frame can reach Tauri IPC.",
+  "category": "Plugins",
+  "entry": "index.html",
+  "runtime": "web"
+}

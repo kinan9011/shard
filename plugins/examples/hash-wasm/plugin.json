@@ -1,0 +1,13 @@
+{
+  "id": "hash-wasm",
+  "name": "WASM Hash",
+  "version": "1.0.0",
+  "description": "SHA-256 of text or a file, computed by a Rust WebAssembly module in a worker.",
+  "category": "Plugins",
+  "keywords": ["example", "wasm", "sha256", "hash"],
+  "icon": "lucide:Hash",
+  "entry": "index.html",
+  "runtime": "web+wasm",
+  "permissions": [{ "name": "files:open", "reason": "Hash files you open", "optional": true }],
+  "license": "MIT"
+}

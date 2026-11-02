@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.kinan9011.shard</id>
+  <name>Shard</name>
+  <summary>Your essential developer companion</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <developer_name>kinan9011</developer_name>
+  <url type="homepage">https://github.com/kinan9011/shard</url>
+  <url type="bugtracker">https://github.com/kinan9011/shard/issues</url>
+  <description>
+    <p>A set of local developer tools in one app: JSON, text and folder diff and merge, encoders, converters and more. Everything is processed on your machine.</p>
+  </description>
+  <launchable type="desktop-id">io.github.kinan9011.shard.desktop</launchable>
+  <categories>
+    <category>Development</category>
+    <category>Utility</category>
+  </categories>
+  <content_rating type="oars-1.1" />
+  <provides>
+    <binary>Shard</binary>
+  </provides>
+  <releases>
+    <release version="2.8.0" date="2026-11-01" />
+  </releases>
+</component>

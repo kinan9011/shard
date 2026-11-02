@@ -1,0 +1,12 @@
+/* Colors come from the app theme (the SDK sets these variables). The values here are used until it answers. */
+:root { color-scheme: light dark; --background: 220 23% 98%; --foreground: 222 25% 16%; --muted-foreground: 220 9% 46%; --primary: 221 83% 53%; --primary-foreground: 0 0% 100%; --border: 220 13% 88%; --radius: 0.5rem; --font-ui: system-ui, sans-serif; }
+@media (prefers-color-scheme: dark) { :root { --background: 222 32% 10%; --foreground: 220 30% 93%; --muted-foreground: 220 12% 62%; --border: 222 20% 22%; } }
+body { margin: 0; font: 14px/1.5 var(--font-ui); background: hsl(var(--background)); color: hsl(var(--foreground)); }
+main { max-width: 640px; margin: 0 auto; padding: 32px 24px; }
+h1 { font-size: 22px; margin: 0 0 8px; }
+label { display: block; margin: 16px 0 4px; font-weight: 600; }
+textarea { width: 100%; box-sizing: border-box; font: 13px ui-monospace, monospace; padding: 8px; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: transparent; color: inherit; resize: vertical; }
+button { font: inherit; cursor: pointer; padding: 6px 14px; border: 0; border-radius: var(--radius); background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+output { display: block; min-height: 1.5em; word-break: break-all; user-select: all; }
+.mono { font: 13px ui-monospace, monospace; }
+.muted { color: hsl(var(--muted-foreground)); font-size: 12px; font-weight: 400; }

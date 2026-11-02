@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- The bundle is Shard.app, but the Dock, Finder, and the menu bar show "Shard".
+       Finder and the Dock show a localized name only when the base CFBundleDisplayName matches
+       the file name, so the base stays "Shard" and en.lproj/InfoPlist.strings (bundled
+       through tauri.conf.json) supplies "Shard". -->
+  <key>LSHasLocalizedDisplayName</key>
+  <true/>
+  <key>CFBundleName</key>
+  <string>Shard</string>
+  <key>CFBundleDisplayName</key>
+  <string>Shard</string>
+</dict>
+</plist>

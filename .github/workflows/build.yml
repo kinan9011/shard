@@ -1,0 +1,121 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  # Dry run: build and sign every platform and create latest.json without publishing.
+  workflow_dispatch:
+    inputs:
+      draft_release:
+        description: Upload the assets to a draft release (visible only to collaborators).
+        type: boolean
+        default: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate release metadata
+        run: node scripts/check-release.mjs "${{ steps.tag.outputs.tag }}"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  build:
+    needs: test
+    uses: ./.github/workflows/build-app.yml
+    with:
+      release: true
+    secrets: inherit
+
+  release:
+    needs: [test, build]
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: shard-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Display downloaded files
+        run: ls -la release-assets
+
+      - name: Create updater manifest
+        run: |
+          if ls release-assets/*.sig >/dev/null 2>&1; then
+            node scripts/create-updater-manifest.mjs "${{ needs.test.outputs.tag }}" --assets release-assets
+            cat release-assets/latest.json
+          elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            # Without latest.json, installed apps cannot find this release.
+            echo "::error::No updater signatures found. Set TAURI_SIGNING_PRIVATE_KEY in the Production environment."
+            exit 1
+          else
+            echo "::warning::No updater signatures found. Skipping latest.json."
+          fi
+
+      # Lets installs of the Electron version (v1.3.0 and earlier) update to this release.
+      - name: Create Electron updater manifests
+        run: node scripts/create-electron-bridge.mjs "${{ needs.test.outputs.tag }}" --assets release-assets
+
+      - name: Upload release assets (dry run)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-dry-run
+          path: release-assets/*
+          retention-days: 7
+
+      - name: Create Release
+        if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || inputs.draft_release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*
+          # A dry run uploads to a draft under a separate tag name, so it never publishes.
+          draft: ${{ github.event_name != 'push' }}
+          tag_name: ${{ github.event_name == 'push' && github.ref_name || format('{0}-dry-run-{1}', needs.test.outputs.tag, github.run_number) }}
+          target_commitish: ${{ github.sha }}
+          prerelease: false
+          generate_release_notes: false
+          body_path: release-notes/${{ needs.test.outputs.tag }}.md
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

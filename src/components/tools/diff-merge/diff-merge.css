@@ -1,0 +1,119 @@
+/* Diff & Merge: tokens and CodeMirror theme. Imported by DiffPanes so it lands in the lazy chunk. */
+
+.dm-root {
+  --dm-a-line: 0.08;
+  --dm-a-word: 0.2;
+  --dm-a-cur: 0.14;
+  --dm-a-rib: 0.09;
+}
+.dark .dm-root {
+  --dm-a-line: 0.1;
+  --dm-a-word: 0.26;
+  --dm-a-cur: 0.17;
+  --dm-a-rib: 0.1;
+}
+
+/* Change kinds: --kind is read by lines, words, gaps, ribbons and map ticks. */
+.dm-add, .dm-gap-added { --kind: var(--success); }
+.dm-del, .dm-gap-removed { --kind: var(--destructive); }
+.dm-mod, .dm-gap-modified { --kind: var(--warning); }
+
+.dm-root .cm-editor { height: 100%; background: transparent; color: hsl(var(--foreground)); font: 13px/22px var(--font-code); }
+.dm-root .cm-editor.cm-focused { outline: none; }
+.dm-root .cm-scroller { font: inherit; line-height: 22px; overflow: auto; }
+.dm-root .cm-content { padding-top: 6px; caret-color: hsl(var(--foreground)); }
+.dm-root .cm-line { padding-left: 4px; }
+.dm-root .cm-cursor, .dm-root .cm-dropCursor { border-left-color: hsl(var(--foreground)); }
+.dm-root .cm-placeholder { color: hsl(var(--muted-foreground)); }
+.dm-root .cm-gutters { background: transparent; border: 0; color: hsl(var(--muted-foreground)); }
+.dm-root .cm-lineNumbers .cm-gutterElement {
+  width: 44px;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0 12px 0 0;
+  font-size: 12px;
+  text-align: right;
+  color: hsl(var(--muted-foreground));
+}
+.dm-root .cm-activeLine { background: hsl(var(--foreground) / 0.04); }
+.dm-root .cm-activeLineGutter { background: transparent; }
+.dm-root .cm-selectionBackground, .dm-root .cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground {
+  background: hsl(var(--primary) / 0.25);
+}
+.dm-root .cm-selectionMatch { background: hsl(var(--primary) / 0.14); }
+
+/* Declared after .cm-activeLine so a change colour wins over the active-line tint. */
+.dm-root .cm-line.dm-add, .dm-root .cm-line.dm-del, .dm-root .cm-line.dm-mod {
+  background: hsl(var(--kind) / var(--dm-a-line));
+}
+.dm-root .cm-line.dm-cur { background: hsl(var(--kind) / var(--dm-a-cur)); }
+.dm-root .cm-line.dm-cur-first { box-shadow: inset 0 1px 0 0 hsl(var(--ring)), inset 1px 0 0 0 hsl(var(--ring)), inset -1px 0 0 0 hsl(var(--ring)); }
+.dm-root .cm-line.dm-cur-last { box-shadow: inset 0 -1px 0 0 hsl(var(--ring)), inset 1px 0 0 0 hsl(var(--ring)), inset -1px 0 0 0 hsl(var(--ring)); }
+.dm-root .cm-line.dm-cur-first.dm-cur-last { box-shadow: inset 0 0 0 1px hsl(var(--ring)); }
+.dm-root .cm-line.dm-cur:not(.dm-cur-first):not(.dm-cur-last) { box-shadow: inset 1px 0 0 0 hsl(var(--ring)), inset -1px 0 0 0 hsl(var(--ring)); }
+
+.dm-root .dm-word { background: hsl(var(--kind) / var(--dm-a-word)); border-radius: 2px; }
+.dm-root .dm-mod .dm-word { --kind: var(--warning); }
+
+.dm-gap { height: 0; border-top: 2px solid hsl(var(--kind)); }
+
+.dm-fold {
+  display: flex;
+  height: 22px;
+  align-items: center;
+  gap: 8px;
+  padding-left: 14px;
+  box-sizing: border-box;
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  border-top: 1px dashed hsl(var(--border));
+  border-bottom: 1px dashed hsl(var(--border));
+  font: 12px/1 system-ui, sans-serif;
+  cursor: pointer;
+}
+.dm-fold-label { color: hsl(var(--foreground)); }
+
+.dm-root .cm-foldPlaceholder { background: transparent; }
+
+/* Unified viewer: four gutters (actions 52, old 40, new 40, marker 20) beside a read-only editor. */
+.dm-uni { --ring-c: hsl(var(--ring)); }
+.dm-uni .cm-gutters { background: transparent; border: 0; color: hsl(var(--muted-foreground)); }
+.dm-uni .cm-gutterElement { box-sizing: border-box; min-width: 0; padding: 0; font-size: 12px; color: hsl(var(--muted-foreground)); user-select: none; }
+.dm-uni .dm-ug-act { width: 52px; }
+.dm-uni .dm-ug-old, .dm-uni .dm-ug-new { width: 40px; }
+.dm-uni .dm-ug-old .cm-gutterElement, .dm-uni .dm-ug-new .cm-gutterElement { padding-right: 8px; text-align: right; }
+.dm-uni .dm-ug-mark { width: 20px; }
+.dm-uni .dm-ug-mark .cm-gutterElement { text-align: center; color: inherit; font-size: 13px; }
+.dm-uni .dm-ug-mark .cm-gutterElement.dm-del { color: hsl(var(--destructive)); }
+.dm-uni .dm-ug-mark .cm-gutterElement.dm-add { color: hsl(var(--success)); }
+.dm-uni .dm-ug-act .cm-gutterElement { padding-left: 8px; }
+.dm-uni .dm-acts { display: flex; height: 100%; align-items: center; gap: 4px; }
+.dm-uni .dm-chip {
+  display: grid; width: 18px; height: 18px; place-items: center; border-radius: 4px; padding: 0;
+  background: var(--surface-raised); box-shadow: 0 0 0 1px hsl(var(--border)); color: hsl(var(--foreground));
+}
+.dm-uni .cm-line { padding-left: 0; }
+.dm-uni .cm-activeLine { background: transparent; }
+
+/* Gutter cells carry the row's tint, so a changed row is one band across all columns. */
+.dm-uni .cm-gutterElement.dm-add, .dm-uni .cm-gutterElement.dm-del { background: hsl(var(--kind) / var(--dm-a-line)); }
+.dm-uni .cm-gutterElement.dm-cur { background: hsl(var(--kind) / var(--dm-a-cur)); }
+
+/* One outline round the current block: top and bottom on every column, left on the first, right on the text. */
+.dm-uni .cm-gutterElement.dm-cur-first { box-shadow: inset 0 1px 0 0 var(--ring-c); }
+.dm-uni .cm-gutterElement.dm-cur-last { box-shadow: inset 0 -1px 0 0 var(--ring-c); }
+.dm-uni .cm-gutterElement.dm-cur-first.dm-cur-last { box-shadow: inset 0 1px 0 0 var(--ring-c), inset 0 -1px 0 0 var(--ring-c); }
+.dm-uni .dm-ug-act .cm-gutterElement.dm-cur {
+  background-image: linear-gradient(var(--ring-c), var(--ring-c)); background-size: 1px 100%; background-repeat: no-repeat;
+}
+.dm-root.dm-root .dm-uni .cm-line.dm-cur { box-shadow: inset -1px 0 0 0 var(--ring-c); }
+.dm-root.dm-root .dm-uni .cm-line.dm-cur-first { box-shadow: inset 0 1px 0 0 var(--ring-c), inset -1px 0 0 0 var(--ring-c); }
+.dm-root.dm-root .dm-uni .cm-line.dm-cur-last { box-shadow: inset 0 -1px 0 0 var(--ring-c), inset -1px 0 0 0 var(--ring-c); }
+.dm-root.dm-root .dm-uni .cm-line.dm-cur-first.dm-cur-last { box-shadow: inset 0 1px 0 0 var(--ring-c), inset 0 -1px 0 0 var(--ring-c), inset -1px 0 0 0 var(--ring-c); }
+
+.dm-uni .cm-gutterElement.dm-ug-fold { background: hsl(var(--muted)); border-top: 1px dashed hsl(var(--border)); border-bottom: 1px dashed hsl(var(--border)); }
+.dm-uni .dm-fold { padding-left: 10px; }
+
+/* Settings-panel switches: 34×19 with a 15px thumb (the toolbar's stay 44×24). Travel = 34 − 2×2 border − 15. */
+.dm-switch-sm > span { width: 15px; height: 15px; }
+.dm-switch-sm > span[data-state="checked"] { transform: translateX(15px); }

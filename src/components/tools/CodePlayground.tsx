@@ -1,0 +1,205 @@
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Play, Code2, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import { startRun } from "@/utils/code-runner";
+
+type Language = "javascript" | "html" | "css";
+
+const snippets = {
+  javascript: `// JavaScript code example
+function greet(name) {
+  return \`Hello, \${name}!\`;
+}
+
+console.log(greet("World"));
+
+// Array operations
+const numbers = [1, 2, 3, 4, 5];
+const doubled = numbers.map(n => n * 2);
+console.log("Doubled:", doubled);
+
+// Async example
+async function fetchData() {
+  console.log("Fetching data...");
+  return { status: "success", data: [1, 2, 3] };
+}
+
+const response = await fetchData();
+console.log("Response:", response);`,
+  html: `<!DOCTYPE html>
+<html>
+<head>
+  <title>My Page</title>
+  <style>
+    body { font-family: Arial; }
+    .container { max-width: 800px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Hello World</h1>
+    <p>This is a sample HTML document.</p>
+    <button onclick="alert('Clicked!')">Click Me</button>
+  </div>
+</body>
+</html>`,
+  css: `/* CSS Styles */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f5f5f5;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: #0056b3;
+}`,
+};
+
+export function CodePlayground() {
+  const [language, setLanguage] = useState<Language>("javascript");
+  const [code, setCode] = useState(snippets.javascript);
+  const [status, setStatus] = useState<"idle" | "running" | "done">("idle");
+  const [logs, setLogs] = useState<string[]>([]);
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const stopRun = useRef<(() => void) | null>(null);
+
+  // Leaving the tool stops a run that is still going
+  useEffect(() => () => stopRun.current?.(), []);
+
+  const resetOutput = () => {
+    stopRun.current?.();
+    stopRun.current = null;
+    setStatus("idle");
+    setLogs([]);
+    setResult(null);
+    setError("");
+  };
+
+  const runCode = () => {
+    resetOutput();
+
+    if (language === "javascript") {
+      setStatus("running");
+      stopRun.current = startRun(code, {
+        onLog: (text) => setLogs((current) => [...current, text]),
+        onResult: (text) => {
+          setResult(text);
+          setStatus("done");
+        },
+        onError: (message) => {
+          setError(message);
+          setStatus("done");
+        },
+      });
+    } else {
+      toast.info(`${language.toUpperCase()} preview is read-only`);
+    }
+  };
+
+  const output =
+    logs.join("\n") ||
+    (status === "done" ? result ?? "Code executed successfully" : status === "running" ? "Running..." : "");
+
+  const updateLanguage = (lang: Language) => {
+    resetOutput();
+    setLanguage(lang);
+    setCode(snippets[lang]);
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Select value={language} onValueChange={updateLanguage}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="javascript">JavaScript</SelectItem>
+                  <SelectItem value="html">HTML</SelectItem>
+                  <SelectItem value="css">CSS</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={runCode} size="sm" disabled={language !== "javascript"}>
+                <Play className="h-4 w-4 mr-1" />
+                Run
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Code Input */}
+              <div className="space-y-2">
+                <div className="text-sm font-medium">Code</div>
+                <Textarea
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="min-h-[400px] font-mono text-sm"
+                  spellCheck={false}
+                />
+              </div>
+
+              {/* Output */}
+              <div className="space-y-2">
+                <div className="text-sm font-medium">Output</div>
+                {error ? (
+                  <div className="min-h-[400px] p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
+                    <div className="flex items-center gap-2 text-destructive mb-2">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="font-medium">Error</span>
+                    </div>
+                    <pre className="text-sm text-destructive whitespace-pre-wrap">{error}</pre>
+                  </div>
+                ) : (
+                  <div className="min-h-[400px] p-4 bg-muted rounded-lg">
+                    <pre className="text-sm whitespace-pre-wrap">{output || "Output will appear here..."}</pre>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Notes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+            <li>JavaScript runs in an isolated sandbox. It cannot reach the app, your files, or the network.</li>
+            <li>HTML and CSS are provided for reference and copying</li>
+            <li>Console output is captured and displayed. You can use await at the top level.</li>
+            <li>A run stops after 5 seconds, so a loop that never ends cannot freeze the app.</li>
+          </ul>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

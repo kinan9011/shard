@@ -1,0 +1,13 @@
+{
+  "name": "@shard/plugin-sdk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SDK for Shard plugins: talks to the host app over postMessage. No dependencies.",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/shard-sdk.js",
+  "types": "src/index.ts",
+  "exports": {
+    ".": { "types": "./src/index.ts", "default": "./dist/shard-sdk.js" }
+  }
+}

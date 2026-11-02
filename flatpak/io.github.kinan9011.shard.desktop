@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Shard
+Comment=Your essential developer companion
+Exec=Shard %u
+Icon=io.github.kinan9011.shard
+Terminal=false
+Type=Application
+Categories=Development;Utility;
+StartupWMClass=Shard
+MimeType=x-scheme-handler/shard;

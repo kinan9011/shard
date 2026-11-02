@@ -1,0 +1,44 @@
+# Built by `task build:flatpak`: the Tauri deb is unpacked into /app (the approach Tauri documents for Flatpak).
+# The GNOME runtime ships WebKitGTK 4.1, which the app links against.
+app-id: io.github.kinan9011.shard
+runtime: org.gnome.Platform
+runtime-version: "50"
+sdk: org.gnome.Sdk
+command: Shard
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # Folder compare and Open read the files you pick, wherever they are.
+  - --filesystem=home
+  # Tray icon.
+  - --talk-name=org.kde.StatusNotifierWatcher
+
+modules:
+  - name: shard
+    buildsystem: simple
+    sources:
+      - type: file
+        path: build/app.deb
+        dest-filename: app.deb
+      - type: file
+        path: io.github.kinan9011.shard.desktop
+      - type: file
+        path: io.github.kinan9011.shard.metainfo.xml
+    build-commands:
+      - ar -x app.deb
+      - mkdir deb && tar -xf data.tar.* -C deb
+      - cp -a deb/usr/. /app/
+      # The deb's own launcher and icon names do not match the app id.
+      - rm -f /app/share/applications/*.desktop
+      - install -Dm644 io.github.kinan9011.shard.desktop /app/share/applications/io.github.kinan9011.shard.desktop
+      - install -Dm644 io.github.kinan9011.shard.metainfo.xml /app/share/metainfo/io.github.kinan9011.shard.metainfo.xml
+      - |
+        for icon in deb/usr/share/icons/hicolor/*/apps/*.png; do
+          size=$(basename "$(dirname "$(dirname "$icon")")")
+          install -Dm644 "$icon" "/app/share/icons/hicolor/$size/apps/io.github.kinan9011.shard.png"
+        done
+        find /app/share/icons -name 'Shard.png' -delete

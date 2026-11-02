@@ -1,0 +1,141 @@
+version: "3"
+
+tasks:
+  default:
+    silent: true
+    cmds:
+      - task --list
+
+  install:
+    desc: Install npm dependencies (skipped when package-lock.json is unchanged)
+    sources:
+      - package-lock.json
+    generates:
+      - node_modules/.package-lock.json
+    cmds:
+      - npm ci
+
+  dev:
+    desc: Run the desktop app with hot reload (tauri dev)
+    deps: [install]
+    cmds:
+      - npm run dev
+
+  dev:web:
+    desc: Run the web UI only in the browser (vite)
+    deps: [install]
+    cmds:
+      - npm run dev:web
+
+  run:
+    desc: Run the desktop app optimized, without bundling (tauri dev --release)
+    deps: [install]
+    cmds:
+      - npm run tauri -- dev --release
+
+  preview:
+    desc: Serve the built web UI (run build:web first)
+    cmds:
+      - npm run preview
+
+  build:
+    desc: Build the full desktop bundle for this platform (tauri build)
+    deps: [install]
+    cmds:
+      - npm run build
+
+  build:deb:
+    desc: Build the Debian package (src-tauri/target/release/bundle/deb)
+    preconditions:
+      - sh: pkg-config --exists ayatana-appindicator3-0.1
+        msg: the Tauri deb bundler needs libayatana-appindicator3-dev (sudo apt install libayatana-appindicator3-dev)
+    deps: [install]
+    cmds:
+      - npm run tauri -- build --bundles deb
+
+  build:exe:
+    desc: Build the Windows NSIS installer (.exe). Run it on Windows or let CI do it
+    preconditions:
+      - sh: test "$OS" = "Windows_NT"
+        msg: build:exe has to run on Windows (the NSIS installer is not cross-built). CI does it in .github/workflows/build-app.yml
+    deps: [install]
+    cmds:
+      - npm run tauri -- build --bundles nsis
+
+  build:flatpak:
+    desc: Build Shard.flatpak from the deb (needs flatpak-builder and the GNOME 50 runtime and SDK)
+    deps: [build:deb]
+    preconditions:
+      - sh: command -v flatpak-builder
+        msg: flatpak-builder is not installed (sudo apt install flatpak-builder)
+    cmds:
+      - mkdir -p flatpak/build
+      - cp "$(ls -t src-tauri/target/release/bundle/deb/*.deb | head -n 1)" flatpak/build/app.deb
+      - flatpak-builder --force-clean --state-dir=flatpak/.flatpak-builder --repo=flatpak/repo flatpak/build-dir flatpak/io.github.kinan9011.shard.yml
+      - flatpak build-bundle flatpak/repo Shard.flatpak io.github.kinan9011.shard
+      - echo "Built Shard.flatpak. Install it with 'flatpak install --user Shard.flatpak'"
+
+  build:web:
+    desc: Build the web UI only into dist/
+    deps: [install]
+    cmds:
+      - npm run build:web
+
+  test:
+    desc: Run all tests (web + rust)
+    cmds:
+      - task: test:web
+      - task: test:rust
+
+  test:web:
+    desc: Run vitest once
+    deps: [install]
+    cmds:
+      - npm test
+
+  test:rust:
+    desc: Run cargo tests
+    dir: src-tauri
+    cmds:
+      - cargo test
+
+  test:watch:
+    desc: Run vitest in watch mode
+    deps: [install]
+    cmds:
+      - npm run test:watch
+
+  lint:
+    desc: Run eslint
+    deps: [install]
+    cmds:
+      - npm run lint
+
+  typecheck:
+    desc: Run the TypeScript type checks
+    deps: [install]
+    cmds:
+      - npm run typecheck
+
+  check:
+    desc: Pre-push gate (lint, typecheck, all tests)
+    cmds:
+      - task: lint
+      - task: typecheck
+      - task: test
+
+  plugin:example-wasm:
+    desc: Build plugins/examples/hash-wasm/hash.wasm from its Rust crate (needs the wasm32-unknown-unknown target)
+    dir: plugins/examples/hash-wasm
+    preconditions:
+      - sh: rustup target list --installed | grep -qx wasm32-unknown-unknown
+        msg: the wasm32 target is missing (rustup target add wasm32-unknown-unknown)
+    cmds:
+      # The build output goes outside the plugin folder, so installing the folder never copies it.
+      - cargo build --target wasm32-unknown-unknown --release --target-dir ../../../src-tauri/target/plugin-examples
+      - cp ../../../src-tauri/target/plugin-examples/wasm32-unknown-unknown/release/hash_wasm.wasm hash.wasm
+
+  clean:
+    desc: Remove dist, vite cache and the rust target dir
+    cmds:
+      - npm run clean

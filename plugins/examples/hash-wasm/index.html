@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WASM Hash</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>WASM Hash</h1>
+      <p class="muted">SHA-256 computed by a Rust WebAssembly module (<code>hash.wasm</code>) inside this sandboxed frame.</p>
+      <label for="text">Text</label>
+      <textarea id="text" rows="4" spellcheck="false" placeholder="Type or paste text…"></textarea>
+      <p><button id="open-file" type="button">Hash a file…</button></p>
+      <label for="digest">SHA-256 <span id="source" class="muted"></span></label>
+      <output id="digest" class="mono"></output>
+      <p id="status" class="muted"></p>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

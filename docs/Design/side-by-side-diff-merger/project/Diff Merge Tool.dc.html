@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <style>body{margin:0;background:#dfe3e9;} a{color:#1f5fbf;} a:hover{color:#174a96;}</style>
+</helmet>
+<section style="padding:72px;display:flex;flex-direction:column;gap:72px;font-family:system-ui, -apple-system, 'Segoe UI', sans-serif;color:#1f2633">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:900px">
+    <h1 style="margin:0;font-size:34px;line-height:1.2;font-weight:650;letter-spacing:-.02em">Diff &amp; Merge</h1>
+    <p style="margin:0;font-size:17px;line-height:1.5;color:#4a5568;text-wrap:pretty">Seven states, dark and light. Toolbar, pane headers, status bar, colours and type follow ToolWorkspace, Text Compare and JSON Diff: added uses success, removed uses destructive, modified uses warning, and the current change gets the ring outline. Folder mode: <a href="Folder Compare.dc.html">Folder Compare</a>.</p>
+  </div>
+  <sc-for list="{{ rows }}" as="row" hint-placeholder-count="7">
+    <div id="{{ row.id }}" style="display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:baseline;gap:14px">
+        <span style="font:600 14px ui-monospace, Menlo, monospace;padding:3px 8px;border-radius:6px;background:#1f2633;color:#fff">{{ row.id }}</span>
+        <h2 style="margin:0;font-size:24px;font-weight:600">{{ row.title }}</h2>
+        <span style="font-size:16px;color:#4a5568">{{ row.note }}</span>
+      </div>
+      <div style="display:flex;gap:48px">
+        <sc-for list="{{ row.screens }}" as="s" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:13px;font-weight:600;color:#4a5568;text-transform:uppercase;letter-spacing:.06em">{{ s.themeLabel }}</span>
+            <div style="{{ s.frame }}">
+<div style="width:1600px;height:960px;display:flex;background:var(--chrome);color:hsl(var(--h-fg));font-family:system-ui, -apple-system, 'Segoe UI', 'Noto Sans', Cantarell, sans-serif;font-size:13px;line-height:1.5;overflow:hidden;position:relative;-webkit-font-smoothing:antialiased;--font-code:ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace">
+
+  <aside style="width:224px;flex-shrink:0;display:flex;flex-direction:column;--h-mfg:var(--h-chrome-mfg)">
+    <div style="height:56px;display:flex;align-items:center;gap:10px;padding:0 16px 0 22px">
+      <span style="width:20px;height:20px;border-radius:6px;background:hsl(var(--h-primary))"></span>
+      <span style="font-weight:600">DevTools</span>
+    </div>
+    <div style="padding:12px">
+      <div style="height:32px;display:flex;align-items:center;gap:8px;padding:0 5px 0 10px;border:1px solid hsl(var(--h-chrome-input));border-radius:6px;background:hsl(var(--h-fg) / .045);color:hsl(var(--h-mfg))">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <span style="flex:1">Search...</span>
+        <span style="height:22px;display:flex;align-items:center;padding:0 6px;border-radius:4px;font-size:11px;background:hsl(var(--h-fg) / .06);border:1px solid hsl(var(--h-fg) / .12)">Ctrl K</span>
+      </div>
+    </div>
+    <nav style="flex:1;padding:4px 12px;display:flex;flex-direction:column;gap:2px;color:hsl(var(--h-mfg))">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:13px;margin-bottom:4px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M9 22V12h6v10"></path></svg>
+        <span>Home</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;padding:6px 8px;font-size:12px;font-weight:500"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>Development Tools</div>
+      <div style="display:flex;align-items:center;gap:4px;padding:6px 8px;font-size:12px;font-weight:500"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>Generators</div>
+      <div style="display:flex;align-items:center;gap:4px;padding:6px 8px;font-size:12px;font-weight:500"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>Converters</div>
+      <div style="display:flex;align-items:center;gap:4px;padding:6px 8px;font-size:12px;font-weight:500"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>Network</div>
+      <div style="display:flex;align-items:center;gap:4px;padding:6px 8px;font-size:12px;font-weight:500"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>Time &amp; Date</div>
+      <div style="display:flex;align-items:center;gap:4px;padding:6px 8px;font-size:12px;font-weight:500"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>Media</div>
+      <div style="display:flex;align-items:center;gap:4px;padding:6px 8px;font-size:12px;font-weight:500"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>Text Tools</div>
+      <div style="display:flex;flex-direction:column;gap:1px">
+        <div style="display:flex;align-items:center;gap:10px;padding:0 10px;min-height:32px;border-radius:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 6H3"></path><path d="M15 12H3"></path><path d="M17 18H3"></path></svg><span>Text Compare</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:0 10px;min-height:32px;border-radius:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg><span>JWT Decoder</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:0 10px;min-height:32px;border-radius:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg><span>API Formatter</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:0 10px;min-height:32px;border-radius:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M7 8h8"></path><path d="M7 12h10"></path><path d="M7 16h6"></path></svg><span>String Inspector</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:0 10px;min-height:32px;border-radius:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12h11"></path><path d="M10 18h11"></path><path d="M10 6h11"></path><path d="M4 10h2"></path><path d="M4 6h1v4"></path><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg><span>Line Tools</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:0 10px;min-height:32px;border-radius:6px;background:hsl(var(--h-fg) / .09);color:hsl(var(--h-fg));font-weight:500"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--h-primary))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke:hsl(var(--h-primary))"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M6 21V9a9 9 0 0 0 9 9"></path></svg><span>Diff &amp; Merge</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;padding:6px 8px;font-size:12px;font-weight:500"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>Utilities</div>
+      <div style="display:flex;align-items:center;gap:4px;padding:6px 8px;font-size:12px;font-weight:500"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>AI Tools</div>
+    </nav>
+    <div style="margin:0 14px;padding:12px 0 14px;border-top:1px solid hsl(var(--h-fg) / .1);font-size:11px;color:hsl(var(--h-mfg))">Shortcuts</div>
+  </aside>
+
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column;padding:0 10px 10px 0">
+    <header style="height:56px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 10px;--h-mfg:var(--h-chrome-mfg)">
+      <span style="width:30px;height:30px;display:grid;place-items:center;border-radius:6px;color:hsl(var(--h-mfg))"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M9 3v18"></path></svg></span>
+      <div style="display:flex;align-self:stretch">
+        <div style="display:flex;align-items:center;padding-right:22px"><span style="display:flex;align-items:center;gap:8px;height:100%;padding:0 12px;color:hsl(var(--h-mfg))"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 6H3"></path><path d="M15 12H3"></path><path d="M17 18H3"></path></svg>Text Compare</span></div>
+        <div style="display:flex;align-items:center;padding-right:22px"><span style="width:1px;height:18px;background:hsl(var(--h-border))"></span><span style="display:flex;align-items:center;gap:8px;height:100%;padding:0 12px;color:hsl(var(--h-mfg))"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>JSON Diff</span></div>
+        <div style="display:flex;align-items:center;padding-right:22px;position:relative"><span style="width:1px;height:18px;background:hsl(var(--h-border))"></span><span style="display:flex;align-items:center;gap:8px;height:100%;padding:0 12px;color:hsl(var(--h-fg));font-weight:600;position:relative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:hsl(var(--h-primary))"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M6 21V9a9 9 0 0 0 9 9"></path></svg>Diff &amp; Merge<span style="position:absolute;left:12px;right:4px;bottom:0;height:2px;background:hsl(var(--h-primary))"></span></span><span style="position:absolute;right:4px;width:20px;height:20px;display:grid;place-items:center;color:hsl(var(--h-mfg))"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></span></div>
+      </div>
+      <span style="width:30px;height:30px;display:grid;place-items:center;border-radius:6px;color:hsl(var(--h-mfg))"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+      <div style="margin-left:auto;display:flex;gap:4px">
+        <span style="width:30px;height:30px;display:grid;place-items:center;border-radius:6px;color:hsl(var(--h-mfg))"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>
+        <span style="width:30px;height:30px;display:grid;place-items:center;border-radius:6px;color:hsl(var(--h-mfg))">
+          <sc-if value="{{ s.isDark }}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg></sc-if>
+          <sc-if value="{{ s.isLight }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></sc-if>
+        </span>
+      </div>
+    </header>
+
+    <div style="flex:1;min-height:0;border-radius:11px;background:var(--editor);box-shadow:var(--sh-card);overflow:hidden;display:flex;flex-direction:column;position:relative">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-bottom:1px solid hsl(var(--h-border));flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="display:flex;align-items:center;gap:2px;opacity:{{ s.navOpacity }}">
+            <span title="Previous difference" style="display:flex;align-items:center;padding:6px;border-radius:5px;color:hsl(var(--h-mfg))"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"></path></svg></span>
+            <span title="Next difference" style="display:flex;align-items:center;padding:6px;border-radius:5px;color:hsl(var(--h-mfg))"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></span>
+            <span style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:5px;color:hsl(var(--h-mfg));font-size:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4"></path><path d="M4 7h16"></path><path d="m16 21 4-4-4-4"></path><path d="M20 17H4"></path></svg>Swap</span>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;padding-left:12px;border-left:1px solid hsl(var(--h-border));font-size:12px;color:hsl(var(--h-mfg))">Viewer
+            <span style="display:flex;align-items:center;gap:10px;height:32px;padding:0 8px 0 12px;border:1px solid hsl(var(--h-input));border-radius:6px;background:hsl(var(--h-card));font-size:13px;color:hsl(var(--h-fg));white-space:nowrap">{{ s.viewerLabel }}<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><path d="m6 9 6 6 6-6"></path></svg></span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding-left:12px;border-left:1px solid hsl(var(--h-border));font-size:12px;color:hsl(var(--h-mfg))">Ignore
+            <span style="display:flex;align-items:center;gap:10px;height:32px;padding:0 8px 0 12px;border:1px solid hsl(var(--h-input));border-radius:6px;background:hsl(var(--h-card));font-size:13px;color:hsl(var(--h-fg));white-space:nowrap">Do not ignore<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><path d="m6 9 6 6 6-6"></path></svg></span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding-left:12px;border-left:1px solid hsl(var(--h-border));font-size:12px;color:hsl(var(--h-mfg))">Highlight
+            <span style="display:flex;align-items:center;gap:10px;height:32px;padding:0 8px 0 12px;border:1px solid hsl(var(--h-input));border-radius:6px;background:hsl(var(--h-card));font-size:13px;color:hsl(var(--h-fg));white-space:nowrap">Words<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><path d="m6 9 6 6 6-6"></path></svg></span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding-left:12px;border-left:1px solid hsl(var(--h-border));font-size:12px;color:hsl(var(--h-fg));white-space:nowrap">Collapse unchanged
+            <span style="width:44px;height:24px;border-radius:999px;border:2px solid transparent;box-sizing:border-box;display:flex;align-items:center;background:{{ s.collapseBg }}"><span style="width:20px;height:20px;border-radius:999px;background:hsl(var(--h-bg));box-shadow:0 2px 6px rgb(0 0 0 / .2);transform:translateX({{ s.collapseX }}px)"></span></span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding-left:12px;border-left:1px solid hsl(var(--h-border));font-size:12px;color:hsl(var(--h-fg));white-space:nowrap">Sync scroll
+            <span style="width:44px;height:24px;border-radius:999px;border:2px solid transparent;box-sizing:border-box;display:flex;align-items:center;background:hsl(var(--h-primary))"><span style="width:20px;height:20px;border-radius:999px;background:hsl(var(--h-bg));box-shadow:0 2px 6px rgb(0 0 0 / .2);transform:translateX(20px)"></span></span>
+          </label>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="display:flex;align-items:center;gap:2px">
+            <span title="Settings" style="display:flex;align-items:center;padding:6px;border-radius:5px;background:{{ s.gearBg }};color:{{ s.gearColor }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
+            <span title="Keyboard shortcuts" style="display:flex;align-items:center;padding:6px;border-radius:5px;background:{{ s.helpBg }};color:{{ s.helpColor }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg></span>
+          </div>
+          <span style="padding-left:12px;border-left:1px solid hsl(var(--h-border));font-size:12px;font-variant-numeric:tabular-nums;color:{{ s.counterColor }};white-space:nowrap" aria-live="polite">{{ s.counter }}</span>
+        </div>
+      </div>
+
+      <sc-if value="{{ s.isSide }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr) 14px;grid-template-rows:38px minmax(0,1fr)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 12px 0 10px;border-bottom:1px solid hsl(var(--h-border) / .5);background:hsl(var(--h-muted) / .35);font-size:12px;font-weight:500;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;min-width:0">
+              <span style="padding:2px 6px;border:1px solid transparent;border-radius:5px;white-space:nowrap">check_client_name.py</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 6px 0 9px;border:1px solid hsl(var(--h-border));border-radius:999px;font-size:11px;font-weight:600">Python<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.6"><path d="m6 9 6 6 6-6"></path></svg></span>
+              <span style="font-weight:400;color:hsl(var(--h-mfg));white-space:nowrap">{{ s.leftCount }}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:2px;font-weight:400;color:hsl(var(--h-mfg))">
+              <span style="padding:4px 6px;border-radius:5px">Open</span><span style="padding:4px 6px;border-radius:5px">Paste</span><span style="padding:4px 6px;border-radius:5px">Clear</span><span style="padding:4px 6px;border-radius:5px">Copy</span>
+            </div>
+          </div>
+          <div style="border-bottom:1px solid hsl(var(--h-border) / .5);background:hsl(var(--h-muted) / .35);border-left:1px solid hsl(var(--h-border) / .6);border-right:1px solid hsl(var(--h-border) / .6)"></div>
+          <div style="grid-column:span 2;position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 12px 0 10px;border-bottom:1px solid hsl(var(--h-border) / .5);background:hsl(var(--h-muted) / .35);font-size:12px;font-weight:500;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;min-width:0">
+              <span style="padding:2px 6px;border:1px solid transparent;border-radius:5px;white-space:nowrap">check_invoices.py</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 6px 0 9px;border:1px solid hsl(var(--h-border));border-radius:999px;font-size:11px;font-weight:600">Python<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.6"><path d="m6 9 6 6 6-6"></path></svg></span>
+              <span style="font-weight:400;color:hsl(var(--h-mfg));white-space:nowrap">{{ s.rightCount }}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:2px;font-weight:400;color:hsl(var(--h-mfg))">
+              <span style="padding:4px 6px;border-radius:5px">Open</span><span style="padding:4px 6px;border-radius:5px">Paste</span><span style="padding:4px 6px;border-radius:5px">Clear</span><span style="padding:4px 6px;border-radius:5px">Copy</span>
+            </div>
+            <span style="position:absolute;left:0;right:0;bottom:-1px;height:2px;background:hsl(var(--h-ring))"></span>
+          </div>
+
+          <div style="position:relative;overflow:hidden;min-width:0">{{ s.leftPane }}</div>
+
+          <div style="position:relative;overflow:hidden;border-left:1px solid hsl(var(--h-border) / .6);border-right:1px solid hsl(var(--h-border) / .6)">{{ s.gutter }}</div>
+
+          <div style="position:relative;overflow:hidden;min-width:0">{{ s.rightPane }}</div>
+
+          <div title="Change map" style="position:relative;border-left:1px solid hsl(var(--h-border) / .5);background:hsl(var(--h-muted) / .3)">{{ s.mapEl }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ s.isUnified }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 14px;grid-template-rows:38px minmax(0,1fr)">
+          <div style="grid-column:span 2;position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 12px 0 10px;border-bottom:1px solid hsl(var(--h-border) / .5);background:hsl(var(--h-muted) / .35);font-size:12px;font-weight:500">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="padding:2px 6px;white-space:nowrap">check_client_name.py</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:hsl(var(--h-mfg))"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+              <span style="padding:2px 6px;white-space:nowrap">check_invoices.py</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 6px 0 9px;border:1px solid hsl(var(--h-border));border-radius:999px;font-size:11px;font-weight:600">Python<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.6"><path d="m6 9 6 6 6-6"></path></svg></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:2px;font-weight:400;color:hsl(var(--h-mfg))">
+              <span style="padding:4px 6px;border-radius:5px">Copy patch</span><span style="padding:4px 6px;border-radius:5px">Copy result</span>
+            </div>
+          </div>
+          <div style="position:relative;overflow:hidden">{{ s.uniPane }}</div>
+          <div style="position:relative;border-left:1px solid hsl(var(--h-border) / .5);background:hsl(var(--h-muted) / .3)">{{ s.mapU }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ s.isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr) 14px;grid-template-rows:38px minmax(0,1fr)">
+          <div style="position:relative;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 10px;border-bottom:1px solid hsl(var(--h-border) / .5);background:hsl(var(--h-muted) / .35);font-size:12px;font-weight:500">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="padding:2px 6px;white-space:nowrap">Original</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 6px 0 9px;border:1px solid hsl(var(--h-border));border-radius:999px;font-size:11px;font-weight:600">Plain text<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.6"><path d="m6 9 6 6 6-6"></path></svg></span>
+            </div>
+            <div style="display:flex;gap:2px;font-weight:400;color:hsl(var(--h-mfg))"><span style="padding:4px 6px">Open</span><span style="padding:4px 6px">Paste</span></div>
+            <span style="position:absolute;left:0;right:0;bottom:-1px;height:2px;background:hsl(var(--h-ring))"></span>
+          </div>
+          <div style="border-bottom:1px solid hsl(var(--h-border) / .5);background:hsl(var(--h-muted) / .35);border-left:1px solid hsl(var(--h-border) / .6);border-right:1px solid hsl(var(--h-border) / .6)"></div>
+          <div style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 10px;border-bottom:1px solid hsl(var(--h-border) / .5);background:hsl(var(--h-muted) / .35);font-size:12px;font-weight:500">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="padding:2px 6px;white-space:nowrap">Modified</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 6px 0 9px;border:1px solid hsl(var(--h-border));border-radius:999px;font-size:11px;font-weight:600">Plain text<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.6"><path d="m6 9 6 6 6-6"></path></svg></span>
+            </div>
+            <div style="display:flex;gap:2px;font-weight:400;color:hsl(var(--h-mfg))"><span style="padding:4px 6px">Open</span><span style="padding:4px 6px">Paste</span></div>
+          </div>
+
+          <div style="position:relative;font-family:var(--font-code);font-size:13px;line-height:22px">
+            <div style="display:flex;height:22px;margin-top:6px"><span style="width:44px;padding-right:12px;box-sizing:border-box;text-align:right;color:hsl(var(--h-mfg));font-size:12px">1</span><span style="width:2px;height:16px;margin:3px 0 0 4px;background:hsl(var(--h-fg))"></span><span style="padding-left:4px;color:hsl(var(--h-mfg))">Paste the original text</span></div>
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-family:system-ui, sans-serif;color:hsl(var(--h-mfg));text-align:center;padding:20px">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
+              <p style="margin:0;color:hsl(var(--h-fg));font-weight:500;font-size:13px">Paste text or drop a file</p>
+              <span style="font-size:12px">Ctrl+V to paste, Ctrl+O to open a file</span>
+            </div>
+          </div>
+          <div style="border-left:1px solid hsl(var(--h-border) / .6);border-right:1px solid hsl(var(--h-border) / .6)"></div>
+          <div style="position:relative;font-family:var(--font-code);font-size:13px;line-height:22px">
+            <div style="display:flex;height:22px;margin-top:6px"><span style="width:44px;padding-right:12px;box-sizing:border-box;text-align:right;color:hsl(var(--h-mfg));font-size:12px">1</span><span style="padding-left:6px;color:hsl(var(--h-mfg))">Paste the modified text</span></div>
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-family:system-ui, sans-serif;color:hsl(var(--h-mfg));text-align:center;padding:20px">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
+              <p style="margin:0;color:hsl(var(--h-fg));font-weight:500;font-size:13px">Paste text or drop a file</p>
+              <span style="font-size:12px">Differences appear as soon as both sides have text</span>
+            </div>
+          </div>
+          <div style="border-left:1px solid hsl(var(--h-border) / .5);background:hsl(var(--h-muted) / .3)"></div>
+        </div>
+      </sc-if>
+
+      <footer style="height:32px;flex-shrink:0;padding:0 16px;display:flex;align-items:center;gap:16px;color:hsl(var(--h-mfg));border-top:1px solid hsl(var(--h-border));font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap">
+        <sc-if value="{{ s.hasStats }}" hint-placeholder-val="{{ true }}">
+          <span>{{ s.statusLn }}</span>
+          <span>Python</span>
+          <span style="display:flex;gap:4px"><span style="color:hsl(var(--h-success))">{{ s.addN }}</span>·<span style="color:hsl(var(--h-destr))">{{ s.delN }}</span>·<span style="color:{{ s.modColor }}">{{ s.modN }}</span></span>
+        </sc-if>
+        <sc-if value="{{ s.isEmpty }}" hint-placeholder-val="{{ false }}"><span>Ready</span></sc-if>
+        <sc-if value="{{ s.hasMsg }}" hint-placeholder-val="{{ false }}">
+          <span style="display:flex;align-items:center;gap:6px;color:hsl(var(--h-fg))"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="color:hsl(var(--h-primary))"><path d="M20 6 9 17l-5-5"></path></svg>{{ s.msg }}</span>
+        </sc-if>
+        <span style="margin-left:auto">UTF-8 · LF</span>
+        <span style="display:flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg>Local processing</span>
+      </footer>
+
+      <sc-if value="{{ s.settingsOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:54px;right:150px;width:300px;z-index:10;background:hsl(var(--h-card));border:1px solid hsl(var(--h-fg) / .12);border-radius:8px;box-shadow:var(--sh-menu);font-size:12px;overflow:hidden">
+          <div style="padding:12px 14px 8px;font-weight:600;font-size:12px">Compare settings</div>
+          <div style="display:flex;flex-direction:column;padding:0 6px 6px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 8px;border-radius:5px">
+              <div style="display:flex;flex-direction:column"><span>Context lines</span><span style="font-size:11px;color:hsl(var(--h-mfg))">Kept around changes when collapsed</span></div>
+              <div style="display:flex;align-items:center;height:26px;border:1px solid hsl(var(--h-input));border-radius:5px;overflow:hidden">
+                <span style="width:24px;text-align:center;color:hsl(var(--h-mfg))">−</span><span style="width:28px;text-align:center;border-left:1px solid hsl(var(--h-border));border-right:1px solid hsl(var(--h-border));font-variant-numeric:tabular-nums">3</span><span style="width:24px;text-align:center;color:hsl(var(--h-mfg))">+</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 8px;border-radius:5px;background:hsl(var(--h-muted))"><span>Wrap long lines</span><span style="width:34px;height:19px;border-radius:999px;display:flex;align-items:center;padding:2px;box-sizing:border-box;background:hsl(var(--h-input))"><span style="width:15px;height:15px;border-radius:999px;background:hsl(var(--h-bg))"></span></span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 8px;border-radius:5px"><span>Show whitespace</span><span style="width:34px;height:19px;border-radius:999px;display:flex;align-items:center;padding:2px;box-sizing:border-box;background:hsl(var(--h-input))"><span style="width:15px;height:15px;border-radius:999px;background:hsl(var(--h-bg))"></span></span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 8px;border-radius:5px"><span>Ignore case</span><span style="width:34px;height:19px;border-radius:999px;display:flex;align-items:center;padding:2px;box-sizing:border-box;background:hsl(var(--h-input))"><span style="width:15px;height:15px;border-radius:999px;background:hsl(var(--h-bg))"></span></span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 8px;border-radius:5px"><span>Detect language from content</span><span style="width:34px;height:19px;border-radius:999px;display:flex;align-items:center;justify-content:flex-end;padding:2px;box-sizing:border-box;background:hsl(var(--h-primary))"><span style="width:15px;height:15px;border-radius:999px;background:hsl(var(--h-bg))"></span></span></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;padding:8px 10px;border-top:1px solid hsl(var(--h-border) / .7)"><span style="padding:4px 6px;border-radius:5px;color:hsl(var(--h-mfg))">Reset to defaults</span></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ s.helpOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:54px;right:120px;width:340px;z-index:10;background:hsl(var(--h-card));border:1px solid hsl(var(--h-fg) / .12);border-radius:8px;box-shadow:var(--sh-menu);font-size:12px;overflow:hidden">
+          <div style="padding:12px 14px 6px;font-weight:600">Keyboard shortcuts</div>
+          <div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px 16px;padding:6px 14px 12px">
+            <span>Next difference</span><span style="display:flex;gap:4px"><span style="padding:2px 7px;border-radius:5px;border:1px solid hsl(var(--h-input));background:hsl(var(--h-muted))">F7</span></span>
+            <span>Previous difference</span><span style="display:flex;gap:4px"><span style="padding:2px 7px;border-radius:5px;border:1px solid hsl(var(--h-input));background:hsl(var(--h-muted))">Shift+F7</span></span>
+            <span>Push change to the right</span><span style="display:flex;gap:4px"><span style="padding:2px 7px;border-radius:5px;border:1px solid hsl(var(--h-input));background:hsl(var(--h-muted))">Ctrl+Shift+→</span></span>
+            <span>Push change to the left</span><span style="display:flex;gap:4px"><span style="padding:2px 7px;border-radius:5px;border:1px solid hsl(var(--h-input));background:hsl(var(--h-muted))">Ctrl+Shift+←</span></span>
+            <span>Swap sides</span><span style="display:flex;gap:4px"><span style="padding:2px 7px;border-radius:5px;border:1px solid hsl(var(--h-input));background:hsl(var(--h-muted))">Ctrl+Shift+S</span></span>
+            <span>Collapse unchanged lines</span><span style="display:flex;gap:4px"><span style="padding:2px 7px;border-radius:5px;border:1px solid hsl(var(--h-input));background:hsl(var(--h-muted))">Ctrl+Shift+C</span></span>
+            <span>Undo / redo</span><span style="display:flex;gap:4px"><span style="padding:2px 7px;border-radius:5px;border:1px solid hsl(var(--h-input));background:hsl(var(--h-muted))">Ctrl+Z</span><span style="padding:2px 7px;border-radius:5px;border:1px solid hsl(var(--h-input));background:hsl(var(--h-muted))">Ctrl+Shift+Z</span></span>
+          </div>
+          <div style="padding:9px 14px;border-top:1px solid hsl(var(--h-border) / .7);color:hsl(var(--h-mfg))">Click the change map on the right edge to jump to a change.</div>
+        </div>
+      </sc-if>
+    </div>
+  </main>
+</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;themes&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;both&quot;,&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;both&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Canvas&quot;},&quot;modTone&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;warning&quot;,&quot;info&quot;],&quot;default&quot;:&quot;warning&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Change colours&quot;},&quot;ribbon&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;curved&quot;,&quot;angular&quot;],&quot;default&quot;:&quot;curved&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Gutter&quot;}}">
+
+const LH = 22, PAD = 6, GW = 64, CTX = 3, VIS = 33;
+const CHUNK = [`def normalise(value):`, `    return str(value).strip().upper()`, ``, `def write_report(missing, out_path):`, `    """Write the invoices that were not found to a CSV report."""`, `    if not missing:`, `        print("All invoices matched.")`, `        return`, `    report = pd.DataFrame({"invoice": missing})`, `    report["checked_at"] = pd.Timestamp.now()`, `    report.to_csv(out_path, index=False)`, `    print(f"Wrote {len(missing)} rows to {out_path}")`, ``, `def load_mapping(path):`, `    mapping = {}`, `    with open(path, encoding="utf-8") as fh:`, `        for line in fh:`, `            line = line.strip()`, `            if not line or line.startswith("#"):`, `                continue`, `            key, _, value = line.partition("=")`, `            mapping[key.strip()] = value.strip()`, `    return mapping`, ``];
+const LEFT = [`import pandas as pd`, ``, `def read_ods(file_path, sheet_name):`, `    # Read ODS file`, `    data = pd.read_excel(file_path, engine='odf', sheet_name=sheet_name)`, `    return data`, ``, `def read_csv(file_path):`, `    return pd.read_csv(file_path, sep=";")`, ``, `def check_invoices(file_a_path, file_b_path, sheet_a_name):`, `    # Read both ODS files`, `    file_a = read_ods(file_a_path, sheet_a_name)`, `    file_b = read_csv(file_b_path)`, ``, `    # Extract the 'Invoice' column from both files`, `    client_a = file_a['Name'].dropna().astype(str).tolist()`, `    client_b = file_b['Kundenname'].dropna().astype(str).tolist()`, ``, `    # Check each invoice from file A in file B`, `    for client in client_a:`, `        if client not in client_b:`, `            print(f"client does not exists in both files.")`, `            print(f"{client}")`, ``, ...CHUNK, `if __name__ == "__main__":`, `    file_a_path = '/mnt/Veritus/Download/Veritus/INV/opened_RE.ods'`, `    file_b_path = '/mnt/Veritus/Download/Veritus/INV/Kontoumsaetze.csv'`, `    check_invoices(file_a_path, file_b_path, 'Tabelle1')`];
+const RIGHT = [`import pandas as pd`, `from pathlib import Path`, ``, `def read_ods(file_path):`, `    # Read the first sheet of an ODS file`, `    data = pd.read_excel(file_path, engine='odf')`, `    return data`, ``, `def check_invoices(file_a_path, file_b_path):`, `    # Read both files`, `    file_a = read_ods(file_a_path)`, `    file_b = read_ods(file_b_path)`, ``, `    # Extract the 'Invoice' column from both files`, `    invoices_a = file_a['Invoice'].dropna().astype(str).tolist()`, `    invoices_b = file_b['Verwendungszweck'].dropna().astype(str).tolist()`, ``, `    # Check each invoice from file A in file B`, `    for invoice in invoices_a:`, `        if invoice in invoices_b:`, `            print(f"Invoice {invoice} exists in both files.")`, ``, ...CHUNK, `if __name__ == "__main__":`, `    file_a_path = Path('/mnt/Veritus/Download/Veritus/INV/opened_RE.ods')`, `    file_b_path = Path('/mnt/Veritus/Download/Veritus/INV/Kontoumsaetze.ods')`, `    check_invoices(file_a_path, file_b_path)`];
+const RIGHT_APPLIED = RIGHT.slice(0, 7).concat(LEFT.slice(6, 9), RIGHT.slice(7));
+const SEG = [['=', 1], ['~', 0, 1], ['=', 1], ['~', 3, 3], ['=', 1], ['~', 3, 0], ['=', 1], ['~', 4, 4], ['=', 2], ['~', 2, 2], ['=', 2], ['~', 4, 3], ['=', 26], ['~', 3, 3]];
+const SEG_APPLIED = [['=', 1], ['~', 0, 1], ['=', 1], ['~', 3, 3], ['=', 5], ['~', 4, 4], ['=', 2], ['~', 2, 2], ['=', 2], ['~', 4, 3], ['=', 26], ['~', 3, 3]];
+const KW = new Set(['import', 'from', 'as', 'def', 'return', 'for', 'in', 'if', 'not', 'with', 'continue', 'and', 'or', 'else', 'elif', 'while', 'class', 'is', 'pass']);
+const BI = new Set(['print', 'str', 'len', 'open', 'True', 'False', 'None']);
+const COL = { kw: 'var(--s-kw)', str: 'var(--s-str)', num: 'var(--s-num)', lit: 'var(--s-lit)', fn: 'var(--s-fn)', com: 'hsl(var(--h-mfg))', '': 'inherit' };
+
+const TOK_CACHE = new Map();
+const BUILD_CACHE = new Map();
+function merge(toks) {
+  const out = [];
+  for (const t of toks) {
+    const p = out[out.length - 1];
+    if (p && p.c === t.c && p.bg === t.bg) p.t += t.t; else out.push({ ...t });
+  }
+  return out;
+}
+function tok(line) {
+  if (TOK_CACHE.has(line)) return TOK_CACHE.get(line);
+  const out = [];
+  const re = /(#.*$)|([rbfuRBFU]{0,2}"""[\s\S]*?"""|[rbfuRBFU]{0,2}"(?:[^"\\]|\\.)*"|[rbfuRBFU]{0,2}'(?:[^'\\]|\\.)*')|(\d+)|([A-Za-z_]\w*)|(\s+)|([^\sA-Za-z_\d#'"]+|.)/g;
+  let m, last = '';
+  while ((m = re.exec(line))) {
+    const s = m[0];
+    let cls = '';
+    if (m[1]) cls = 'com';
+    else if (m[2]) cls = 'str';
+    else if (m[3]) cls = 'num';
+    else if (m[4]) { cls = KW.has(s) ? 'kw' : BI.has(s) ? 'lit' : last === 'def' ? 'fn' : ''; last = s; }
+    else if (!m[5]) last = '';
+    (s.match(/\s+|[A-Za-z_]\w*|\d+|[^\sA-Za-z_\d]/g) || []).forEach(p => out.push({ t: p, cls }));
+  }
+  TOK_CACHE.set(line, out);
+  return out;
+}
+
+function wdiff(a, b) {
+  const n = a.length, m = b.length;
+  const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = a[i].t === b[j].t ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  const ca = new Array(n).fill(true), cb = new Array(m).fill(true);
+  let i = 0, j = 0;
+  while (i < n && j < m) {
+    if (a[i].t === b[j].t) { ca[i] = false; cb[j] = false; i++; j++; }
+    else if (dp[i + 1][j] >= dp[i][j + 1]) i++;
+    else j++;
+  }
+  const fill = (toks, ch) => toks.forEach((t, k) => {
+    if (/^\s+$/.test(t.t)) ch[k] = !!(ch[k - 1] && ch[k + 1]);
+  });
+  fill(a, ca); fill(b, cb);
+  return [ca, cb];
+}
+
+function ribbonPath(a1, a2, b1, b2, style) {
+  if (style === 'angular') return `M0 ${a1} L12 ${a1} L${GW - 12} ${b1} L${GW} ${b1} L${GW} ${b2} L${GW - 12} ${b2} L12 ${a2} L0 ${a2} Z`;
+  const c = GW / 2;
+  return `M0 ${a1} C${c} ${a1} ${c} ${b1} ${GW} ${b1} L${GW} ${b2} C${c} ${b2} ${c} ${a2} 0 ${a2} Z`;
+}
+
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const CR = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg>';
+const CL = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/></svg>';
+const FOLD_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>';
+const toksH = (toks) => toks.map(t => (t.c === 'inherit' && t.bg === 'transparent') ? esc(t.t) : `<span style="color:${t.c};background:${t.bg}">${esc(t.t)}</span>`).join('');
+const foldH = (r, pad) => `<div style="display:flex;height:22px"><div style="flex:1;display:flex;align-items:center;gap:8px;padding-left:${pad}px;background:hsl(var(--h-muted));color:hsl(var(--h-mfg));font-family:system-ui,sans-serif;font-size:12px;border-top:1px dashed hsl(var(--h-border));border-bottom:1px dashed hsl(var(--h-border));box-sizing:border-box">${FOLD_ICON}<span style="color:hsl(var(--h-fg))">${r.label}</span><span>Click to expand</span></div></div>`;
+const NUM = 'flex-shrink:0;box-sizing:border-box;text-align:right;color:hsl(var(--h-mfg));font-size:12px;user-select:none';
+const boxH = (bs, z) => bs.map(b => `<div style="position:absolute;left:0;right:0;top:${b.top}px;height:${b.h}px;background:${b.bg || 'transparent'};box-shadow:${b.sh};${z ? 'z-index:2;' : ''}pointer-events:none"></div>`).join('');
+function paneEl(boxes, rows, caretTop) {
+  const rowsH = rows.map(r => r.fold ? foldH(r, 14) : `<div style="display:flex;height:22px;background:${r.bg}"><span style="width:44px;padding-right:12px;${NUM}">${r.n}</span><span style="white-space:pre;padding-left:4px">${toksH(r.toks)}</span></div>`).join('');
+  const caret = caretTop == null ? '' : `<span style="position:absolute;left:calc(48px + 4ch);top:${caretTop}px;width:2px;height:16px;background:hsl(var(--h-fg))"></span>`;
+  return React.createElement('div', { style: { position: 'absolute', inset: 0, overflow: 'hidden' }, dangerouslySetInnerHTML: { __html: `${boxH(boxes)}<div style="position:relative;padding-top:6px;font-family:var(--font-code);font-size:13px;line-height:22px">${rowsH}${caret}</div>` } });
+}
+function uniEl(boxes, rows) {
+  const chip = (icon, title) => `<span title="${title}" style="width:18px;height:18px;border-radius:4px;display:grid;place-items:center;background:var(--raised);box-shadow:0 0 0 1px hsl(var(--h-border));color:hsl(var(--h-fg))">${icon}</span>`;
+  const rowsH = rows.map(r => r.fold ? foldH(r, 66) : `<div style="display:flex;height:22px;background:${r.bg}"><span style="width:52px;flex-shrink:0;display:flex;align-items:center;gap:4px;padding-left:8px;box-sizing:border-box">${r.act ? chip(CR, 'Keep left') + chip(CL, 'Keep right') : ''}</span><span style="width:40px;padding-right:8px;${NUM}">${r.o}</span><span style="width:40px;padding-right:8px;${NUM}">${r.nn}</span><span style="width:20px;flex-shrink:0;text-align:center;color:${r.mc || 'inherit'}">${r.mark}</span><span style="white-space:pre">${toksH(r.toks)}</span></div>`).join('');
+  return React.createElement('div', { style: { position: 'absolute', inset: 0, overflow: 'hidden' }, dangerouslySetInnerHTML: { __html: `${boxH(boxes.map(b => ({ ...b, sh: 'inset 0 0 0 1px hsl(var(--h-ring))' })), true)}<div style="position:relative;padding-top:6px;font-family:var(--font-code);font-size:13px;line-height:22px">${rowsH}</div>` } });
+}
+function gutterEl(ribbons, arrows, h) {
+  const paths = ribbons.map(p => `<path d="${p.d}" style="fill:${p.fill};stroke:${p.stroke};stroke-width:1"/>`).join('');
+  const arr = arrows.map(a => `<div title="${a.title}" style="position:absolute;top:${a.top}px;left:${a.left}px;width:18px;height:18px;border-radius:4px;display:grid;place-items:center;color:${a.color};background:${a.bg};box-shadow:${a.sh}">${a.toRight ? CR : CL}</div>`).join('');
+  return React.createElement('div', { style: { position: 'absolute', inset: 0 }, dangerouslySetInnerHTML: { __html: `<svg width="64" height="${h}" style="position:absolute;left:0;top:0">${paths}</svg>${arr}` } });
+}
+function mapEl(ticks, thumb) {
+  const t = ticks.map(t => `<div style="position:absolute;left:3px;right:3px;top:${t.top}%;height:${t.h}%;min-height:3px;background:${t.bg};box-shadow:${t.sh};border-radius:1px"></div>`).join('');
+  return React.createElement('div', { style: { position: 'absolute', inset: 0 }, dangerouslySetInnerHTML: { __html: `<div style="position:absolute;left:1px;right:1px;top:0;height:${thumb}%;background:hsl(var(--h-fg) / .07);border-radius:3px"></div>${t}` } });
+}
+
+
+class Builder {
+  build(L, R, segs, o) {
+    const d = { leftRows: [], rightRows: [], boxesL: [], boxesR: [], ribbons: [], arrows: [], ticks: [], uniRows: [], boxesU: [], counts: { add: 0, del: 0, mod: 0 }, blocks: 0, caretRow: 0, curLine: 1 };
+    let iL = 0, iR = 0, kL = 0, kR = 0, kU = 0, b = 0;
+    const line = (text, n, ch, strong) => ({ line: true, fold: false, n, bg: 'transparent', toks: merge(tok(text).map((t, i) => ({ t: t.t, c: COL[t.cls], bg: ch && ch[i] ? strong : 'transparent' }))) });
+    const fold = (cnt) => ({ line: false, fold: true, label: `${cnt} unchanged lines`, n: '', bg: 'transparent', toks: [] });
+    const chip = 'var(--raised)', chipSh = '0 0 0 1px hsl(var(--h-border)), 0 1px 2px rgb(0 0 0 / .15)';
+    for (const s of segs) {
+      if (s[0] === '=') {
+        const n = s[1];
+        const parts = o.collapse && n > 2 * CTX + 1 ? [[0, CTX], null, [n - CTX, n]] : [[0, n]];
+        for (const p of parts) {
+          if (!p) {
+            const hidden = n - 2 * CTX, yl = PAD + kL * LH, yr = PAD + kR * LH;
+            d.leftRows.push(fold(hidden)); d.rightRows.push(fold(hidden));
+            d.ribbons.push({ d: ribbonPath(yl, yl + LH, yr, yr + LH, o.ribbon), fill: 'hsl(var(--h-muted))', stroke: 'none' });
+            d.uniRows.push({ ...fold(hidden), o: '', nn: '', mark: '', mc: '', act: false });
+            kL++; kR++; kU++;
+            continue;
+          }
+          for (let j = p[0]; j < p[1]; j++) {
+            const a = iL + j, r = iR + j;
+            const lr = line(L[a], a + 1), rr = line(R[r], r + 1);
+            if (o.applied && o.applied.has(r)) rr.bg = 'hsl(var(--h-primary) / .13)';
+            d.leftRows.push(lr); d.rightRows.push(rr);
+            d.uniRows.push({ ...line(R[r], ''), o: a + 1, nn: r + 1, mark: '', mc: '', act: false, bg: rr.bg });
+            kL++; kR++; kU++;
+          }
+        }
+        iL += n; iR += n;
+      } else {
+        const lc = s[1], rc = s[2];
+        const kind = lc && rc ? 'mod' : lc ? 'del' : 'add';
+        d.counts[kind]++;
+        const kv = kind === 'mod' ? o.modVar : kind === 'del' ? '--h-destr' : '--h-success';
+        const cur = b === o.cur;
+        const lineBg = `hsl(var(${kv}) / var(${cur ? '--a-cur' : '--a-line'}))`;
+        const strong = `hsl(var(${kv}) / var(--a-word))`;
+        const ring = cur ? 'inset 0 0 0 1px hsl(var(--h-ring))' : 'none';
+        const yL = PAD + kL * LH, yR = PAD + kR * LH;
+        d.boxesL.push(lc ? { top: yL, h: lc * LH, bg: lineBg, sh: ring } : { top: yL - 1, h: 2, bg: `hsl(var(${kv}))`, sh: 'none' });
+        d.boxesR.push(rc ? { top: yR, h: rc * LH, bg: lineBg, sh: ring } : { top: yR - 1, h: 2, bg: `hsl(var(${kv}))`, sh: 'none' });
+        const chL = [], chR = [];
+        for (let i = 0; i < Math.min(lc, rc); i++) { const [x, y] = wdiff(tok(L[iL + i]), tok(R[iR + i])); chL[i] = x; chR[i] = y; }
+        for (let i = 0; i < lc; i++) d.leftRows.push(line(L[iL + i], iL + i + 1, chL[i], strong));
+        for (let i = 0; i < rc; i++) d.rightRows.push(line(R[iR + i], iR + i + 1, chR[i], strong));
+        d.ribbons.push({ d: ribbonPath(yL, yL + lc * LH, yR, yR + rc * LH, o.ribbon), fill: `hsl(var(${kv}) / var(${cur ? '--a-cur' : '--a-rib'}))`, stroke: cur ? 'hsl(var(--h-ring))' : 'none' });
+        const ac = cur ? { color: 'hsl(var(--h-fg))', bg: chip, sh: chipSh } : { color: 'hsl(var(--h-fg) / .7)', bg: 'transparent', sh: 'none' };
+        d.arrows.push({ ...ac, top: lc ? yL + 2 : yL - 9, left: 3, toRight: true, toLeft: false, title: `Apply left to right (change ${b + 1})` });
+        d.arrows.push({ ...ac, top: rc ? yR + 2 : yR - 9, left: GW - 21, toRight: false, toLeft: true, title: `Apply right to left (change ${b + 1})` });
+        d.ticks.push({ top: (iR / R.length) * 100, h: (Math.max(rc, 0.4) / R.length) * 100, bg: `hsl(var(${kv}))`, sh: cur ? '0 0 0 2px hsl(var(--h-ring))' : 'none' });
+        if (cur) { d.caretRow = kR; d.curLine = iR + 1; d.boxesU.push({ top: PAD + kU * LH, h: (lc + rc) * LH }); }
+        const ua = cur ? '--a-cur' : '--a-line';
+        for (let i = 0; i < lc; i++) d.uniRows.push({ ...line(L[iL + i], '', chL[i], 'hsl(var(--h-destr) / var(--a-word))'), o: iL + i + 1, nn: '', mark: '−', mc: 'hsl(var(--h-destr))', bg: `hsl(var(--h-destr) / var(${ua}))`, act: i === 0 });
+        for (let i = 0; i < rc; i++) d.uniRows.push({ ...line(R[iR + i], '', chR[i], 'hsl(var(--h-success) / var(--a-word))'), o: '', nn: iR + i + 1, mark: '+', mc: 'hsl(var(--h-success))', bg: `hsl(var(--h-success) / var(${ua}))`, act: lc === 0 && i === 0 });
+        kU += lc + rc; kL += lc; kR += rc; iL += lc; iR += rc; b++;
+      }
+    }
+    d.blocks = b;
+    d.rows = Math.max(kL, kR);
+    d.rowsU = kU;
+    return d;
+  }
+
+  compute(st, dark, modVar, ribbon) {
+    const applied = st === 'applied';
+    const empty = st === 'empty';
+    const collapse = st === 'collapsed' || st === 'unified';
+    const R = applied ? RIGHT_APPLIED : RIGHT;
+    const cur = applied ? 2 : 3;
+    const d = this.build(LEFT, R, applied ? SEG_APPLIED : SEG, { collapse, cur, applied: applied ? new Set([7, 8, 9]) : null, modVar, ribbon });
+    const on = 'hsl(var(--h-muted))';
+    const MAXR = 36;
+    const thumbH = Math.min(100, (VIS / d.rows) * 100), thumbU = Math.min(100, (VIS / d.rowsU) * 100);
+    const side = !empty && st !== 'unified';
+    return {
+      leftPane: side ? paneEl(d.boxesL, d.leftRows.slice(0, MAXR), null) : null,
+      rightPane: side ? paneEl(d.boxesR, d.rightRows.slice(0, MAXR), PAD + d.caretRow * LH + 3) : null,
+      gutter: side ? gutterEl(d.ribbons, d.arrows, d.rows * LH + PAD * 2) : null,
+      mapEl: side ? mapEl(d.ticks, thumbH) : null,
+      uniPane: st === 'unified' ? uniEl(d.boxesU, d.uniRows.slice(0, MAXR)) : null,
+      mapU: st === 'unified' ? mapEl(d.ticks, thumbU) : null,
+      isDark: dark, isLight: !dark,
+      isSide: !empty && st !== 'unified', isUnified: st === 'unified', isEmpty: empty,
+      settingsOpen: st === 'settings', helpOpen: st === 'help',
+      gearBg: st === 'settings' ? on : 'transparent', gearColor: st === 'settings' ? 'hsl(var(--h-fg))' : 'hsl(var(--h-mfg))',
+      helpBg: st === 'help' ? on : 'transparent', helpColor: st === 'help' ? 'hsl(var(--h-fg))' : 'hsl(var(--h-mfg))',
+      viewerLabel: st === 'unified' ? 'Unified' : 'Side-by-side',
+      collapseBg: collapse ? 'hsl(var(--h-primary))' : 'hsl(var(--h-input))',
+      collapseX: collapse ? 20 : 0,
+      navOpacity: empty ? 0.6 : 1,
+      counter: empty ? 'Nothing to compare' : `${cur + 1} of ${d.blocks} differences`,
+      counterColor: empty ? 'hsl(var(--h-mfg))' : 'hsl(var(--h-fg))',
+      leftCount: `${LEFT.length} lines`, rightCount: `${R.length} lines`,
+      hasStats: !empty,
+      statusLn: `Ln ${d.curLine}, Col 5`,
+      addN: `${d.counts.add} added`, delN: `${d.counts.del} removed`, modN: `${d.counts.mod} modified`,
+      modColor: `hsl(var(${modVar}))`,
+      hasMsg: applied, msg: 'Applied change 3 — Ctrl+Z to undo',
+    };
+  }
+}
+
+const STATES = [
+  { id: '1a', key: 'default', title: 'Default', note: '7 differences, change 4 is current' },
+  { id: '1b', key: 'collapsed', title: 'Collapse unchanged lines', note: 'Runs longer than 2 × 3 context lines fold into a bar' },
+  { id: '1c', key: 'applied', title: 'After applying a change', note: 'Change 3 pushed left → right; the status bar offers undo' },
+  { id: '1d', key: 'settings', title: 'Settings popover', note: 'Gear opens per-tool compare settings' },
+  { id: '1e', key: 'help', title: 'Shortcuts help', note: '? lists the keyboard shortcuts' },
+  { id: '1f', key: 'unified', title: 'Unified viewer', note: 'One column, merge arrows on each change' },
+  { id: '1g', key: 'empty', title: 'Empty state', note: 'Nothing pasted yet' },
+];
+const FRAME = { width: '1600px', height: '960px', borderRadius: '12px', overflow: 'hidden' };
+const DARK_FRAME = { ...FRAME, outline: '1px solid rgb(0 0 0 / .25)', ...{"--h-fg":"220 30% 93%","--h-bg":"222 32% 10%","--h-card":"222 30% 13%","--h-muted":"222 24% 19%","--h-mfg":"220 18% 72%","--h-chrome-mfg":"218 30% 86%","--h-chrome-input":"218 18% 60%","--h-border":"222 20% 27%","--h-input":"220 16% 52%","--h-ring":"213 91% 72%","--h-primary":"213 80% 66%","--h-success":"142 69% 58%","--h-destr":"0 90% 76%","--h-warn":"48 96% 53%","--h-info":"213 94% 72%","--chrome":"#1c2536","--editor":"#121a28","--raised":"#2b3750","--a-line":".10","--a-word":".26","--a-cur":".17","--a-rib":".10","--s-kw":"#bb9aec","--s-str":"#e9a394","--s-lit":"#91b9ee","--s-num":"#dec28e","--s-fn":"#91b9ee","--sh-card":"0 0 0 1px rgb(255 255 255 / .07), 0 2px 6px rgb(0 0 0 / .3), 0 10px 30px rgb(0 0 0 / .25)","--sh-menu":"0 12px 32px rgb(0 0 0 / .45), 0 2px 6px rgb(0 0 0 / .3)"} };
+const LIGHT_FRAME = { ...FRAME, outline: '1px solid rgb(0 0 0 / .12)', ...{"--h-fg":"222 25% 16%","--h-bg":"220 23% 98%","--h-card":"0 0% 100%","--h-muted":"220 18% 95%","--h-mfg":"218 12% 42%","--h-chrome-mfg":"216 23% 28%","--h-chrome-input":"218 22% 48%","--h-border":"218 20% 86%","--h-input":"218 13% 55%","--h-ring":"215 78% 47%","--h-primary":"215 78% 47%","--h-success":"142 76% 24%","--h-destr":"0 74% 40%","--h-warn":"26 90% 31%","--h-info":"221 83% 45%","--chrome":"#eef3fb","--editor":"#ffffff","--raised":"#ffffff","--a-line":".08","--a-word":".20","--a-cur":".14","--a-rib":".09","--s-kw":"#6d42ba","--s-str":"#aa3540","--s-lit":"#2865b5","--s-num":"#805720","--s-fn":"#2865b5","--sh-card":"0 0 0 1px rgb(0 0 0 / .06), 0 1px 2px rgb(0 0 0 / .06), 0 6px 20px rgb(0 0 0 / .06)","--sh-menu":"0 10px 28px rgb(17 30 53 / .16), 0 2px 6px rgb(17 30 53 / .08)"} };
+const ROWS_CACHE = new Map();
+const B = new Builder();
+
+class Component extends DCLogic {
+  renderVals() {
+    const themes = this.props.themes ?? 'both';
+    const modVar = (this.props.modTone ?? 'warning') === 'info' ? '--h-info' : '--h-warn';
+    const ribbon = this.props.ribbon ?? 'curved';
+    const key = themes + '|' + modVar + '|' + ribbon;
+    if (!ROWS_CACHE.has(key)) {
+      const rows = STATES.map(st => {
+        const screens = [];
+        if (themes !== 'light') screens.push({ ...B.compute(st.key, true, modVar, ribbon), themeLabel: 'Dark', frame: DARK_FRAME });
+        if (themes !== 'dark') screens.push({ ...B.compute(st.key, false, modVar, ribbon), themeLabel: 'Light', frame: LIGHT_FRAME });
+        return { ...st, screens };
+      });
+      ROWS_CACHE.set(key, { rows });
+    }
+    return ROWS_CACHE.get(key);
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "id": "my-plugin",
+  "name": "My Plugin",
+  "version": "0.1.0",
+  "description": "A starting point for a Shard plugin.",
+  "category": "Utilities",
+  "keywords": ["template"],
+  "icon": "lucide:Puzzle",
+  "entry": "index.html",
+  "runtime": "web",
+  "permissions": [],
+  "minAppVersion": "3.0.0",
+  "license": "MIT",
+  "changelog": "CHANGELOG.md"
+}
