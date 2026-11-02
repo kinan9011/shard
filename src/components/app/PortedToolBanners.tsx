@@ -34,7 +34,7 @@ function usePortedInstall(onOpenPlugin: (id: string) => void) {
   const catalog = usePluginCatalog();
   // The plugin is installed: the app reads the plugins again and the offer is gone, so nothing else is needed here.
   const install = useInstallFlow({ onOpen: onOpenPlugin, refresh: catalog.refresh });
-  const officialUrl = catalog.repos.find((repo) => repo.official)?.url ?? OFFICIAL_REPO_URL;
+  const officialUrl = OFFICIAL_REPO_URL;
   const isOfficial = (repo: string) => catalog.repos.some((item) => item.url === repo && item.official);
 
   const start = (tool: PortedTool) => {

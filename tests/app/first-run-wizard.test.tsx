@@ -166,6 +166,16 @@ describe("first-run wizard", () => {
     await waitFor(() => expect(JSON.parse(localStorage.getItem("shard-pinned") ?? "null")).toEqual(["json-viewer"]));
   });
 
+  it("reads the plugin repository, not another built-in one such as Shard Themes", async () => {
+    const themes = { url: "https://github.com/kinan9011/shard-themes", name: "Shard Themes", enabled: true, official: true, type: "index" as const };
+    api.listRepos.mockResolvedValue([themes, official]);
+    api.syncRepos.mockResolvedValue([themes, official]);
+    await startOnStep2();
+    expect(await screen.findByRole("checkbox", { name: "OpenAPI Explorer" })).toBeInTheDocument();
+    expect(api.syncRepos).toHaveBeenCalledWith(OFFICIAL);
+    expect(api.syncRepos).not.toHaveBeenCalledWith(themes.url);
+  });
+
   it("installs without a dialog when nothing asks for a permission, and Skip leaves step 2 untouched", async () => {
     await startOnStep2();
     fireEvent.click(await screen.findByRole("checkbox", { name: "OpenAPI Explorer" }));
@@ -255,7 +265,7 @@ describe("first run in the Launcher layout (08 B)", () => {
   it("offers the bundles of the official index, with a footer that counts them", async () => {
     api.repoBundles.mockResolvedValue(bundles);
     await chooseLauncher();
-    expect(await screen.findByText("Start with a set of tools. The 9 built-in tools are always included, and you can add or remove plugins any time.")).toBeInTheDocument();
+    expect(await screen.findByText("Start with a set of tools. The 9 built-in tools are included, and you can hide them or add and remove plugins any time.")).toBeInTheDocument();
     expect(api.repoBundles).toHaveBeenCalledWith(OFFICIAL);
     for (const name of ["Web & APIs", "Data & SQL", "Security"]) expect(screen.getByRole("checkbox", { name })).not.toBeChecked();
     expect(screen.getByText("OpenAPI Explorer")).toBeInTheDocument();

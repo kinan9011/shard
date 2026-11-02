@@ -196,7 +196,7 @@ export function PinnedEditor({ tools, pinned, pinnedTools, startWithPicker, onPi
       </p>
       <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
 
-      <AnchoredPanel open={pickerOpen} onClose={() => setPickerOpen(false)} anchorRef={addRef} width={300} top={34} role="dialog">
+      <AnchoredPanel open={pickerOpen} onClose={() => setPickerOpen(false)} anchorRef={addRef} width={300} role="dialog">
         <PickerBody items={items} pinned={pinned} progress={install.progress} onPick={pick} />
       </AnchoredPanel>
 

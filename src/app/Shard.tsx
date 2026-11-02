@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { CommandPalette, type PaletteCommand } from "@/components/app/CommandPalette";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useUserThemes } from "@/hooks/useUserThemes";
 import { pruneToolIds, type CatalogTool } from "@/app/catalog";
 import { PORTED_PLUGIN_IDS, PORTED_TOOLS, migrateToolIds, portedToOffer, type PortedTool } from "@/app/legacyMigration";
 import { useToolCatalog } from "@/app/useToolCatalog";
@@ -52,7 +53,9 @@ import {
   SYSTEM_THEME_QUERY,
   THEME_STORAGE_KEY,
   getStoredChoice,
+  COLOR_SCHEMES,
   getStoredColorScheme,
+  resolveColorScheme,
   getStoredThemePreference,
   getSystemDarkMode,
   resolveDarkMode,
@@ -105,6 +108,8 @@ const Shard = () => {
   const [colorScheme, setColorScheme] = useState(() =>
     getStoredColorScheme(typeof window !== "undefined" ? window.localStorage : undefined)
   );
+  const customThemes = useUserThemes();
+  const activeScheme = resolveColorScheme(colorScheme, [...COLOR_SCHEMES, ...customThemes.schemes], customThemes.loaded);
   const [sidebarCategories, setSidebarCategories] = useState(() =>
     getStoredChoice(typeof window !== "undefined" ? window.localStorage : undefined, SIDEBAR_CATEGORIES_STORAGE_KEY, SIDEBAR_CATEGORY_MODES, "remember")
   );
@@ -210,18 +215,18 @@ const Shard = () => {
   }, [darkMode]);
 
   useEffect(() => {
-    syncColorScheme(document.documentElement, colorScheme);
+    syncColorScheme(document.documentElement, activeScheme);
     try {
-      localStorage.setItem(SCHEME_STORAGE_KEY, colorScheme);
+      localStorage.setItem(SCHEME_STORAGE_KEY, activeScheme);
     } catch (error) {
       console.error("Failed to save color scheme:", error);
     }
-  }, [colorScheme]);
+  }, [activeScheme]);
 
   useEffect(() => {
     // Plugin frames get the new colors. This runs after the two effects above, so the root already has the class and scheme.
     notifyThemeChanged();
-  }, [darkMode, colorScheme]);
+  }, [darkMode, activeScheme, customThemes.schemes]);
 
   useEffect(() => {
     // The native window material follows the window appearance, not the page theme.
@@ -748,6 +753,13 @@ const Shard = () => {
   }, [openTools, selectedTool]);
   const closeTool = useCallback((tool: CatalogTool) => closeTools(new Set([tool.id])), [closeTools]);
 
+  // A tool that was hidden (or whose plugin was turned off) while its tab was open: close the tab.
+  useEffect(() => {
+    if (!pluginsReady) return;
+    const gone = new Set(openTools.filter((tool) => !toolIds.has(tool.id)).map((tool) => tool.id));
+    if (gone.size) closeTools(gone);
+  }, [pluginsReady, toolIds, openTools, closeTools]);
+
   useEffect(() => {
     // Browser previews retain the browser's own tab/window shortcuts.
     if (!desktop || showCommandPalette || recordingShortcut || showWhatsNew) return;
@@ -862,9 +874,8 @@ const Shard = () => {
               {updates.length > 0 && <span className="launcher-badge" title={`${updates.length} plugin ${updates.length === 1 ? "update" : "updates"}`}>{updates.length}</span>}
             </button>
             <button type="button" className="chrome-button" aria-label="Settings" title="Settings" aria-current={view.kind === "settings" ? "page" : undefined} onClick={() => openSettings()}><Settings size={16} aria-hidden="true" /></button>
-            <button type="button" className="chrome-button" aria-label="Appearance" onClick={() => openSettings("appearance")}>
-              {darkMode ? <Moon size={16} /> : <Sun size={16} />}
-              <span className="sr-only">{darkMode ? "Dark" : "Light"}</span>
+            <button type="button" className="chrome-button" aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} onClick={() => setThemePreference(darkMode ? "light" : "dark")}>
+              {darkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
             </button>
           </div>
         </header>
@@ -875,9 +886,8 @@ const Shard = () => {
           <button type="button" className="chrome-button" aria-label="Open a tool" title="Open a tool" onClick={openCommandPalette}><Plus size={17} /></button>
           <div className="ml-auto flex shrink-0 items-center gap-1">
             {selectedTool && <button type="button" className="chrome-button" aria-label={pinned.includes(selectedTool.id) ? "Unpin from Home" : "Pin to Home"} onClick={() => togglePinned(selectedTool.id)}><Pin size={15} className={pinned.includes(selectedTool.id) ? "fill-current text-primary" : ""} /></button>}
-            <button type="button" className="chrome-button" aria-label="Appearance" onClick={() => openSettings("appearance")}>
-              {darkMode ? <Moon size={16} /> : <Sun size={16} />}
-              <span className="sr-only">{darkMode ? "Dark" : "Light"}</span>
+            <button type="button" className="chrome-button" aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} onClick={() => setThemePreference(darkMode ? "light" : "dark")}>
+              {darkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
             </button>
           </div>
         </header>
@@ -891,8 +901,9 @@ const Shard = () => {
               onSection={(section) => setView({ kind: "settings", section })}
               preference={themePreference}
               onPreference={setThemePreference}
-              scheme={colorScheme}
+              scheme={activeScheme}
               onScheme={setColorScheme}
+              customThemes={desktop ? customThemes : undefined}
               dark={darkMode}
               layout={layout}
               onLayout={setLayout}

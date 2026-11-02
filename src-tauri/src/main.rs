@@ -8,6 +8,7 @@ mod e2e;
 mod folder_compare;
 mod paths;
 mod plugins;
+mod themes;
 
 use percent_encoding::percent_decode_str;
 use tauri::ipc::{InvokeBody, Request};
@@ -120,6 +121,25 @@ fn set_update_ready(ready: bool) {
 fn quit_now(app: AppHandle) {
     QUITTING.store(true, std::sync::atomic::Ordering::SeqCst);
     app.exit(0);
+}
+
+/// Deletes everything Shard stores, then restarts into a clean first run.
+#[tauri::command]
+fn reset_app_data(app: AppHandle) {
+    use tauri::Manager;
+    let id = app.config().identifier.clone();
+    let path = app.path();
+    let dirs = [path.app_data_dir(), path.app_local_data_dir(), path.app_cache_dir(), path.app_config_dir()];
+    for dir in dirs.into_iter().flatten() {
+        // Only ever delete a folder named after the app identifier. Errors are ignored: Windows can
+        // keep the webview folder locked, and the frontend has already cleared its own storage.
+        if dir.ends_with(&id) {
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+    }
+    // A pending update must not hold the restart back.
+    QUITTING.store(true, std::sync::atomic::Ordering::SeqCst);
+    app.restart();
 }
 
 /// Quits, installing a downloaded update first. Returns false when the quit must wait.
@@ -279,7 +299,7 @@ fn main() {
     let builder = plugins::protocol::register(tauri::Builder::default());
 
     #[cfg(not(feature = "e2e"))]
-    let builder = builder.invoke_handler(tauri::generate_handler![save_file, set_window_theme, write_tool_manifest, set_global_shortcut, set_update_ready, quit_now, folder_compare::pick_folder, folder_compare::scan_folder, folder_compare::compare_contents, folder_compare::read_text_file, folder_compare::write_text_file, folder_compare::apply_folder_merge, folder_compare::undo_folder_merge, plugins::store::plugins_list, plugins::store::plugin_install_folder, plugins::store::plugin_uninstall, plugins::store::plugin_set_enabled, plugins::store::plugin_pick_folder, plugins::zip::plugin_inspect_zip, plugins::zip::plugin_install_zip, plugins::zip::plugin_stage_zip, plugins::zip::plugin_clear_drop, plugins::zip::plugin_pick_zip, plugins::store::plugin_inspect_folder, plugins::store::plugin_set_grants, plugins::storage::plugin_storage_get, plugins::storage::plugin_storage_set, plugins::fetch::plugin_fetch, plugins::files::plugin_open_file, plugins::repos::repo_list, plugins::repos::repo_add, plugins::repos::repo_remove, plugins::repos::repo_set_enabled, plugins::repos::repo_sync, plugins::repos::repo_catalog, plugins::repos::repo_bundles, plugins::repos::repo_set_settings, plugins::install::plugin_install_from_repo, plugins::install::plugin_lookup_url, plugins::install::plugin_install_from_url, plugins::install::plugin_updates, plugins::install::plugin_update]);
+    let builder = builder.invoke_handler(tauri::generate_handler![save_file, set_window_theme, write_tool_manifest, set_global_shortcut, set_update_ready, quit_now, reset_app_data, themes::theme_list, themes::theme_dir, themes::theme_import, themes::theme_remove, themes::theme_catalog, themes::theme_install, folder_compare::pick_folder, folder_compare::scan_folder, folder_compare::compare_contents, folder_compare::read_text_file, folder_compare::write_text_file, folder_compare::apply_folder_merge, folder_compare::undo_folder_merge, plugins::store::plugins_list, plugins::store::plugin_install_folder, plugins::store::plugin_uninstall, plugins::store::plugin_set_enabled, plugins::store::plugin_pick_folder, plugins::zip::plugin_inspect_zip, plugins::zip::plugin_install_zip, plugins::zip::plugin_stage_zip, plugins::zip::plugin_clear_drop, plugins::zip::plugin_pick_zip, plugins::store::plugin_inspect_folder, plugins::store::plugin_set_grants, plugins::storage::plugin_storage_get, plugins::storage::plugin_storage_set, plugins::fetch::plugin_fetch, plugins::files::plugin_open_file, plugins::repos::repo_list, plugins::repos::repo_add, plugins::repos::repo_remove, plugins::repos::repo_set_enabled, plugins::repos::repo_sync, plugins::repos::repo_catalog, plugins::repos::repo_bundles, plugins::repos::repo_set_settings, plugins::install::plugin_install_from_repo, plugins::install::plugin_lookup_url, plugins::install::plugin_install_from_url, plugins::install::plugin_updates, plugins::install::plugin_update]);
 
     #[cfg(feature = "e2e")]
     let builder = builder
@@ -290,6 +310,13 @@ fn main() {
             set_global_shortcut,
             set_update_ready,
             quit_now,
+            reset_app_data,
+            themes::theme_list,
+            themes::theme_dir,
+            themes::theme_import,
+            themes::theme_remove,
+            themes::theme_catalog,
+            themes::theme_install,
             folder_compare::pick_folder,
             folder_compare::scan_folder,
             folder_compare::compare_contents,

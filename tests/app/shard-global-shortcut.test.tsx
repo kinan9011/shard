@@ -8,6 +8,8 @@ const desktopMock = vi.hoisted(() => ({ bridge: null as DesktopBridge | null }))
 vi.mock("@/lib/desktop", () => ({
   getDesktopBridge: () => desktopMock.bridge,
   saveFile: vi.fn(async () => true),
+  listThemes: vi.fn(async () => ({ themes: [], errors: [] })),
+  themeCatalog: vi.fn(async () => []),
 }));
 
 let openPalette: () => void = () => {};

@@ -3,6 +3,7 @@ import { ChevronDown, Ellipsis, GitBranch, Lock, Plus, RefreshCw, Trash2, Triang
 import { toast } from "sonner";
 import { AnchoredPanel } from "@/components/tools/diff-merge/Panels";
 import { Switch } from "@/components/ui/switch";
+import { themeCatalog } from "@/lib/desktop";
 import { addRepo, removeRepo, repoSettings, setRepoEnabled, setRepoSettings, syncRepos, type Repo, type RepoSettings } from "@/plugins/api";
 import { repoAddress, syncedAgo } from "@/plugins/format";
 import type { CatalogRow } from "@/plugins/usePluginCatalog";
@@ -31,8 +32,6 @@ interface RepositoriesTabProps {
 interface MenuState {
   repo: Repo;
   anchor: HTMLElement;
-  /** Pixels from the top of the scrolling body. */
-  top: number;
 }
 
 function MenuItem({ icon, children, destructive, onClick }: { icon: ReactNode; children: string; destructive?: boolean; onClick: () => void }) {
@@ -70,7 +69,6 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [settings, setSettings] = useState<RepoSettings | null>(null);
   const [saving, setSaving] = useState(false);
-  const body = useRef<HTMLDivElement>(null);
   const anchorRef = useMemo(() => ({ current: menu?.anchor ?? null }), [menu]);
 
   useEffect(() => {
@@ -89,6 +87,36 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
     for (const { entry } of rows) out.set(entry.repo, (out.get(entry.repo) ?? 0) + 1);
     return out;
   }, [rows]);
+
+  // The themes a repository lists. The catalog above is the plugins only.
+  const [themeCounts, setThemeCounts] = useState<ReadonlyMap<string, number>>(new Map());
+  useEffect(() => {
+    let current = true;
+    Promise.resolve()
+      .then(themeCatalog)
+      .then(
+        (themes) => {
+          const out = new Map<string, number>();
+          for (const theme of themes) out.set(theme.repo, (out.get(theme.repo) ?? 0) + 1);
+          if (current) setThemeCounts(out);
+        },
+        () => {},
+      );
+    return () => {
+      current = false;
+    };
+  }, [repos]);
+
+  /** "3 plugins", "6 themes" or both. Null while the repository is off or not synced yet. */
+  const countLabel = (repo: Repo): string | null => {
+    if (!repo.enabled || repo.lastSync == null) return null;
+    const plugins = counts.get(repo.url) ?? 0;
+    const themes = themeCounts.get(repo.url) ?? 0;
+    const parts = [];
+    if (plugins > 0 || themes === 0) parts.push(`${plugins} ${plugins === 1 ? "plugin" : "plugins"}`);
+    if (themes > 0) parts.push(`${themes} ${themes === 1 ? "theme" : "themes"}`);
+    return parts.join(", ");
+  };
 
   const run = async (key: string, work: () => Promise<unknown>, failure: string) => {
     if (busy.has(key)) return;
@@ -155,13 +183,11 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
 
   const openMenu = (repo: Repo, anchor: HTMLElement) => {
     if (menu?.repo.url === repo.url) return setMenu(null);
-    const box = body.current;
-    const top = box ? anchor.getBoundingClientRect().bottom - box.getBoundingClientRect().top + box.scrollTop + 4 : 40;
-    setMenu({ repo, anchor, top });
+    setMenu({ repo, anchor });
   };
 
   return (
-    <div ref={body} className="relative flex min-w-0 flex-1 flex-col gap-5 overflow-y-auto px-7 py-5">
+    <div className="relative flex min-w-0 flex-1 flex-col gap-5 overflow-y-auto px-7 py-5">
       <div className="flex flex-col gap-2">
         <div className="flex gap-2">
           <label className="flex h-[34px] w-[480px] max-w-full shrink-0 items-center gap-[9px] rounded-[7px] border border-input bg-background pl-[11px] pr-2 text-muted-foreground focus-within:border-ring">
@@ -199,7 +225,7 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
         <div className="grid grid-cols-2 gap-3">
           {repos.map((repo) => {
             const working = busy.has(repo.url);
-            const count = repo.enabled && repo.lastSync != null ? (counts.get(repo.url) ?? 0) : null;
+            const label = countLabel(repo);
             return (
               <div key={repo.url} data-repo-card className={cn("flex flex-col gap-3 rounded-[10px] border bg-secondary p-4", repo.lastError ? "border-destructive/40" : "border-border")}>
                 <div className="flex items-start gap-3">
@@ -217,7 +243,7 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
                 </div>
                 <div className="flex items-center gap-2.5 text-xs">
                   {repo.type && <span className={cn(BADGE, "border-input bg-background text-muted-foreground")}>{TYPE_LABEL[repo.type]}</span>}
-                  {count !== null && <span className="text-foreground">{`${count} ${count === 1 ? "plugin" : "plugins"}`}</span>}
+                  {label !== null && <span className="text-foreground">{label}</span>}
                   <span className="ml-auto flex min-w-0">
                     <Status repo={repo} />
                   </span>
@@ -251,7 +277,7 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
         </div>
         {repos.map((repo) => {
           const working = busy.has(repo.url);
-          const count = repo.enabled && repo.lastSync != null ? (counts.get(repo.url) ?? 0) : null;
+          const label = countLabel(repo);
           return (
             <div key={repo.url} role="row" className={cn(COLUMNS, "min-h-14 border-b border-border")}>
               <span role="cell" className="flex min-w-0 flex-col">
@@ -264,8 +290,8 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
               <span role="cell">
                 {repo.type ? <span className={cn(BADGE, "border-input bg-secondary text-muted-foreground")}>{TYPE_LABEL[repo.type]}</span> : <span className="text-muted-foreground">–</span>}
               </span>
-              <span role="cell" className={count === null ? "text-muted-foreground" : "text-foreground"}>
-                {count === null ? "–" : `${count} ${count === 1 ? "plugin" : "plugins"}`}
+              <span role="cell" className={label === null ? "text-muted-foreground" : "text-foreground"}>
+                {label ?? "–"}
               </span>
               <span role="cell" className="flex min-w-0 pr-2">
                 <Status repo={repo} />
@@ -329,7 +355,7 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
         </label>
       </div>
 
-      <AnchoredPanel open={!!menu} onClose={() => setMenu(null)} anchorRef={anchorRef} width={168} top={menu?.top} align="end" role="menu">
+      <AnchoredPanel open={!!menu} onClose={() => setMenu(null)} anchorRef={anchorRef} width={168} align="end" role="menu">
         {menu && (
           <div className="p-1">
             <MenuItem

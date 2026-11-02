@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import { Switch } from "@/components/ui/switch";
 import type { DiffSettings } from "@/utils/diff-merge/settings";
 
@@ -7,34 +8,47 @@ interface AnchoredPanelProps {
   onClose(): void;
   anchorRef: RefObject<HTMLElement>;
   width: number;
-  /** Distance from the top of the nearest positioned ancestor. The design uses 54px. */
-  top?: number;
   /** "end" lines the right edges up (toolbar buttons); "start" opens to the right of the anchor. */
   align?: "end" | "start";
   role?: string;
   children: ReactNode;
 }
 
+const MARGIN = 8;
+
 /**
- * Popover under a toolbar button: right edges aligned, closes on Escape or a pointerdown outside
- * (the anchor excepted, so its own click can toggle), focuses its first control when it opens.
- * The repo has no popover component; folder mode's action menu reuses this one.
+ * Popover under a button: closes on Escape, a pointerdown outside (the anchor excepted, so its own click can toggle)
+ * or a scroll elsewhere, and focuses its first control when it opens. It is portalled to <body> and positioned with
+ * `fixed`, so neither the content area's overflow clipping nor the sidebar can hide any part of it.
+ * The repo has no popover component; the plugin menus, folder mode's action menu and the pinned picker reuse this one.
  */
-export function AnchoredPanel({ open, onClose, anchorRef, width, top = 54, align = "end", role = "dialog", children }: AnchoredPanelProps) {
+export function AnchoredPanel({ open, onClose, anchorRef, width, align = "end", role = "dialog", children }: AnchoredPanelProps) {
   const panel = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
-  const [offset, setOffset] = useState(8);
+  const [pos, setPos] = useState<CSSProperties>({ top: 54, right: MARGIN });
   useEffect(() => {
     close.current = onClose;
   });
 
   useLayoutEffect(() => {
-    const anchor = anchorRef.current?.getBoundingClientRect();
-    const parent = panel.current?.offsetParent?.getBoundingClientRect();
-    // No layout (jsdom): keep the default.
-    if (!open || !anchor || !parent || (anchor.width === 0 && parent.width === 0)) return;
-    setOffset(Math.max(8, align === "start" ? anchor.right - parent.left + 8 : parent.right - anchor.right));
-  }, [open, anchorRef, align]);
+    if (!open) return;
+    const place = () => {
+      const anchor = anchorRef.current?.getBoundingClientRect();
+      // No layout (jsdom): keep the default.
+      if (!anchor || (anchor.width === 0 && anchor.height === 0)) return;
+      // Stay inside the content area (right of the sidebar), not just the window.
+      const area = anchorRef.current?.closest(".workspace-content")?.getBoundingClientRect();
+      const minLeft = (area?.left ?? 0) + MARGIN;
+      const maxRight = (area?.right ?? window.innerWidth) - MARGIN;
+      const wanted = align === "start" ? anchor.right + MARGIN : anchor.right - width;
+      const left = Math.max(minLeft, Math.min(wanted, maxRight - width));
+      const top = anchor.bottom + 6;
+      setPos({ top, left, maxHeight: Math.max(120, window.innerHeight - top - MARGIN) });
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [open, anchorRef, align, width]);
 
   useEffect(() => {
     if (!open) return;
@@ -48,25 +62,32 @@ export function AnchoredPanel({ open, onClose, anchorRef, width, top = 54, align
       if (panel.current?.contains(target) || anchorRef.current?.contains(target)) return;
       close.current();
     };
+    // A fixed panel does not follow its anchor, so scrolling the page behind it closes it.
+    const onScroll = (e: Event) => {
+      if (!panel.current?.contains(e.target as Node)) close.current();
+    };
     document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onDown);
+    document.addEventListener("scroll", onScroll, true);
     panel.current?.querySelector<HTMLElement>("button, [role=switch], [role=menuitem], input")?.focus();
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("scroll", onScroll, true);
     };
   }, [open, anchorRef]);
 
   if (!open) return null;
-  return (
+  return createPortal(
     <div
       ref={panel}
       role={role}
-      className="absolute z-10 overflow-hidden rounded-lg border bg-card text-xs shadow-lg"
-      style={{ top, [align === "start" ? "left" : "right"]: offset, width, borderColor: "hsl(var(--foreground) / .12)" }}
+      className="fixed z-[90] overflow-y-auto rounded-lg border bg-card text-xs shadow-lg"
+      style={{ ...pos, width, borderColor: "hsl(var(--foreground) / .12)" }}
     >
       {children}
-    </div>
+    </div>,
+    document.body,
   );
 }
 

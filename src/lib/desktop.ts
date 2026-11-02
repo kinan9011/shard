@@ -6,6 +6,7 @@ import { platform as getOsPlatform } from "@tauri-apps/plugin-os";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
+import type { UserTheme } from "@/utils/theme";
 import type { ToolManifest } from "@/utils/tool-manifest";
 
 export type UpdateStatus =
@@ -455,6 +456,67 @@ export async function undoFolderMerge(journal: string): Promise<FolderUndoReport
 export async function revealPath(path: string): Promise<void> {
   requireDesktop();
   await revealItemInDir(path);
+}
+
+export interface UserThemeList {
+  themes: UserTheme[];
+  /** `file.json: reason`, one per file in the themes folder that is not usable. */
+  errors: string[];
+}
+
+/** The theme files of the user. Empty in the browser preview, which has no folder. */
+export async function listThemes(): Promise<UserThemeList> {
+  return isTauri() ? invoke<UserThemeList>("theme_list") : { themes: [], errors: [] };
+}
+
+/** Asks for a theme file and adds it. Resolves to null when the user cancels; rejects with the reason a file is refused. */
+export async function importTheme(): Promise<UserTheme | null> {
+  if (!isTauri()) {
+    throw new Error("Custom themes need the desktop app.");
+  }
+  return invoke<UserTheme | null>("theme_import");
+}
+
+/** A theme a repository lists, as `theme_catalog` returns it. */
+export interface ThemeCatalogEntry {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  repo: string;
+  repoName: string;
+}
+
+/** The themes of the enabled repositories, from their last sync. Empty in the browser preview. */
+export async function themeCatalog(): Promise<ThemeCatalogEntry[]> {
+  return isTauri() ? invoke<ThemeCatalogEntry[]>("theme_catalog") : [];
+}
+
+/** Downloads, checks and adds a repository's theme. Installing an installed one updates it. Rejects with the reason. */
+export async function installTheme(repo: string, id: string): Promise<UserTheme> {
+  return invoke<UserTheme>("theme_install", { repo, id });
+}
+
+export async function removeTheme(id: string): Promise<void> {
+  await invoke("theme_remove", { id });
+}
+
+/** Shows the themes folder in the system file manager. */
+export async function openThemesFolder(): Promise<void> {
+  requireDesktop();
+  await revealItemInDir(await invoke<string>("theme_dir"));
+}
+
+/** Wipes all Shard data and restarts. The browser preview clears its storage and reloads. */
+export async function resetAppData(): Promise<void> {
+  // Clear the webview first: it is empty even where Rust cannot delete a locked file.
+  localStorage.clear();
+  sessionStorage.clear();
+  if (!isTauri()) {
+    location.reload();
+    return;
+  }
+  await invoke("reset_app_data");
 }
 
 /** Opens http(s) and mailto links in the system browser instead of the app window. */

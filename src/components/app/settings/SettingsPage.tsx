@@ -1,9 +1,12 @@
 import { RefreshCw } from "lucide-react";
+import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
-import type { UpdateState } from "@/lib/desktop";
+import { resetAppData, type UpdateState } from "@/lib/desktop";
 import { COLOR_SCHEMES, type Layout, type OpenToolsIn, type SidebarCategoryMode, type ThemePreference } from "@/utils/theme";
 import type { GlobalShortcut } from "@/utils/global-shortcut";
 import type { ShortcutActionId, ShortcutBinding, ShortcutBindings } from "@/utils/shortcuts";
+import { BuiltInToolSwitches } from "../BuiltInToolSwitches";
+import { CustomThemesRow, type CustomThemes } from "./CustomThemes";
 import { LayoutChoice } from "./LayoutChoice";
 import { ActionButton, Heading, Row } from "./Row";
 import { GlobalShortcutSetting, ShortcutSettings } from "./ShortcutSettings";
@@ -12,6 +15,7 @@ import { updateButtonLabel, updateStatusLabel } from "./updateLabels";
 export const SETTINGS_SECTIONS = [
   ["general", "General"],
   ["appearance", "Appearance"],
+  ["tools", "Built-in tools"],
   ["home", "Home"],
   ["plugins", "Plugins"],
   ["shortcuts", "Shortcuts"],
@@ -27,6 +31,8 @@ interface Props {
   onPreference(next: ThemePreference): void;
   scheme: string;
   onScheme(id: string): void;
+  /** The themes folder. Omitted in the browser preview, which has none. */
+  customThemes?: CustomThemes;
   /** The mode in effect, after "system" is resolved. */
   dark: boolean;
   layout: Layout;
@@ -83,6 +89,8 @@ export function SettingsPage(props: Props) {
           <Appearance {...props} />
         ) : current[0] === "general" ? (
           <General {...props} />
+        ) : current[0] === "tools" ? (
+          <BuiltInTools />
         ) : current[0] === "plugins" ? (
           <PluginsSection {...props} />
         ) : current[0] === "shortcuts" ? (
@@ -140,6 +148,42 @@ function General(p: Props) {
             paused={p.recordingPaused}
           />
         )}
+        <ResetRow />
+      </div>
+    </>
+  );
+}
+
+/** Wipes every trace of Shard. Two steps, so a stray click cannot do it. */
+function ResetRow() {
+  const [confirming, setConfirming] = useState(false);
+  return (
+    <Row
+      title="Reset Shard"
+      hint={
+        confirming
+          ? "This can't be undone. All settings, plugins, repositories, caches and backups are removed, then Shard restarts."
+          : "Remove all settings, plugins, repositories, caches and backups. Shard restarts as if newly installed."
+      }
+    >
+      {confirming ? (
+        <div className="flex gap-2">
+          <ActionButton onClick={() => setConfirming(false)}>Cancel</ActionButton>
+          <ActionButton onClick={() => void resetAppData()} className="text-destructive">Remove all data</ActionButton>
+        </div>
+      ) : (
+        <ActionButton onClick={() => setConfirming(true)}>Reset…</ActionButton>
+      )}
+    </Row>
+  );
+}
+
+function BuiltInTools() {
+  return (
+    <>
+      <Heading title="Built-in tools" hint="Turn off the tools you don't use. They disappear from the sidebar, Home and search, and you can turn them back on here." />
+      <div className="max-w-[820px] overflow-hidden rounded-lg bg-secondary">
+        <BuiltInToolSwitches />
       </div>
     </>
   );
@@ -193,7 +237,7 @@ function About(p: Props) {
 
 function Appearance(p: Props) {
   const mode = p.dark ? "dark" : "light";
-  const schemes = COLOR_SCHEMES.filter((s) => s.modes.includes(mode));
+  const schemes = [...COLOR_SCHEMES, ...(p.customThemes?.schemes ?? [])].filter((s) => s.modes.includes(mode));
   return (
     <>
       <Heading title="Appearance" hint="Changes apply right away." />
@@ -238,6 +282,7 @@ function Appearance(p: Props) {
             ))}
           </div>
         </Row>
+        {p.customThemes && <CustomThemesRow themes={p.customThemes} />}
         <Row title="Sidebar categories" hint="Collapse categories you don’t use. Applies to the sidebar layout.">
           <Segmented
             label="Sidebar categories"

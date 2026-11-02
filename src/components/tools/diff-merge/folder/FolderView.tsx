@@ -39,7 +39,7 @@ import { ModeSwitch, type Mode } from "../ModeSwitch";
 import { TextDiffView, type TextDiffHandle } from "../TextDiffView";
 import { ActionMenu, type MenuChoice } from "./ActionMenu";
 import { MergeDialog } from "./MergeDialog";
-import { FolderTable, ROW_HEIGHT, type TableCommand } from "./FolderTable";
+import { FolderTable, type TableCommand } from "./FolderTable";
 import { FolderToolbar } from "./FolderToolbar";
 
 const BATCH = 500;
@@ -80,7 +80,7 @@ export function FolderView({ onOpenInText, onModeChange }: Props) {
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set());
   const anchor = useRef<string | null>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
-  const [menu, setMenu] = useState<{ row: FileRow; el: HTMLElement; top: number } | null>(null);
+  const [menu, setMenu] = useState<{ row: FileRow; el: HTMLElement } | null>(null);
   const [lower, setLower] = useState<Lower | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [merging, setMerging] = useState(false);
@@ -88,7 +88,6 @@ export function FolderView({ onOpenInText, onModeChange }: Props) {
   const run = useRef(0);
   const lowerRun = useRef(0);
   const text = useRef<TextDiffHandle>(null);
-  const tableBox = useRef<HTMLDivElement>(null);
 
   const compare = useCallback(async (left: string, right: string, by: CompareBy) => {
     const id = ++run.current;
@@ -256,10 +255,7 @@ export function FolderView({ onOpenInText, onModeChange }: Props) {
       setSelected(new Set([row.path]));
       anchor.current = row.path;
     }
-    const box = tableBox.current?.getBoundingClientRect();
-    const chip = el.getBoundingClientRect();
-    // The chip is 20px in a 28px row: the menu starts just under the row.
-    setMenu({ row, el, top: box ? Math.round(chip.bottom - box.top) + (ROW_HEIGHT - 20) / 2 : 0 });
+    setMenu({ row, el });
   };
 
   /** A click on an action chip: select the row (without opening it below) and move it to its next action. */
@@ -424,9 +420,9 @@ export function FolderView({ onOpenInText, onModeChange }: Props) {
           <PanelGroup direction="vertical" autoSaveId="diff-merge-folder-split">
             <Panel minSize={15} defaultSize={withLower ? 45 : 100} order={1} id="folder-files">
               <div className="flex h-full min-h-0 flex-col">
-                <div ref={tableBox} className="relative min-h-0 flex-1 overflow-hidden">
+                <div className="relative min-h-0 flex-1 overflow-hidden">
                   <FolderTable groups={groups} selected={selected} onSelect={select} onChip={chipClick} onMenu={openMenu} onCommand={command} />
-                  <ActionMenu row={menu?.row ?? null} anchor={menu?.el ?? null} top={menu?.top ?? 0} onPick={pick} onClose={() => setMenu(null)} />
+                  <ActionMenu row={menu?.row ?? null} anchor={menu?.el ?? null} onPick={pick} onClose={() => setMenu(null)} />
                 </div>
                 <div
                   className="flex h-[26px] flex-shrink-0 items-center justify-center gap-1.5 border-t border-border text-[11px] text-muted-foreground"

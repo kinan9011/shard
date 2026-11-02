@@ -119,6 +119,14 @@ describe("validateIndex", () => {
     expect(validateIndex(index([], { extra: true })).ok).toBe(true);
   });
 
+  it("accepts a themes-only index and rejects a duplicate or oversized theme", () => {
+    const theme = (extra = {}) => ({ id: "nord", name: "Nord", version: "1.0.0", url: "https://x.test/nord.json", sha256: "a".repeat(64), size: 900, ...extra });
+    expect(validateIndex(index([], { themes: [theme()] })).ok).toBe(true);
+    expect(errorsOf(validateIndex(index([], { themes: [theme(), theme()] })))).toEqual(['themes[1].id: "nord" is listed more than once']);
+    expect(validateIndex(index([], { themes: [theme({ size: 70000 })] })).ok).toBe(false);
+    expect(validateIndex(index([], { themes: [theme({ id: "Bad Id" })] })).ok).toBe(false);
+  });
+
   it("rejects a schema other than 1", () => {
     expect(errorsOf(validateIndex(index([], { schema: 2 })))).toEqual(["schema: must be 1"]);
   });

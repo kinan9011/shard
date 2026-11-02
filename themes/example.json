@@ -1,0 +1,22 @@
+{
+  "id": "example",
+  "name": "Example",
+  "version": "1.0.0",
+  "author": "Your name",
+  "light": {
+    "--background": "40 33% 97%", "--foreground": "30 10% 15%",
+    "--card": "0 0% 100%", "--card-foreground": "30 10% 15%",
+    "--primary": "24 80% 40%", "--primary-foreground": "0 0% 100%",
+    "--accent": "36 70% 90%", "--accent-foreground": "24 80% 22%",
+    "--surface-editor": "#ffffff",
+    "--syntax-kw": "#9a3412", "--syntax-str": "#166534", "--syntax-num": "#1d4ed8"
+  },
+  "dark": {
+    "--background": "30 8% 12%", "--foreground": "40 20% 92%",
+    "--card": "30 8% 15%", "--card-foreground": "40 20% 92%",
+    "--primary": "28 90% 62%", "--primary-foreground": "30 8% 10%",
+    "--accent": "28 30% 24%", "--accent-foreground": "36 80% 88%",
+    "--surface-editor": "#1c1a17",
+    "--syntax-kw": "#fdba74", "--syntax-str": "#86efac", "--syntax-num": "#93c5fd"
+  }
+}

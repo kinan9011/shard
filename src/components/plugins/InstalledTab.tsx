@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowRight, Ellipsis, FolderOpen, Lock, Puzzle, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { BuiltInToolSwitches } from "@/components/app/BuiltInToolSwitches";
 import { useDialogFocus } from "@/components/app/useDialogFocus";
 import { AnchoredPanel } from "@/components/tools/diff-merge/Panels";
 import { Switch } from "@/components/ui/switch";
@@ -54,8 +55,6 @@ interface InstalledTabProps {
 interface MenuState {
   plugin: InstalledPlugin;
   anchor: HTMLElement;
-  /** Pixels from the top of the scrolling body. */
-  top: number;
 }
 
 function ConfirmUninstall({ plugin, onCancel, onConfirm }: { plugin: InstalledPlugin; onCancel: () => void; onConfirm: () => void }) {
@@ -101,7 +100,6 @@ function MenuItem({ icon, children, destructive, onClick }: { icon: ReactNode; c
 }
 
 function BuiltIns() {
-  const hidden = useHiddenTools();
   const [open, setOpen] = useState(false);
   const core = useMemo(() => ALL_TOOLS.filter((tool) => tool.kind === "core"), []);
   const first = core.slice(0, 3).map((tool) => tool.name);
@@ -121,23 +119,7 @@ function BuiltIns() {
           {open ? "Hide" : "Show"}
         </button>
       </div>
-      {open && (
-        <ul aria-label="Built-in tools" className="flex flex-col border-t border-border">
-          {core.map((tool) => (
-            <li key={tool.id} className="flex h-10 items-center gap-3 border-b border-border px-3.5 last:border-b-0">
-              <tool.icon size={15} aria-hidden="true" className="shrink-0 text-muted-foreground" />
-              <span className="flex-1 font-medium text-foreground">{tool.name}</span>
-              <span className="text-xs text-muted-foreground">{tool.category}</span>
-              <Switch
-                aria-label={`Show ${tool.name}`}
-                checked={!hidden.has(tool.id)}
-                onCheckedChange={(shown) => setToolHidden(tool.id, !shown)}
-                className="h-[18px] w-8 border-0 p-0.5 [&>span]:size-3.5 [&>span]:data-[state=checked]:translate-x-3.5"
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+      {open && <BuiltInToolSwitches />}
     </div>
   );
 }
@@ -182,7 +164,6 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
   const [managing, setManaging] = useState<InstalledPlugin | null>(null);
   const [removing, setRemoving] = useState<InstalledPlugin | null>(null);
   const [busy, setBusy] = useState<ReadonlySet<string>>(new Set());
-  const body = useRef<HTMLDivElement>(null);
   const anchorRef = useMemo(() => ({ current: menu?.anchor ?? null }), [menu]);
 
   const pairs = useMemo(
@@ -233,9 +214,7 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
 
   const openMenu = (plugin: InstalledPlugin, anchor: HTMLElement) => {
     if (menu?.plugin.id === plugin.id) return setMenu(null);
-    const box = body.current;
-    const top = box ? anchor.getBoundingClientRect().bottom - box.getBoundingClientRect().top + box.scrollTop + 4 : 40;
-    setMenu({ plugin, anchor, top });
+    setMenu({ plugin, anchor });
   };
 
   const cards = variant === "cards";
@@ -330,7 +309,7 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
   );
 
   return (
-    <div ref={body} className={cn("relative flex min-w-0 flex-1 flex-col overflow-y-auto px-7 py-[18px]", cards ? "gap-5" : "gap-[22px]")}>
+    <div className={cn("relative flex min-w-0 flex-1 flex-col overflow-y-auto px-7 py-[18px]", cards ? "gap-5" : "gap-[22px]")}>
       {cards && banner}
       {cards && pluginCards}
       {cards && <BuiltInChips />}
@@ -440,7 +419,7 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
 
       {!cards && <BuiltIns />}
 
-      <AnchoredPanel open={!!menu} onClose={() => setMenu(null)} anchorRef={anchorRef} width={188} top={menu?.top} align="end" role="menu">
+      <AnchoredPanel open={!!menu} onClose={() => setMenu(null)} anchorRef={anchorRef} width={188} align="end" role="menu">
         {menu && (
           <div className="p-1">
             <MenuItem

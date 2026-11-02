@@ -50,6 +50,17 @@ export interface PluginIndexEntry {
   icon?: string;
 }
 
+/** One color theme listed in a repository's `index.json`. `url` is the theme file (docs/themes.md). */
+export interface ThemeIndexEntry {
+  id: string;
+  name: string;
+  version: string;
+  description?: string;
+  url: string;
+  sha256: string;
+  size: number;
+}
+
 /** A named set of plugins of one index, offered together on the Launcher first-run screen. */
 export interface PluginBundle {
   id: string;
@@ -64,6 +75,7 @@ export interface PluginIndex {
   name: string;
   plugins: PluginIndexEntry[];
   bundles?: PluginBundle[];
+  themes?: ThemeIndexEntry[];
 }
 
 export type ValidationResult<T> = { ok: true; value: T } | { ok: false; errors: string[] };

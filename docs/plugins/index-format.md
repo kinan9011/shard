@@ -32,7 +32,7 @@ A repository that lists many plugins has an `index.json` at the root of its defa
 
 ## Fields
 
-Top level: `schema` (must be `1`), `name` (non-empty), `plugins` (array). `bundles` (array) is optional.
+Top level: `schema` (must be `1`), `name` (non-empty), `plugins` (array). `bundles` (array) and `themes` (array) are optional. `themes` lists color themes, see [docs/themes.md](../themes.md#sharing-themes-from-a-repository); a repository may list only themes, with `"plugins": []`.
 
 Each plugin: `id`, `name`, `version`, `description`, `runtime`, `url` (URI), `sha256`
 (64 lowercase hex characters) and `size` (bytes, integer ≥ 0) are required. `category`,
@@ -74,8 +74,9 @@ each repository's catalog in `repo-cache/<hash>.json`.
 - **Adding.** Paste `github.com/<owner>/<repo>`, with or without `https://`, `www.`, `.git` or a
   trailing slash. The app detects the type (see above) and adds the repository only if that works.
   A repository can be added once. Names are case-insensitive.
-- **Official repository.** `github.com/kinan9011/shard-plugins` is there from the first launch. It
-  can be turned off but not removed.
+- **Built-in repositories.** `github.com/kinan9011/shard-plugins` (plugins) and
+  `github.com/kinan9011/shard-themes` (color themes) are there from the first launch. They can be
+  turned off but not removed. Both carry the Official badge.
 - **Sync.** Fetches the index (or the release's `plugin.json` and `plugin.zip.sha256`) and validates
   it. On success the cache is replaced and `lastSync` is set. On failure the old cache stays in use and
   `lastError` holds the reason, for example `index.json not found (404)`, `HTTP 500`,

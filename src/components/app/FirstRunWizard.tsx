@@ -7,6 +7,7 @@ import { PermissionDialog } from "@/components/plugins/PermissionDialog";
 import { PickerBody } from "@/components/app/PinnedEditor";
 import { LayoutChoice } from "@/components/app/settings/LayoutChoice";
 import { CORE_NAMES } from "@/app/firstRun";
+import { OFFICIAL_REPO_URL } from "@/app/legacyMigration";
 import { MAX_PINNED, pickerItems, pinLimitMessage, type PickerItem } from "@/app/pinned";
 import type { CatalogTool } from "@/app/catalog";
 import { listRepos, repoBundles, syncRepos, type Repo } from "@/plugins/api";
@@ -154,7 +155,8 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
     setLoad({ phase: "loading" });
     const settle = (next: Load) => mine === attempt.current && setLoad(next);
     try {
-      const official = (await listRepos()).find((repo) => repo.official);
+      // The plugin repository, not just any built-in one: Shard Themes is built in too and lists no plugins.
+      const official = (await listRepos()).find((repo) => repo.url === OFFICIAL_REPO_URL);
       if (!official) return settle({ phase: "offline", reason: "Shard Official is not in your repositories." });
       if (!official.enabled) return settle({ phase: "offline", reason: "Shard Official is turned off in Plugins → Repositories." });
       const synced = (await syncRepos(official.url)).find((repo) => repo.url === official.url) ?? official;
@@ -305,7 +307,7 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
             <span className="grid size-[22px] place-items-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground" aria-hidden="true">D</span>
           </span>
           <h1 className="text-2xl font-semibold">Welcome to Shard</h1>
-          <p className="text-muted-foreground">Start with a set of tools. The {CORE_NAMES.length} built-in tools are always included, and you can add or remove plugins any time.</p>
+          <p className="text-muted-foreground">Start with a set of tools. The {CORE_NAMES.length} built-in tools are included, and you can hide them or add and remove plugins any time.</p>
         </div>
         <div className="min-h-0 w-[820px] max-w-full flex-1 overflow-y-auto">
           {load.phase === "loading" ? (
@@ -375,7 +377,7 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
               <div className="flex items-end justify-between gap-5">
                 <div className="flex flex-col gap-1">
                   <h2 className="text-xl font-semibold">Pick your starter tools</h2>
-                  <p className="text-muted-foreground">Plugins come from the Shard Official repository. The {CORE_NAMES.length} built-in tools are always included.</p>
+                  <p className="text-muted-foreground">Plugins come from the Shard Official repository. The {CORE_NAMES.length} built-in tools are included; hide any you don't need in Settings → Built-in tools.</p>
                 </div>
                 {load.phase === "ready" && (
                   <div className="flex h-8 w-[260px] shrink-0 items-center gap-[9px] rounded-[7px] border border-border bg-background px-2.5 text-muted-foreground focus-within:border-ring focus-within:shadow-[0_0_0_3px_hsl(var(--ring)/.16)]">

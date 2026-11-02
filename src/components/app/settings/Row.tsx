@@ -23,12 +23,12 @@ export function Row({ title, hint, children, htmlFor }: { title: string; hint?: 
   );
 }
 
-export function ActionButton(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+export function ActionButton({ className = "", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type="button"
       {...props}
-      className="inline-flex h-[30px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-input bg-secondary px-3 text-sm font-medium text-secondary-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+      className={`inline-flex h-[30px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-input bg-secondary px-3 text-sm font-medium text-secondary-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
     />
   );
 }

@@ -367,6 +367,7 @@ pub fn check_on_start(app: tauri::AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::plugins::repos::BUILT_IN;
     use crate::plugins::mock::Mock;
     use serde_json::{json, Value};
     use std::sync::Mutex;
@@ -661,7 +662,7 @@ mod tests {
         assert_eq!(w.repos.set_settings(None, Some(true)).unwrap(), crate::plugins::repos::RepoSettings { check_on_start: true, allow_outside: true });
         let plugin = run(w.installer.install_from_url("github.com/acme/tools", false)).unwrap();
         assert_eq!((plugin.source.kind, plugin.source.url.as_deref(), plugin.source.repo.as_deref(), plugin.verified), (SourceKind::Url, Some(URL), None, false));
-        assert_eq!(w.repos.list().unwrap().len(), 1, "the repository was not added");
+        assert_eq!(w.repos.list().unwrap().len(), BUILT_IN.len(), "the repository was not added");
         assert!(run(w.installer.updates()).unwrap().is_empty());
 
         // The setting persists, and each switch changes on its own.
@@ -675,14 +676,14 @@ mod tests {
         let w = world();
         serve(&w, &Spec { sha: Some("0".repeat(64)), ..spec("1.0.0") });
         assert!(run(w.installer.install_from_url(URL, true)).unwrap_err().contains("checksum does not match"));
-        assert_eq!(w.repos.list().unwrap().len(), 1, "the repository went again");
+        assert_eq!(w.repos.list().unwrap().len(), BUILT_IN.len(), "the repository went again");
         assert!(!w.repos.cache_path(URL).exists());
         assert_nothing_installed(&w);
 
         serve(&w, &spec("1.0.0"));
         let plugin = run(w.installer.install_from_url(URL, true)).unwrap();
         assert_eq!((plugin.source.kind, plugin.source.repo.as_deref(), plugin.verified), (SourceKind::Repo, Some(URL), true));
-        assert_eq!(w.repos.list().unwrap().len(), 2);
+        assert_eq!(w.repos.list().unwrap().len(), BUILT_IN.len() + 1);
         // It is a repository now: updates come, and a URL install of it needs no gate.
         serve(&w, &spec("1.1.0"));
         sync(&w);
@@ -692,7 +693,7 @@ mod tests {
         assert_eq!((again.version.as_str(), again.verified), ("1.1.0", true));
         // Adding a repository that is already there is fine.
         assert!(run(w.installer.install_from_url(URL, true)).is_ok());
-        assert_eq!(w.repos.list().unwrap().len(), 2);
+        assert_eq!(w.repos.list().unwrap().len(), BUILT_IN.len() + 1);
     }
 
     #[test]
@@ -710,7 +711,7 @@ mod tests {
         let wire = serde_json::to_value(&preview).unwrap();
         assert_eq!((wire["checksumMatches"].as_bool(), wire["repoName"].as_str(), wire["kind"].as_str(), wire["runtime"].as_str()), (Some(true), Some("acme/tools"), Some("releases"), Some("web")));
         assert_nothing_installed(&w);
-        assert_eq!(w.repos.list().unwrap().len(), 1, "a lookup adds nothing");
+        assert_eq!(w.repos.list().unwrap().len(), BUILT_IN.len(), "a lookup adds nothing");
 
         w.mock.set(&format!("{base}/plugin.zip.sha256"), 200, format!("{}  plugin.zip\n", "0".repeat(64)));
         assert!(!run(w.installer.lookup_url(URL)).unwrap().checksum_matches);
@@ -726,7 +727,7 @@ mod tests {
         assert!(error.contains("lists 2 plugins"), "{error}");
         let error = run(w.installer.install_from_url(URL, true)).unwrap_err();
         assert!(error.contains("lists 2 plugins"), "{error}");
-        assert_eq!(w.repos.list().unwrap().len(), 1);
+        assert_eq!(w.repos.list().unwrap().len(), BUILT_IN.len());
         assert_eq!(run(w.installer.lookup_url("https://example.com/x")).unwrap_err(), "Not a GitHub repository URL: https://example.com/x");
         w.mock.set("/raw/acme/tools/HEAD/index.json", 404, "");
         assert_eq!(run(w.installer.lookup_url(URL)).unwrap_err(), "Not a plugin repository");
