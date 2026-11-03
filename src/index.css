@@ -259,8 +259,8 @@ body:has(.workspace[data-platform="darwin"]) #root,
 
 /* Dialogs share the window's cool glass chrome, with opaque reading surfaces. */
 .modal-backdrop { background: rgb(0 0 0 / .20); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
-.modal-surface { background: hsl(var(--card) / .94); border: 1px solid hsl(var(--foreground) / .14); border-radius: 14px; overflow: hidden; box-shadow: 0 24px 70px rgb(0 0 0 / .24), 0 4px 12px rgb(0 0 0 / .12); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); }
-.modal-header, .modal-footer { flex-shrink: 0; padding: 18px 24px; background: linear-gradient(120deg, hsl(var(--card) / .85), hsl(var(--accent) / .35)); }
+.modal-surface { background: hsl(var(--card) / .94); border: 1px solid hsl(var(--foreground) / .14); border-radius: 14px; overflow: hidden; box-shadow: 0 24px 70px rgb(0 0 0 / .24), 0 4px 12px rgb(0 0 0 / .12); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); max-height: calc(100vh - 2rem); max-height: calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+.modal-header,.modal-footer { flex-shrink: 0; padding: 18px 24px; background: linear-gradient(120deg, hsl(var(--card) / .85), hsl(var(--accent) / .35)); }
 .modal-header { border-bottom: 1px solid hsl(var(--foreground) / .08); box-shadow: inset 0 1px rgb(255 255 255 / .45); }
 .modal-header h2 { font-size: 17px; letter-spacing: -.01em; }
 .modal-header p { font-size: 12px; line-height: 1.5; }

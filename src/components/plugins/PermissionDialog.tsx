@@ -44,7 +44,7 @@ export function PermissionDialog({ mode = "install", granted, newPermissions = [
 
   return (
     <div
-      className="modal-backdrop fixed inset-0 z-[75] grid place-items-center p-4"
+      className="modal-backdrop fixed inset-0 z-[75] flex items-center justify-center p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onCancel();
       }}
@@ -88,12 +88,12 @@ export function PermissionDialog({ mode = "install", granted, newPermissions = [
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 border-t border-border px-5 py-3">
-          <span className="flex-1 text-xs text-muted-foreground">{mode === "manage" ? "" : "Optional permissions can be changed later in Installed."}</span>
+        <div className="flex flex-wrap items-center gap-2 border-t border-border px-5 py-3">
+          <span className="min-w-[12rem] flex-1 text-xs text-muted-foreground">{mode === "manage" ? "" : "Optional permissions can be changed later in Installed."}</span>
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex h-[30px] items-center rounded-md border border-input bg-secondary px-3 text-sm font-medium text-secondary-foreground"
+            className="ml-auto inline-flex h-[30px] items-center rounded-md border border-input bg-secondary px-3 text-sm font-medium text-secondary-foreground"
           >
             Cancel
           </button>

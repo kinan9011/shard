@@ -183,7 +183,7 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
 
   return (
     <div
-      className="modal-backdrop fixed inset-0 z-[70] grid place-items-center p-4"
+      className="modal-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) close();
       }}
