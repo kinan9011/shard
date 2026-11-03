@@ -182,6 +182,13 @@ export function connect(options: ConnectOptions = {}): ShardSdk {
     target.postMessage({ v: PROTOCOL_VERSION, event: "error", message: String(event.message || event.error || "Unknown error").slice(0, 500) }, "*");
   });
 
+  // A file dropped on the frame, away from the plugin's own drop zone (which calls preventDefault first), must not make the webview open it.
+  for (const name of ["dragover", "drop"] as const) {
+    self.addEventListener(name, (event: DragEvent) => {
+      if (!event.defaultPrevented && Array.from(event.dataTransfer?.types ?? []).includes("Files")) event.preventDefault();
+    });
+  }
+
   self.addEventListener("message", (event: MessageEvent) => {
     // Only the host answers. Another frame or window cannot spoof a response.
     if (event.source !== target) return;

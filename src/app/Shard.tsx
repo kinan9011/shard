@@ -537,6 +537,9 @@ const Shard = () => {
     if (window.innerWidth < 640) setSidebarOpen(false);
     setView({ kind: "plugins", tab, install });
   };
+  // The drop guard below lives for the whole session and must not go stale.
+  const openPluginsRef = useRef(openPlugins);
+  openPluginsRef.current = openPlugins;
 
   const checkPluginUpdates = async () => {
     setShowCommandPalette(false);
@@ -704,6 +707,40 @@ const Shard = () => {
     document.addEventListener("paste", handlePaste);
     return () => document.removeEventListener("paste", handlePaste);
   }, [pasteBlocked, toolIds, installableIds]);
+
+  // The app decides where a dropped file lands. The Install dialog's zone is the only place a plugin zip is taken. A zone claims
+  // its drop with preventDefault() (this runs after it, in the bubble phase). Any other file drop would make the webview open
+  // the file and replace the app, with no way back.
+  useEffect(() => {
+    const isZip = (name: string) => /\.zip$/i.test(name);
+    const hint = () =>
+      toast("To install a plugin, drop it on Install plugin.", { action: { label: "Open", onClick: () => openPluginsRef.current("browse", true) } });
+    // Only files (and file:// links) are ours. Text dragged into a field is left alone.
+    const isFileDrag = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).some((type) => type === "Files" || type === "text/uri-list");
+    const handleDragOver = (event: DragEvent) => {
+      if (event.defaultPrevented || !isFileDrag(event)) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+    };
+    const handleDrop = (event: DragEvent) => {
+      if (event.defaultPrevented || !event.dataTransfer || !isFileDrag(event)) return;
+      event.preventDefault();
+      if (Array.from(event.dataTransfer.files).some((file) => isZip(file.name))) hint();
+    };
+    window.addEventListener("dragover", handleDragOver);
+    window.addEventListener("drop", handleDrop);
+    // Linux takes drops natively: the page gets paths and the point, and a drop never reaches the handlers above.
+    const stopNative = getDesktopBridge()?.onFileDrop?.((paths, x, y) => {
+      const at = document.elementFromPoint(x, y);
+      if (at?.closest("[data-drop-zone]") || at?.closest("[role='dialog']")) return;
+      if (paths.some(isZip)) hint();
+    });
+    return () => {
+      window.removeEventListener("dragover", handleDragOver);
+      window.removeEventListener("drop", handleDrop);
+      stopNative?.();
+    };
+  }, []);
 
   const dismissPasted = useCallback(() => setPasted(null), []);
   const openPastedIn = useCallback((toolId: string) => {

@@ -22,6 +22,8 @@ const api = vi.hoisted(() => ({
   installFromUrl: vi.fn(),
 }));
 vi.mock("@/plugins/api", () => api);
+const desktop = vi.hoisted(() => ({ bridge: null as unknown }));
+vi.mock("@/lib/desktop", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/desktop")>()), getDesktopBridge: () => desktop.bridge }));
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast: toastMock }));
 
@@ -29,6 +31,7 @@ import { InstallDialog } from "@/components/plugins/InstallDialog";
 import { PluginsPage } from "@/components/plugins/PluginsPage";
 import { resetPlugins } from "@/plugins/usePlugins";
 import type { InstallJob } from "@/plugins/useInstallFlow";
+import type { DesktopBridge } from "@/lib/desktop";
 
 const URL_TEXT = "https://github.com/kinan9011/kafka-inspector";
 const PERMISSIONS = [
@@ -62,15 +65,16 @@ const lookUp = async (text = URL_TEXT) => {
   fireEvent.click(screen.getByRole("button", { name: "Look up" }));
 };
 // Lets the dialog read the setting first: a drop before that is ignored.
-const dropOn = async (files: File[], entryIsDirectory = false, uriList = "") => {
+const dropOn = async (files: File[], entryIsDirectory = false) => {
   await act(async () => {});
   fireEvent.drop(screen.getByTestId("drop-zone"), {
-    dataTransfer: { files, items: [{ webkitGetAsEntry: () => ({ isDirectory: entryIsDirectory }) }], getData: () => uriList },
+    dataTransfer: { files, items: [{ webkitGetAsEntry: () => ({ isDirectory: entryIsDirectory }) }] },
   });
 };
 
 beforeEach(() => {
   resetPlugins();
+  desktop.bridge = null;
   Object.values(api).forEach((mock) => mock.mockReset());
   Object.values(toastMock).forEach((mock) => mock.mockReset());
   api.repoSettings.mockResolvedValue({ checkOnStart: true, allowOutside: true });
@@ -217,13 +221,36 @@ describe("InstallDialog", () => {
     expect(api.clearDroppedZip).toHaveBeenCalledTimes(1);
   });
 
-  it("installs from the path of a dropped file:// URI when the webview gives no File", async () => {
+  it("takes the paths of a zip dropped on the zone when the window takes drops natively (Linux)", async () => {
     api.inspectZip.mockResolvedValue({ manifest: MANIFEST, sha256: "c".repeat(64), warnings: [] });
+    let fileDrop: (paths: string[], x: number, y: number) => void = () => {};
+    desktop.bridge = { onFileDrop: (callback: typeof fileDrop) => ((fileDrop = callback), () => {}) } as unknown as DesktopBridge;
     renderDialog();
-    await dropOn([], false, "# comment\r\nfile:///home/u/My%20Plugin.zip\r\n");
+    await act(async () => {});
+    const zone = screen.getByTestId("drop-zone");
+    const at = vi.fn<(x: number, y: number) => Element | null>(() => document.body);
+    document.elementFromPoint = at;
+
+    // Dropped beside the zone: not for the dialog.
+    act(() => fileDrop(["/home/u/My Plugin.zip"], 5, 5));
+    expect(api.inspectZip).not.toHaveBeenCalled();
+
+    at.mockReturnValue(zone.querySelector("button"));
+    act(() => fileDrop(["/home/u/My Plugin.zip"], 100, 100));
     expect(await screen.findByText("My Plugin.zip · Web + WASM")).toBeInTheDocument();
     expect(api.inspectZip).toHaveBeenCalledWith("/home/u/My Plugin.zip");
     expect(api.stageDroppedZip).not.toHaveBeenCalled();
+  });
+
+  it("says what to drop when a native drop on the zone is not a zip", async () => {
+    let fileDrop: (paths: string[], x: number, y: number) => void = () => {};
+    desktop.bridge = { onFileDrop: (callback: typeof fileDrop) => ((fileDrop = callback), () => {}) } as unknown as DesktopBridge;
+    renderDialog();
+    await act(async () => {});
+    document.elementFromPoint = vi.fn(() => screen.getByTestId("drop-zone"));
+    act(() => fileDrop(["/home/u/invoice.pdf"], 100, 100));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Drop a plugin .zip file.");
+    expect(api.inspectZip).not.toHaveBeenCalled();
   });
 
   it("tells a dropped folder or a dropped non-zip what to do", async () => {
