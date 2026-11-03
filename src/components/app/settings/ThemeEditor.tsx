@@ -102,7 +102,7 @@ export function ThemeEditor({ initial, dark, onClose, onSaved }: Props) {
 
   const field = "h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground";
   return (
-    <div className="modal-backdrop fixed inset-0 z-[75] grid place-items-center p-4">
+    <div className="modal-backdrop fixed inset-0 z-[75] flex items-center justify-center p-4">
       <div ref={ref} role="dialog" aria-modal="true" aria-label={editing ? `Edit ${initial?.name}` : "Create a theme"} className="modal-surface flex max-h-full w-[640px] max-w-full flex-col">
         <div className="flex flex-col gap-3 border-b border-border px-5 pb-4 pt-5">
           <h2 className="text-base font-semibold text-foreground">{editing ? `Edit ${initial?.name}` : "Create a theme"}</h2>

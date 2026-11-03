@@ -382,7 +382,26 @@ pub(super) fn client_builder() -> reqwest::ClientBuilder {
             attempt.follow()
         }
     });
-    reqwest::Client::builder().redirect(redirects)
+    tls_roots(reqwest::Client::builder().redirect(redirects))
+}
+
+/// Android has no working default certificate check here (reqwest's platform verifier needs a JNI setup and a Gradle
+/// dependency the app doesn't have, and it panics at the first handshake), so trust the bundled Mozilla roots there.
+/// Every other platform keeps the system store.
+// ponytail: bundled roots ignore CAs the user installed on the phone. Upgrade path: rustls-platform-verifier's
+// `android::init_with_env` at startup plus its Maven artifact in gen/android.
+#[cfg(target_os = "android")]
+pub(super) fn tls_roots(builder: reqwest::ClientBuilder) -> reqwest::ClientBuilder {
+    builder.tls_certs_only(
+        webpki_root_certs::TLS_SERVER_ROOT_CERTS
+            .iter()
+            .filter_map(|der| reqwest::Certificate::from_der(der).ok()),
+    )
+}
+
+#[cfg(not(target_os = "android"))]
+pub(super) fn tls_roots(builder: reqwest::ClientBuilder) -> reqwest::ClientBuilder {
+    builder
 }
 
 static LOCK: Mutex<()> = Mutex::new(());

@@ -40,12 +40,23 @@ describe("Phone shell (390 px wide)", () => {
     expect(document.querySelector('[data-phone="true"]')).not.toBeNull();
   });
 
-  it("ignores a saved Sidebar layout: a phone always gets the Launcher", () => {
-    localStorage.setItem("shard-layout", "sidebar");
+  it("starts on the Launcher when no layout is saved", () => {
     render(<Shard />);
     expect(document.querySelector('[data-layout="launcher"]')).not.toBeNull();
-    // The saved choice stays for when the window is wide again.
-    expect(localStorage.getItem("shard-layout")).toBe("sidebar");
+    expect(localStorage.getItem("shard-layout")).toBe("launcher");
+  });
+
+  it("honours a saved Sidebar layout: a menu button opens the sidebar as a drawer, and there is no bottom bar", () => {
+    localStorage.setItem("shard-layout", "sidebar");
+    render(<Shard />);
+    expect(document.querySelector('[data-layout="sidebar"][data-phone="true"]')).not.toBeNull();
+    expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
+    expect(screen.getByTestId("phone-title")).toHaveTextContent("Shard");
+    expect(document.querySelector('[data-sidebar-open="true"]')).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open sidebar" }));
+    expect(document.querySelector('[data-sidebar-open="true"]')).not.toBeNull();
+    expect(screen.getByRole("navigation", { name: "Tools" })).toBeInTheDocument();
   });
 
   it("opens Plugins and Settings from the bottom bar, and offers no keyboard shortcuts", async () => {
@@ -59,8 +70,8 @@ describe("Phone shell (390 px wide)", () => {
     const sections = within(screen.getByRole("navigation", { name: "Settings sections" }));
     expect(sections.getByRole("button", { name: "Appearance" })).toBeInTheDocument();
     expect(sections.queryByRole("button", { name: "Shortcuts" })).toBeNull();
-    // The layout choice is not offered either.
-    expect(screen.queryByRole("group", { name: "Layout" })).toBeNull();
+    // The layout choice is offered: a phone can pick the sidebar.
+    expect(screen.getByRole("radiogroup", { name: "Layout" })).toBeInTheDocument();
   });
 
   it("opens a tool full screen with a back button, and lists open tools in a sheet", async () => {

@@ -66,6 +66,9 @@ jobs:
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/${{ env.NDK_VERSION }}
         run: npx tauri android init --ci
 
+      - name: Use the Shard launcher icons
+        run: bash scripts/android-icons.sh
+
       - name: Build a debug APK
         env:
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/${{ env.NDK_VERSION }}

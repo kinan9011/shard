@@ -159,7 +159,8 @@ jobs:
           $app.Refresh()
           Write-Host "Window title: $($app.MainWindowTitle)"
           if ($app.MainWindowTitle -ne "Shard") { throw "The Shard window did not open" }
-          Stop-Process -Id $app.Id
+          # Kill the whole tree, so no WebView2 child process survives into the e2e step.
+          taskkill /PID $app.Id /T /F | Out-Null
           $app.WaitForExit(10000) | Out-Null
 
 

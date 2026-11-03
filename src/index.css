@@ -214,7 +214,8 @@ body:has(.workspace[data-platform="darwin"]) #root,
   backdrop-filter: none; -webkit-backdrop-filter: none;
 }
 @media (max-width: 639px) {
-  .workspace-sidebar { background: hsl(var(--background) / .96); }
+  /* The drawer floats over the page: opaque, or the page shows through it. */
+  .workspace-sidebar { background: hsl(var(--background)); box-shadow: 4px 0 24px rgb(0 0 0 / .25); }
 }
 .workspace-sidebar input {
   background: linear-gradient(rgb(255 255 255 / .42), rgb(255 255 255 / .16));
@@ -258,8 +259,8 @@ body:has(.workspace[data-platform="darwin"]) #root,
 
 /* Dialogs share the window's cool glass chrome, with opaque reading surfaces. */
 .modal-backdrop { background: rgb(0 0 0 / .20); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
-.modal-surface { background: hsl(var(--card) / .94); border: 1px solid hsl(var(--foreground) / .14); border-radius: 14px; overflow: hidden; box-shadow: 0 24px 70px rgb(0 0 0 / .24), 0 4px 12px rgb(0 0 0 / .12); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); }
-.modal-header, .modal-footer { flex-shrink: 0; padding: 18px 24px; background: linear-gradient(120deg, hsl(var(--card) / .85), hsl(var(--accent) / .35)); }
+.modal-surface { background: hsl(var(--card) / .94); border: 1px solid hsl(var(--foreground) / .14); border-radius: 14px; overflow: hidden; box-shadow: 0 24px 70px rgb(0 0 0 / .24), 0 4px 12px rgb(0 0 0 / .12); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); max-height: calc(100vh - 2rem); max-height: calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+.modal-header,.modal-footer { flex-shrink: 0; padding: 18px 24px; background: linear-gradient(120deg, hsl(var(--card) / .85), hsl(var(--accent) / .35)); }
 .modal-header { border-bottom: 1px solid hsl(var(--foreground) / .08); box-shadow: inset 0 1px rgb(255 255 255 / .45); }
 .modal-header h2 { font-size: 17px; letter-spacing: -.01em; }
 .modal-header p { font-size: 12px; line-height: 1.5; }
@@ -464,6 +465,9 @@ code, pre, kbd, samp, .font-mono { font-family: var(--font-code); font-feature-s
 
 /* ---- Phone shell: one column, a top bar, a bottom bar, the content fills the screen. See src/components/app/PhoneShell.tsx. */
 .workspace[data-phone="true"] { height: 100dvh; flex-direction: column; }
+/* A wide phone or tablet gets the sidebar beside the content (Tailwind's sm breakpoint); a narrow one gets a drawer. */
+.workspace[data-phone="true"][data-layout="sidebar"] { flex-direction: row; }
+.workspace[data-phone="true"] .workspace-sidebar { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); height: 100dvh; }
 .workspace[data-phone="true"] > main { padding: 0; }
 .workspace[data-phone="true"] .workspace-content { border-radius: 0; box-shadow: none; }
 .phone-header { display: flex; flex-shrink: 0; align-items: center; gap: 4px; min-height: calc(52px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 8px 0 12px; background: var(--surface-chrome); border-bottom: 1px solid hsl(var(--border)); }

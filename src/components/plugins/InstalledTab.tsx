@@ -235,7 +235,7 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
       {plugins.length === 0 ? (
         <p className="py-4 text-sm text-muted-foreground">No plugins installed yet.</p>
       ) : (
-        <div ref={grid} className="grid grid-cols-4 gap-3">
+        <div ref={grid} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {plugins.map((plugin) => {
             const pair = pairs.find((item) => item.plugin.id === plugin.id);
             const updating = !!pair && pair.update.id in progress;
@@ -283,7 +283,7 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
   );
 
   return (
-    <div className={cn("relative flex min-w-0 flex-1 flex-col overflow-y-auto px-7 py-[18px]", cards ? "gap-5" : "gap-[22px]")}>
+    <div className={cn("relative flex min-w-0 flex-1 flex-col overflow-y-auto px-4 py-[18px] sm:px-7", cards ? "gap-5" : "gap-[22px]")}>
       {cards && banner}
       {cards && pluginCards}
       {cards && <BuiltInChips />}

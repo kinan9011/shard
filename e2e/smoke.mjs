@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -53,11 +53,38 @@ function startProcess(command, args, env = {}) {
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Polls the WebView2 debugging port. Throws if the app exits first, so a crash shows up as one. */
+async function waitForDebugPort(app, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (app.exitCode !== null) throw new Error(`Shard exited with code ${app.exitCode} before opening the WebView2 debug port`);
+    try {
+      const response = await fetch(`http://127.0.0.1:${WEBVIEW2_DEBUG_PORT}/json/version`);
+      if (response.ok) return true;
+    } catch {
+      // Not listening yet.
+    }
+    await delay(500);
+  }
+  return false;
+}
+
 async function startSession() {
   if (isWindows) {
-    startProcess(application, []);
+    // A leftover WebView2 process from an earlier launch can swallow --remote-debugging-port, so retry with a clean tree.
+    let opened = false;
+    for (let attempt = 1; attempt <= 3 && !opened; attempt++) {
+      const app = startProcess(application, []);
+      opened = await waitForDebugPort(app, 30000);
+      if (!opened) {
+        console.log(`(attempt ${attempt}: WebView2 debug port ${WEBVIEW2_DEBUG_PORT} did not open, restarting the app)`);
+        spawnSync("taskkill", ["/pid", String(app.pid), "/T", "/F"]);
+        await delay(2000);
+      }
+    }
+    if (!opened) throw new Error(`WebView2 debug port ${WEBVIEW2_DEBUG_PORT} never opened`);
     startProcess(process.env.NATIVE_DRIVER ?? "msedgedriver.exe", ["--port=4444"]);
-    await delay(5000);
+    await delay(1000);
     return remote({
       hostname: "127.0.0.1",
       port: 4444,

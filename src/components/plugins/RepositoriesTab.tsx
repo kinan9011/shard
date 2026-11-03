@@ -187,10 +187,10 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
   };
 
   return (
-    <div className="relative flex min-w-0 flex-1 flex-col gap-5 overflow-y-auto px-7 py-5">
+    <div className="relative flex min-w-0 flex-1 flex-col gap-5 overflow-y-auto px-4 py-5 sm:px-7">
       <div className="flex flex-col gap-2">
         <div className="flex gap-2">
-          <label className="flex h-[34px] w-[480px] max-w-full shrink-0 items-center gap-[9px] rounded-[7px] border border-input bg-background pl-[11px] pr-2 text-muted-foreground focus-within:border-ring">
+          <label className="flex h-[34px] w-full min-w-0 sm:w-[480px] sm:shrink-0 items-center gap-[9px] rounded-[7px] border border-input bg-background pl-[11px] pr-2 text-muted-foreground focus-within:border-ring">
             <GitBranch size={15} aria-hidden="true" className="shrink-0" />
             <input
               type="text"
@@ -222,7 +222,7 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
       </div>
 
       {cards ? (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {repos.map((repo) => {
             const working = busy.has(repo.url);
             const label = countLabel(repo);

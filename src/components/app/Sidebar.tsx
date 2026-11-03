@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Home, Pin, Puzzle, Search, Settings, X } from "lucide-react";
 import { MAX_PINNED } from "@/app/pinned";
 import { Button } from "@/components/ui/button";
+import { BrandMark } from "@/components/app/BrandMark";
 import { Input } from "@/components/ui/input";
 import type { CatalogTool } from "@/app/catalog";
 import type { SidebarCategoryMode } from "@/utils/theme";
@@ -163,7 +164,7 @@ export function Sidebar({
         {/* Logo */}
         <div data-tauri-drag-region className="sidebar-brand h-14 flex items-center justify-between px-4 border-border border-b">
           <div className="flex items-center">
-            <img src="./brand/mark.svg" alt="" aria-hidden="true" className="w-5 h-5" />
+            <BrandMark className="w-5 h-5" />
             <span className="ml-2.5 font-semibold text-foreground">Shard</span>
           </div>
           <button

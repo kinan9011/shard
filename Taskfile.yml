@@ -70,6 +70,12 @@ tasks:
     cmds:
       - npx tauri android init --ci
 
+  android:icons:
+    desc: Put the Shard launcher icons into the generated Android project (init leaves the template ones)
+    deps: [android:init]
+    cmds:
+      - bash scripts/android-icons.sh
+
   build:android:
     desc: Build a debug APK (aarch64), same as CI. Needs the Android SDK and NDK, JDK 17 and the aarch64-linux-android Rust target (docs/android.md)
     # ponytail: ANDROID_HOME, NDK_HOME and JAVA_HOME default to the usual Linux spots; export them to override.
@@ -89,7 +95,7 @@ tasks:
         msg: JDK 17 not found at $JAVA_HOME (sudo apt install openjdk-17-jdk, or export JAVA_HOME)
       - sh: rustup target list --installed | grep -qx aarch64-linux-android
         msg: the Android Rust target is missing (rustup target add aarch64-linux-android)
-    deps: [android:init]
+    deps: [android:icons]
     cmds:
       - npx tauri android build --apk --debug --target aarch64
 

@@ -218,7 +218,7 @@ export function BrowseTab({ rows, repos, loading, error, onInstall, onUninstall,
 
   if (variant === "cards") {
     return (
-      <div className="flex min-w-0 flex-1 flex-col gap-3.5 overflow-y-auto px-7 pb-5 pt-4">
+      <div className="flex min-w-0 flex-1 flex-col gap-3.5 overflow-y-auto px-4 pb-5 pt-4 sm:px-7">
         <div className="flex flex-wrap items-center gap-2.5">
           {searchBox("w-[300px] max-w-full shrink-0")}
           <select aria-label="Repository" className={selectClass} value={repo} onChange={(event) => setRepo(event.target.value)}>
@@ -249,7 +249,7 @@ export function BrowseTab({ rows, repos, loading, error, onInstall, onUninstall,
         {errorBanner}
         {notice}
         {!notice && (
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {shown.map((row) => (
               <PluginCard key={rowKey(row)} row={row} onOpen={() => onOpen?.(row)} onInstall={() => onInstall(row)} progress={progress[row.entry.id]} />
             ))}

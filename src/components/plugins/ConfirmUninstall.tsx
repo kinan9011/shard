@@ -9,7 +9,7 @@ export function ConfirmUninstall({ plugin, onCancel, onConfirm }: { plugin: { ma
   const title = `Uninstall ${plugin.manifest.name}?`;
   return (
     <div
-      className="modal-backdrop fixed inset-0 z-[75] grid place-items-center p-4"
+      className="modal-backdrop fixed inset-0 z-[75] flex items-center justify-center p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onCancel();
       }}

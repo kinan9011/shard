@@ -175,7 +175,7 @@ export function PluginDetail({ row, official, progress, onInstall, onUninstall, 
             }
           : undefined
       }
-      className={cn("flex min-w-0 flex-1 flex-col overflow-y-auto outline-none", page ? "gap-[18px] px-10 pb-5 pt-[18px]" : "gap-3.5 px-8 py-5")}
+      className={cn("flex min-w-0 flex-1 flex-col overflow-y-auto outline-none", page ? "gap-[18px] px-4 pb-5 pt-[18px] sm:px-10" : "gap-3.5 px-4 py-5 sm:px-8")}
     >
       {page && (
         <button type="button" onClick={onBack} className="flex w-fit items-center gap-1.5 text-muted-foreground hover:text-foreground">
@@ -231,7 +231,7 @@ export function PluginDetail({ row, official, progress, onInstall, onUninstall, 
           <aside aria-label={`About ${entry.name}`} className="flex flex-col gap-3.5">
             <section aria-label="Details" className="flex flex-col gap-3 rounded-[10px] border border-border p-4">
               <span className={LABEL}>Details</span>
-              <DetailsGrid entry={entry} installed={installed} sourceUrl={sourceUrl} className="grid-cols-2" />
+              <DetailsGrid entry={entry} installed={installed} sourceUrl={sourceUrl} className="grid-cols-1 sm:grid-cols-2" />
             </section>
             {rows.length > 0 && (
               <section aria-label="Asks for" className="flex flex-col rounded-[10px] border border-border px-4 pb-2 pt-4">
@@ -256,7 +256,7 @@ export function PluginDetail({ row, official, progress, onInstall, onUninstall, 
             {tab === "overview" && (
               <>
                 <p className="max-w-[640px] whitespace-pre-line leading-[1.6] text-foreground [text-wrap:pretty]">{description}</p>
-                <DetailsGrid entry={entry} installed={installed} sourceUrl={sourceUrl} className="grid-cols-3" />
+                <DetailsGrid entry={entry} installed={installed} sourceUrl={sourceUrl} className="grid-cols-1 sm:grid-cols-3" />
                 <div className="mt-1 flex flex-col">
                   <span className={cn(LABEL, "mb-2")}>Permissions</span>
                   <PermissionList rows={rows} />

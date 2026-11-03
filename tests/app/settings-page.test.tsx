@@ -46,13 +46,13 @@ afterEach(() => {
 });
 
 describe("Settings page", () => {
-  it("opens from the sidebar on Appearance with the seven sections", async () => {
+  it("opens from the sidebar on Appearance with the six sections", async () => {
     render(<Shard />);
     openSettings();
 
     expect(within(main()).getByRole("heading", { name: "Appearance" })).toBeInTheDocument();
     expect(within(main()).getByText("Changes apply right away.")).toBeInTheDocument();
-    for (const name of ["General", "Appearance", "Built-in tools", "Home", "Plugins", "Shortcuts", "About"]) {
+    for (const name of ["General", "Appearance", "Built-in tools", "Plugins", "Shortcuts", "About"]) {
       expect(settingsNav().getByRole("button", { name })).toBeInTheDocument();
     }
     expect(settingsNav().getByRole("button", { name: "Appearance" })).toHaveAttribute("aria-current", "page");
@@ -117,11 +117,11 @@ describe("Settings sections", () => {
     fireEvent.click(settingsNav().getByRole("button", { name }));
   };
 
-  it("keeps Home as a placeholder until it has settings", () => {
+  it("has no Home section until Home has settings", () => {
     render(<Shard />);
-    openSection("Home");
-    expect(within(main()).getByRole("heading", { name: "Home" })).toBeInTheDocument();
-    expect(within(main()).getByText("Coming soon.")).toBeInTheDocument();
+    openSection("General");
+    expect(settingsNav().queryByText("Home")).not.toBeInTheDocument();
+    expect(screen.queryByText("Coming soon.")).not.toBeInTheDocument();
   });
 
   it("explains in the browser preview that updates need the desktop app", () => {

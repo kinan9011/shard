@@ -21,7 +21,6 @@ export const SETTINGS_SECTIONS = [
   ["general", "General"],
   ["appearance", "Appearance"],
   ["tools", "Built-in tools"],
-  ["home", "Home"],
   ["plugins", "Plugins"],
   ["shortcuts", "Shortcuts"],
   ["about", "About"],
@@ -118,13 +117,8 @@ export function SettingsPage(props: Props) {
               paused={props.recordingPaused}
             />
           </>
-        ) : current[0] === "about" ? (
-          <About {...props} />
         ) : (
-          <>
-            <Heading title={current[1]} />
-            <p className="text-sm text-muted-foreground">Coming soon.</p>
-          </>
+          <About {...props} />
         )}
       </div>
     </div>
@@ -256,7 +250,7 @@ function Appearance(p: Props) {
   return (
     <>
       <Heading title="Appearance" hint="Changes apply right away." />
-      <div className="hidden flex-col gap-2.5 sm:flex">
+      <div className="flex flex-col gap-2.5">
         <span className="text-2xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Layout</span>
         <LayoutChoice layout={p.layout} onLayout={p.onLayout} />
       </div>
