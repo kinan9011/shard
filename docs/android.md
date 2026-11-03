@@ -24,6 +24,8 @@ npx tauri android dev           # runs on a connected device or emulator
 npx tauri android build --apk --debug --target aarch64
 ```
 
+Or `task build:android`: it runs the init once and builds the debug APK. It defaults `ANDROID_HOME` to `~/Android/Sdk`, `NDK_HOME` to the newest NDK there and `JAVA_HOME` to JDK 17; export them to override.
+
 `tauri android init` takes the launcher icons from `src-tauri/icons/android`. `npm run icon` does not touch that folder; after a brand change run `npx tauri icon src-tauri/app-icon.png` to refresh it.
 
 ## Release builds

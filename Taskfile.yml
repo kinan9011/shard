@@ -62,6 +62,37 @@ tasks:
     cmds:
       - npm run tauri -- build --bundles nsis
 
+  android:init:
+    desc: Generate src-tauri/gen/android (once; not committed)
+    deps: [install]
+    status:
+      - test -d src-tauri/gen/android
+    cmds:
+      - npx tauri android init --ci
+
+  build:android:
+    desc: Build a debug APK (aarch64), same as CI. Needs the Android SDK and NDK, JDK 17 and the aarch64-linux-android Rust target (docs/android.md)
+    # ponytail: ANDROID_HOME, NDK_HOME and JAVA_HOME default to the usual Linux spots; export them to override.
+    env:
+      ANDROID_HOME:
+        sh: echo "${ANDROID_HOME:-$HOME/Android/Sdk}"
+      NDK_HOME:
+        sh: echo "${NDK_HOME:-$(ls -d "${ANDROID_HOME:-$HOME/Android/Sdk}"/ndk/* 2>/dev/null | sort -V | tail -n 1)}"
+      JAVA_HOME:
+        sh: echo "${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}"
+    preconditions:
+      - sh: test -d "$ANDROID_HOME"
+        msg: Android SDK not found at $ANDROID_HOME (install Android Studio or the command-line SDK, or export ANDROID_HOME)
+      - sh: test -d "$NDK_HOME"
+        msg: Android NDK not found (sdkmanager "ndk;27.2.12479018", or export NDK_HOME)
+      - sh: test -x "$JAVA_HOME/bin/java"
+        msg: JDK 17 not found at $JAVA_HOME (sudo apt install openjdk-17-jdk, or export JAVA_HOME)
+      - sh: rustup target list --installed | grep -qx aarch64-linux-android
+        msg: the Android Rust target is missing (rustup target add aarch64-linux-android)
+    deps: [android:init]
+    cmds:
+      - npx tauri android build --apk --debug --target aarch64
+
   build:flatpak:
     desc: Build Shard.flatpak from the deb (needs flatpak-builder and the GNOME 50 runtime and SDK)
     deps: [build:deb]

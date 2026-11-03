@@ -135,6 +135,7 @@ dist
 # Tauri build output
 src-tauri/target/
 src-tauri/gen/schemas/
+src-tauri/gen/android/
 
 # Generated installers
 *.dmg
