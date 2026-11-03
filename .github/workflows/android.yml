@@ -44,9 +44,9 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-
-      - name: Install the platform and the NDK
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;${NDK_VERSION}"
+        with:
+          # The action's default package list asks for `tools`, which Google's repo no longer has, so sdkmanager exits 1.
+          packages: platform-tools platforms;android-35 build-tools;35.0.0 ndk;${{ env.NDK_VERSION }}
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable

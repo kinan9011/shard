@@ -57,6 +57,11 @@ export interface DesktopBridge {
   /** Calls back when the tray menu or the global shortcut asks for the command palette. */
   onOpenCommandPalette?: (callback: () => void) => () => void;
   /**
+   * Calls back with the paths of files dropped on the window and the point they landed at (CSS px).
+   * Only where the window takes drops natively (Linux). Elsewhere a page gets the drop as a DOM event.
+   */
+  onFileDrop?: (callback: (paths: string[], x: number, y: number) => void) => () => void;
+  /**
    * Turns automatic updating on or off. When on, the app downloads updates in the background
    * and installs a downloaded update when it quits.
    */
@@ -254,6 +259,28 @@ function createTauriBridge(): DesktopBridge {
     };
   };
 
+  const nodePlatform = toNodePlatform(getOsPlatform());
+
+  // Linux only (tauri.linux.conf.json): WebKitGTK gives a page no File and no path for a file dragged from a file manager,
+  // so the window hands the drop to Tauri, which sends the real paths and the point where it landed.
+  // ponytail: the point is in CSS px on Linux. Divide by devicePixelRatio before turning native drag-drop on elsewhere.
+  const onFileDrop = (callback: (paths: string[], x: number, y: number) => void) => {
+    let active = true;
+    let unlisten: (() => void) | undefined;
+    listen<{ paths: string[]; position: { x: number; y: number } }>("tauri://drag-drop", ({ payload }) => {
+      if (active) callback(payload.paths, payload.position.x, payload.position.y);
+    })
+      .then((stop) => {
+        if (active) unlisten = stop;
+        else stop();
+      })
+      .catch((error) => console.error("Failed to listen for dropped files:", error));
+    return () => {
+      active = false;
+      unlisten?.();
+    };
+  };
+
   const writeToolManifest = async (manifest: ToolManifest) => {
     try {
       await invoke("write_tool_manifest", { manifest });
@@ -292,9 +319,10 @@ function createTauriBridge(): DesktopBridge {
     setWindowTheme,
     setGlobalShortcut,
     onOpenCommandPalette,
+    onFileDrop: nodePlatform === "linux" ? onFileDrop : undefined,
     writeToolManifest,
     onDeepLink,
-    platform: toNodePlatform(getOsPlatform()),
+    platform: nodePlatform,
     getVersion,
     getUpdateState: async () => {
       scheduleUpdateCheck();

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
 import { Archive, Check, Folder, Link, Puzzle, ShieldCheck, TriangleAlert, Upload, X } from "lucide-react";
 import { useDialogFocus } from "@/components/app/useDialogFocus";
+import { getDesktopBridge } from "@/lib/desktop";
 import { isMobileApp } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import {
@@ -117,22 +118,19 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
     if (path) await inspect(() => inspectFolder(path), (preview) => ({ kind: "folder", path, name: baseName(path), preview }));
   };
 
+  const takeZipPath = (path: string) =>
+    inspect(() => inspectZip(path), (preview) => ({ kind: "zip", path, name: baseName(path), dropped: false, preview }));
+
+  // Windows and macOS: the page gets the drop as a DOM event, with the File.
   const onDrop = async (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
     setDragging(false);
     if (allowOutside !== true || busy) return;
-    const first = event.dataTransfer.items?.[0];
     const file = event.dataTransfer.files?.[0];
-    if (first?.webkitGetAsEntry?.()?.isDirectory) return setError("Folders can't be dropped here. Use Choose folder.");
-    // Linux file managers often give the webview a file:// URI and no File. A URI has the real path: no copy, no size limit on the bytes sent.
-    // ponytail: the File branch below reads the whole zip into memory. Turn on Tauri's native drag-drop (real paths) if big drops hurt on Windows or macOS.
-    const uri = event.dataTransfer.getData?.("text/uri-list")?.split(/\r?\n/).find((line) => line.startsWith("file://"));
-    const path = uri ? decodeURIComponent(new URL(uri).pathname) : null;
-    if (path && /\.zip$/i.test(path)) {
-      return inspect(() => inspectZip(path), (preview) => ({ kind: "zip", path, name: baseName(path), dropped: false, preview }));
-    }
+    if (event.dataTransfer.items?.[0]?.webkitGetAsEntry?.()?.isDirectory) return setError("Folders can't be dropped here. Use Choose folder.");
     if (!file || !/\.zip$/i.test(file.name)) return setError("Drop a plugin .zip file.");
+    // ponytail: this reads the whole zip into memory. Turn on native drag-drop (real paths, as on Linux) if big drops hurt on Windows or macOS.
     await inspect(
       async () => {
         const path = await stageDroppedZip(file);
@@ -142,6 +140,24 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
       ({ path, preview }) => ({ kind: "zip", path, name: file.name, dropped: true, preview }),
     );
   };
+
+  // Linux: WebKitGTK gives the page no File and no path for a file dragged from a file manager, so the window takes the drop
+  // natively and sends the paths with the point they landed at. The zone is the only place that takes it.
+  const zone = useRef<HTMLDivElement>(null);
+  const latest = useRef({ allowOutside, busy, takeZipPath });
+  latest.current = { allowOutside, busy, takeZipPath };
+  useEffect(
+    () =>
+      getDesktopBridge()?.onFileDrop?.((paths, x, y) => {
+        if (!zone.current?.contains(document.elementFromPoint(x, y))) return;
+        const { allowOutside: allowed, busy: working, takeZipPath: take } = latest.current;
+        if (allowed !== true || working) return;
+        const path = paths[0];
+        if (!path || !/\.zip$/i.test(path)) return setError("Drop a plugin .zip file.");
+        void take(path);
+      }),
+    [],
+  );
 
   const lookUp = async (event: FormEvent) => {
     event.preventDefault();
@@ -198,7 +214,9 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
           {!isMobileApp() && (
             <>
               <div
+                ref={zone}
                 data-testid="drop-zone"
+                data-drop-zone
                 onDragOver={(event) => {
                   event.preventDefault();
                   if (!outsideOff) setDragging(true);

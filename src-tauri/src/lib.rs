@@ -410,7 +410,14 @@ pub fn run() {
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_os::init());
+        .plugin(tauri_plugin_os::init())
+        // A file dropped where nothing takes it makes the webview open it (a PDF replaces the whole app, with no way back).
+        // The UI claims drops, and this is the backstop: the main window never navigates to a file.
+        .plugin(
+            tauri::plugin::Builder::<tauri::Wry>::new("no-file-navigation")
+                .on_navigation(|_webview, url| url.scheme() != "file")
+                .build(),
+        );
 
     // Global shortcuts, restarting and self-updating exist on a desktop only. A phone updates through its store.
     #[cfg(desktop)]

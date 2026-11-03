@@ -53,6 +53,11 @@ function connect(options = {}) {
   self.addEventListener("error", (event) => {
     target.postMessage({ v: PROTOCOL_VERSION, event: "error", message: String(event.message || event.error || "Unknown error").slice(0, 500) }, "*");
   });
+  for (const name of ["dragover", "drop"]) {
+    self.addEventListener(name, (event) => {
+      if (!event.defaultPrevented && Array.from(event.dataTransfer?.types ?? []).includes("Files")) event.preventDefault();
+    });
+  }
   self.addEventListener("message", (event) => {
     if (event.source !== target) return;
     const data = event.data;
