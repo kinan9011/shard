@@ -44,6 +44,11 @@ tauri-plugin-process = "2"
 tauri-plugin-single-instance = { version = "=2.5.2", features = ["deep-link"] }
 tauri-plugin-updater = "2"
 
+# Android: reqwest's default certificate check calls Java through JNI and panics unless the app wires that up,
+# so the phone build trusts the bundled Mozilla roots instead (already in the lock). See `repos::tls_roots`.
+[target.'cfg(target_os = "android")'.dependencies]
+webpki-root-certs = "1"
+
 [dev-dependencies]
 tempfile = "3"
 

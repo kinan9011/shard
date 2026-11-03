@@ -10,6 +10,7 @@ import {
 import { House, Moon, Pin, Plus, PanelLeft, Puzzle, RefreshCw, Search, Settings, Sun, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { BrandMark } from "@/components/app/BrandMark";
 import { CommandPalette, type PaletteCommand } from "@/components/app/CommandPalette";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useAccent } from "@/hooks/useAccent";
@@ -129,7 +130,7 @@ const Shard = () => {
     getStoredChoice(typeof window !== "undefined" ? window.localStorage : undefined, SIDEBAR_CATEGORIES_STORAGE_KEY, SIDEBAR_CATEGORY_MODES, "remember")
   );
   const [storedLayout, setLayout] = useState(() =>
-    getStoredChoice(typeof window !== "undefined" ? window.localStorage : undefined, LAYOUT_STORAGE_KEY, LAYOUTS, "sidebar")
+    getStoredChoice(typeof window !== "undefined" ? window.localStorage : undefined, LAYOUT_STORAGE_KEY, LAYOUTS, phone ? "launcher" : "sidebar")
   );
   const [openToolsIn, setOpenToolsIn] = useState(() =>
     getStoredChoice(typeof window !== "undefined" ? window.localStorage : undefined, OPEN_TOOLS_IN_STORAGE_KEY, OPEN_TOOLS_IN_MODES, "new")
@@ -273,8 +274,9 @@ const Shard = () => {
       console.error("Failed to save layout setting:", error);
     }
   }, [storedLayout]);
-  // A phone always gets the Launcher layout, whatever the saved choice: it has no room for a sidebar or a tab strip.
-  const layout = phone ? "launcher" : storedLayout;
+  // A phone honours the saved choice too: Launcher gets the bottom bar, Sidebar gets the sidebar as a drawer behind a menu button.
+  // With nothing saved yet a phone starts on Launcher (a bottom bar suits a thumb); the first-run step and Settings change it.
+  const layout = storedLayout;
 
   useEffect(() => {
     try {
@@ -932,6 +934,7 @@ const Shard = () => {
             destination={phoneDestination}
             title={selectedTool?.name ?? (view.kind === "plugins" ? "Plugins" : view.kind === "settings" ? "Settings" : "Shard")}
             onBack={() => setView(HOME_VIEW)}
+            onMenu={layout === "sidebar" ? () => setSidebarOpen(!sidebarOpen) : undefined}
             onSearch={openCommandPalette}
             tool={selectedTool}
             pinned={selectedTool ? pinned.includes(selectedTool.id) : false}
@@ -943,7 +946,7 @@ const Shard = () => {
         ) : layout === "launcher" ? (
         <header data-tauri-drag-region className="workspace-titlebar launcher-titlebar">
           <div data-tauri-drag-region className="flex items-center gap-2.5 pr-2.5">
-            <img src="./brand/mark.svg" alt="" aria-hidden="true" className="h-[22px] w-[22px]" />
+            <BrandMark className="h-[22px] w-[22px]" />
             <span className="font-semibold text-foreground">Shard</span>
           </div>
           <div className="launcher-tabs" role="presentation">
@@ -1030,7 +1033,7 @@ const Shard = () => {
               onWhatsNew={openWhatsNew}
             />
           ) : view.kind === "plugins" ? (
-            <PluginsPage variant={layout === "launcher" ? "cards" : "list"} customThemes={bridge ? customThemes : undefined} themeApply={{ scheme: activeScheme, onScheme: setColorScheme, dark: darkMode }} startInstall={view.install} tab={view.tab} onTabChange={(tab) => setView({ kind: "plugins", tab })} onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }} />
+            <PluginsPage variant={layout === "launcher" || phone ? "cards" : "list"} customThemes={bridge ? customThemes : undefined} themeApply={{ scheme: activeScheme, onScheme: setColorScheme, dark: darkMode }} startInstall={view.install} tab={view.tab} onTabChange={(tab) => setView({ kind: "plugins", tab })} onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }} />
           ) : !selectedTool && layout === "launcher" ? (
             <LauncherHome
               tools={catalogTools}
@@ -1079,7 +1082,7 @@ const Shard = () => {
         </div>
       </main>
 
-      {phone && (
+      {phone && layout === "launcher" && (
         <MobileNav
           destination={phoneDestination}
           onHome={() => setView(HOME_VIEW)}

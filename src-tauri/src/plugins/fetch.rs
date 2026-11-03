@@ -117,7 +117,7 @@ pub async fn fetch(allow: &Allowlist, request: FetchRequest, limits: Limits) -> 
     ensure_crypto_provider();
     let hops = Arc::new(allow.clone());
     // ponytail: a client per call (the redirect rule depends on this plugin's list). Cache per plugin if polling plugins show up.
-    let client = reqwest::Client::builder()
+    let client = super::repos::tls_roots(reqwest::Client::builder())
         .timeout(limits.timeout)
         .no_proxy()
         .redirect(reqwest::redirect::Policy::custom(move |attempt| {

@@ -16,7 +16,8 @@ function LayoutCard({ title, badge, description, preview, checked, onSelect }: {
       }`}
     >
       <input type="radio" name="layout" className="sr-only" checked={checked} onChange={onSelect} />
-      {preview}
+      {/* A phone has no room for the miniature. */}
+      <div className="hidden sm:block">{preview}</div>
       <div className="flex items-start gap-3">
         <span
           aria-hidden="true"
@@ -96,9 +97,9 @@ function LauncherPreview() {
 }
 
 /** The Sidebar / Launcher cards of Settings → Appearance (2b) and of the first-run layout step (2a). */
-export function LayoutChoice({ layout, onLayout, className = "max-w-[820px] gap-3.5" }: { layout: Layout; onLayout(next: Layout): void; className?: string }) {
+export function LayoutChoice({ layout, onLayout, className = "max-w-[820px] gap-3 sm:gap-3.5" }: { layout: Layout; onLayout(next: Layout): void; className?: string }) {
   return (
-    <div role="radiogroup" aria-label="Layout" className={`flex ${className}`}>
+    <div role="radiogroup" aria-label="Layout" className={`flex flex-col sm:flex-row ${className}`}>
       <LayoutCard
         checked={layout === "sidebar"}
         onSelect={() => onLayout("sidebar")}

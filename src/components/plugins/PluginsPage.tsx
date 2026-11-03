@@ -87,8 +87,8 @@ export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = fal
           onBack={closeDetail}
         />
       )}
-      <div className={cn("flex shrink-0 flex-col gap-3.5 border-b border-border px-7 pt-5", detail && "hidden")}>
-        <div className="flex items-start justify-between gap-4">
+      <div className={cn("flex shrink-0 flex-col gap-3.5 border-b border-border px-4 pt-5 sm:px-7", detail && "hidden")}>
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
           <div className="flex flex-col gap-0.5">
             <h1 className="text-xl font-semibold leading-[1.3] text-foreground">Plugins</h1>
             <p className="text-sm text-muted-foreground">Add tools from your repositories, a zip file, a folder or a repo URL.</p>
@@ -102,7 +102,7 @@ export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = fal
             Install from file or URL
           </button>
         </div>
-        <div role="tablist" aria-label="Plugins" className="-ml-3 flex h-9 gap-1">
+        <div role="tablist" aria-label="Plugins" className="-ml-3 flex h-9 gap-1 overflow-x-auto">
           <TabButton idPrefix="plugins-tab" controls="plugins-panel" id="browse" selected={current === "browse"} onSelect={onTabChange}>
             Browse
           </TabButton>

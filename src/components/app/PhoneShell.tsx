@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ChevronLeft, House, Layers, Pin, Puzzle, Search, Settings, X } from "lucide-react";
+import { ChevronLeft, House, Layers, Menu, Pin, Puzzle, Search, Settings, X } from "lucide-react";
 import type { CatalogTool } from "@/app/catalog";
+import { BrandMark } from "@/components/app/BrandMark";
 import { useDialogFocus } from "@/components/app/useDialogFocus";
 
 export type PhoneDestination = "home" | "tool" | "plugins" | "settings";
@@ -10,6 +11,8 @@ interface PhoneHeaderProps {
   /** The title of what is on screen: the tool's name, "Plugins", "Settings", or the app's name on Home. */
   title: string;
   onBack: () => void;
+  /** Sidebar layout only: opens the sidebar drawer. Launcher navigates with the bottom bar instead. */
+  onMenu?: () => void;
   onSearch: () => void;
   /** The tool on screen, if any: it can be pinned. */
   tool: CatalogTool | null;
@@ -21,13 +24,18 @@ interface PhoneHeaderProps {
 }
 
 /** The phone's top bar: back to Home from a tool, the title, search, pin, and the list of open tools. */
-export function PhoneHeader({ destination, title, onBack, onSearch, tool, pinned, onTogglePin, openTools, onSelectTool, onCloseTool }: PhoneHeaderProps) {
+export function PhoneHeader({ destination, title, onBack, onMenu, onSearch, tool, pinned, onTogglePin, openTools, onSelectTool, onCloseTool }: PhoneHeaderProps) {
   const [sheet, setSheet] = useState(false);
   return (
     <>
       <header className="phone-header">
+        {onMenu && (
+          <button type="button" className="chrome-button" aria-label="Open sidebar" onClick={onMenu}>
+            <Menu size={20} aria-hidden="true" />
+          </button>
+        )}
         {destination === "home" ? (
-          <img src="./brand/mark.svg" alt="" aria-hidden="true" className="size-6 shrink-0" />
+          !onMenu && <BrandMark className="size-6" />
         ) : (
           <button type="button" className="chrome-button" aria-label="Back to Home" onClick={onBack}>
             <ChevronLeft size={20} aria-hidden="true" />

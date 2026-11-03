@@ -100,7 +100,7 @@ export function ThemesTab({ themes, apply, onAddRepository }: { themes: CustomTh
   };
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col overflow-y-auto px-7 py-3">
+    <div className="flex min-w-0 flex-1 flex-col overflow-y-auto px-4 py-3 sm:px-7">
       <div className="flex justify-end pb-2">
         <ActionButton disabled={syncing} onClick={() => void sync()}>{syncing ? "Syncing…" : "Sync repositories"}</ActionButton>
       </div>

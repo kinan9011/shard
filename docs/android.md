@@ -26,7 +26,9 @@ npx tauri android build --apk --debug --target aarch64
 
 Or `task build:android`: it runs the init once and builds the debug APK. It defaults `ANDROID_HOME` to `~/Android/Sdk`, `NDK_HOME` to the newest NDK there and `JAVA_HOME` to JDK 17; export them to override.
 
-`tauri android init` takes the launcher icons from `src-tauri/icons/android`. `npm run icon` does not touch that folder; after a brand change run `npx tauri icon src-tauri/app-icon.png` to refresh it.
+`tauri android init` leaves the stock Tauri launcher icons in the generated project. `bash scripts/android-icons.sh` (run by `task build:android` and by CI) copies the Shard ones from `src-tauri/icons/android` over them; run it by hand after a manual `tauri android init`. `npm run icon` does not touch `src-tauri/icons/android`; after a brand change run `npx tauri icon src-tauri/app-icon.png` to refresh it.
+
+The phone build trusts the root certificates bundled in the app (`webpki-root-certs`), not the phone's certificate store, because reqwest's Android verifier needs a JNI setup the app doesn't have. A CA the user installed on the phone is not trusted by repository sync or plugin downloads.
 
 ## Release builds
 

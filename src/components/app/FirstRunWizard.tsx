@@ -17,6 +17,7 @@ import { repoJob, useInstallFlow } from "@/plugins/useInstallFlow";
 import { usePluginCatalog, type CatalogRow } from "@/plugins/usePluginCatalog";
 import type { PluginBundle } from "@/plugins/types";
 import { searchTools } from "@/utils/tool-search";
+import { BrandMark } from "@/components/app/BrandMark";
 import { cn } from "@/lib/utils";
 import type { Layout } from "@/utils/theme";
 
@@ -304,16 +305,16 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
         <div data-tauri-drag-region className="absolute inset-x-0 top-0 z-10 h-7" />
         <div className={cn("flex flex-col items-center gap-2.5 text-center", mac && "pt-4")}>
           <span className="mb-2 scale-[1.6]">
-            <span className="grid size-[22px] place-items-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground" aria-hidden="true">D</span>
+            <BrandMark className="size-[22px]" />
           </span>
           <h1 className="text-2xl font-semibold">Welcome to Shard</h1>
           <p className="text-muted-foreground">Start with a set of tools. The {CORE_NAMES.length} built-in tools are included, and you can hide them or add and remove plugins any time.</p>
         </div>
-        <div className="min-h-0 w-[820px] max-w-full flex-1 overflow-y-auto">
+        <div className="min-h-0 w-[820px] max-w-full flex-1 overflow-y-auto px-4 sm:px-0">
           {load.phase === "loading" ? (
             <p className="text-center text-muted-foreground" role="status">Loading plugins…</p>
           ) : (
-            <div className="grid grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5">
               {bundleCards.map((bundle) => (
                 <BundleCard key={bundle.id} bundle={bundle} checked={selectedBundles.has(bundle.id)} onToggle={() => toggleBundle(bundle.id)} />
               ))}
@@ -325,7 +326,7 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
             </button>
           </div>
         </div>
-        <div className="flex w-[820px] max-w-full items-center gap-2.5 border-t border-border pb-7 pt-4">
+        <div className="flex w-[820px] max-w-full items-center gap-2.5 border-t border-border px-4 pb-7 pt-4 sm:px-0">
           <span className="flex-1 text-muted-foreground" role="status">
             {footerStatus ?? `${plural(chosenBundles.length, "bundle", "bundles")} · ${plural(chosen.length, "plugin", "plugins")}${bytes > 0 ? ` · ${formatSize(bytes)}` : ""}`}
           </span>
@@ -342,7 +343,7 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
       <div data-tauri-drag-region className="absolute inset-x-0 top-0 z-10 h-7" />
       <aside className={cn("flex w-full shrink-0 flex-col gap-4 border-b border-border p-5 sm:w-[300px] sm:gap-7 sm:border-b-0 sm:border-r sm:p-7", mac && "pt-14")}>
         <div className="flex items-center gap-2.5">
-          <span className="grid size-[22px] place-items-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground" aria-hidden="true">D</span>
+          <BrandMark className="size-[22px]" />
           <span className="font-semibold">Shard</span>
         </div>
         <div className="flex flex-col gap-1">
@@ -359,14 +360,14 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
       <div className="flex min-w-0 flex-1 flex-col">
         {step === 1 ? (
           <>
-            <div className="flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto px-12 pt-10">
+            <div className="flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto px-4 pt-6 sm:px-12 sm:pt-10">
               <div className="flex flex-col gap-1">
                 <h2 className="text-xl font-semibold">How do you want to move between tools?</h2>
                 <p className="text-muted-foreground">You can switch at any time in Settings → Appearance.</p>
               </div>
               <LayoutChoice layout={layout} onLayout={onLayout} className="gap-4" />
             </div>
-            <div className="flex items-center gap-2.5 border-t border-border px-12 py-3.5">
+            <div className="flex items-center gap-2.5 border-t border-border px-4 py-3.5 sm:px-12">
               <span className="flex-1 text-muted-foreground">Step 1 of 3</span>
               <Button type="button" size="sm" className="h-[30px] px-3 text-sm" onClick={() => setStep(2)}>Continue</Button>
             </div>
