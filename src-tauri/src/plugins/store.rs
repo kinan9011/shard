@@ -486,7 +486,7 @@ pub(crate) fn enabled_plugin(app: &tauri::AppHandle, id: &str) -> Result<Install
 
 #[tauri::command]
 pub async fn plugin_pick_folder(app: tauri::AppHandle) -> Option<String> {
-    crate::folder_compare::pick_folder(app).await
+    crate::folder_compare::pick_folder(app, None).await
 }
 
 #[cfg(test)]

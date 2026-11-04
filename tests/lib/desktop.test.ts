@@ -387,7 +387,9 @@ describe("folder bridge", () => {
     const d = await loadDesktop();
     tauri.invoke.mockResolvedValue("ok");
     await d.pickFolder();
-    expect(tauri.invoke).toHaveBeenCalledWith("pick_folder");
+    expect(tauri.invoke).toHaveBeenCalledWith("pick_folder", { start: null });
+    await d.pickFolder("/l");
+    expect(tauri.invoke).toHaveBeenCalledWith("pick_folder", { start: "/l" });
     await d.compareContents("/l", "/r", ["a"]);
     expect(tauri.invoke).toHaveBeenCalledWith("compare_contents", { leftRoot: "/l", rightRoot: "/r", paths: ["a"] });
     await d.readTextFile("/l", "a");

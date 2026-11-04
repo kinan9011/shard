@@ -127,7 +127,8 @@ export function FolderView({ onOpenInText, onModeChange }: Props) {
   const browse = async (side: "left" | "right") => {
     let path: string | null;
     try {
-      path = await pickFolder();
+      // Open where the user last was: this side's folder, else the other side's.
+      path = await pickFolder(roots.current[side] ?? roots.current[side === "left" ? "right" : "left"] ?? undefined);
     } catch (e) {
       toast.error(messageOf(e));
       return;

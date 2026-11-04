@@ -463,10 +463,10 @@ function requireDesktop(): void {
   }
 }
 
-/** Asks for a folder with the native dialog. Resolves to null when the user cancels. */
-export async function pickFolder(): Promise<string | null> {
+/** Asks for a folder with the native dialog, opened in `start` when given. Resolves to null when the user cancels. */
+export async function pickFolder(start?: string): Promise<string | null> {
   requireDesktop();
-  return invoke<string | null>("pick_folder");
+  return invoke<string | null>("pick_folder", { start: start ?? null });
 }
 
 export async function scanFolder(root: string): Promise<FolderEntry[]> {

@@ -458,17 +458,24 @@ fn backups_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 /// A phone's file picker cannot pick a folder, so there it answers like a cancelled dialog.
 #[cfg(mobile)]
 #[tauri::command]
-pub async fn pick_folder(_app: tauri::AppHandle) -> Option<String> {
+pub async fn pick_folder(_app: tauri::AppHandle, _start: Option<String>) -> Option<String> {
     None
 }
 
+/// `start` is the folder the dialog opens in. It is ignored when it is not an existing folder.
 #[cfg(desktop)]
 #[tauri::command]
-pub async fn pick_folder(app: tauri::AppHandle) -> Option<String> {
+pub async fn pick_folder(app: tauri::AppHandle, start: Option<String>) -> Option<String> {
     use tauri_plugin_dialog::DialogExt;
-    let picked = tauri::async_runtime::spawn_blocking(move || app.dialog().file().blocking_pick_folder())
-        .await
-        .ok()??;
+    let picked = tauri::async_runtime::spawn_blocking(move || {
+        let mut dialog = app.dialog().file();
+        if let Some(start) = start.filter(|s| Path::new(s).is_dir()) {
+            dialog = dialog.set_directory(start);
+        }
+        dialog.blocking_pick_folder()
+    })
+    .await
+    .ok()??;
     picked.into_path().ok().map(|path| path_string(&path))
 }
 
