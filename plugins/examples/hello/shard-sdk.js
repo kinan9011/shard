@@ -181,7 +181,7 @@ function connect(options = {}) {
       writeText: (text) => call("clipboard.writeText", { text })
     },
     files: {
-      open: (options2 = {}) => call("files.open", { accept: options2.accept, as: options2.as ?? "text" }, null),
+      open: ((options2 = {}) => call("files.open", { accept: options2.accept, as: options2.as ?? "text" }, null)),
       save: (name, data) => call("files.save", { name, data }, null)
     },
     net: {
