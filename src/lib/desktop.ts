@@ -8,6 +8,7 @@ import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { t } from "@/i18n";
+import { FONT_DB } from "@/lib/customFonts";
 import { isMobileApp } from "@/lib/platform";
 import type { UserTheme } from "@/utils/theme";
 import type { ToolManifest } from "@/utils/tool-manifest";
@@ -246,9 +247,12 @@ function createTauriBridge(): DesktopBridge {
     }
   };
 
+  // The webview zoom last applied. A native drop point is not scaled by it, a CSS point is.
+  let webviewZoom = 1;
   const setZoom = async (factor: number) => {
     try {
       await getCurrentWebview().setZoom(factor);
+      webviewZoom = factor;
       return true;
     } catch (error) {
       console.error("Failed to zoom the webview:", error);
@@ -279,12 +283,13 @@ function createTauriBridge(): DesktopBridge {
 
   // Linux only (tauri.linux.conf.json): WebKitGTK gives a page no File and no path for a file dragged from a file manager,
   // so the window hands the drop to Tauri, which sends the real paths and the point where it landed.
-  // ponytail: the point is in CSS px on Linux. Divide by devicePixelRatio before turning native drag-drop on elsewhere.
+  // ponytail: GTK gives the point in window px that display scaling has already taken out, so only the webview zoom is
+  // divided out to get CSS px. Divide by devicePixelRatio too before turning native drag-drop on elsewhere.
   const onFileDrop = (callback: (paths: string[], x: number, y: number) => void) => {
     let active = true;
     let unlisten: (() => void) | undefined;
     listen<{ paths: string[]; position: { x: number; y: number } }>("tauri://drag-drop", ({ payload }) => {
-      if (active) callback(payload.paths, payload.position.x, payload.position.y);
+      if (active) callback(payload.paths, payload.position.x / webviewZoom, payload.position.y / webviewZoom);
     })
       .then((stop) => {
         if (active) unlisten = stop;
@@ -584,7 +589,7 @@ export async function resetAppData(): Promise<boolean> {
   sessionStorage.clear();
   // Fonts the user added live in IndexedDB. A blocked delete (another connection open) is not worth stopping the reset for.
   try {
-    indexedDB.deleteDatabase("shard-fonts");
+    indexedDB.deleteDatabase(FONT_DB);
   } catch {
     /* no IndexedDB here */
   }

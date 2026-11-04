@@ -43,7 +43,7 @@ checked. Wave 5 of the plugin shell plan is a gate: later waves build on this re
     ask for input, and cannot read anything it was not sent.
   - The target is the plugin id the host chose, delivered to that plugin's own frame window. It is never taken
     from a message.
-  - Text is capped at 1 MB. For a frame that is not ready yet it is held in memory for 30 s at most and handed
+  - Text is capped at 1,048,576 characters. For a frame that is not ready yet it is held in memory for 30 s at most and handed
     over at the handshake, once. It is never written to disk.
 
 ## Why the frame cannot reach Tauri IPC

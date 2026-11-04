@@ -350,6 +350,13 @@ export function sendInputToPlugin(pluginId: string, text: string): boolean {
       sent = true;
     }
   }
-  if (!sent) pendingInput.set(pluginId, { text, at: Date.now() });
+  if (!sent) {
+    const entry = { text, at: Date.now() };
+    pendingInput.set(pluginId, entry);
+    // A frame that never says ready must not keep the text: drop it when its time is up.
+    setTimeout(() => {
+      if (pendingInput.get(pluginId) === entry) pendingInput.delete(pluginId);
+    }, INPUT_TTL_MS);
+  }
   return true;
 }

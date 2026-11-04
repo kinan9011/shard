@@ -10,6 +10,7 @@ const tauri = vi.hoisted(() => ({
   relaunch: vi.fn(async () => {}),
   check: vi.fn(),
   listen: vi.fn(async () => () => {}),
+  setZoom: vi.fn(async () => {}),
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({ isTauri: tauri.isTauri, invoke: tauri.invoke }));
@@ -22,6 +23,7 @@ vi.mock("@tauri-apps/plugin-opener", () => ({
 vi.mock("@tauri-apps/plugin-process", () => ({ relaunch: tauri.relaunch }));
 vi.mock("@tauri-apps/plugin-updater", () => ({ check: tauri.check }));
 vi.mock("@tauri-apps/api/event", () => ({ listen: tauri.listen }));
+vi.mock("@tauri-apps/api/webview", () => ({ getCurrentWebview: () => ({ setZoom: tauri.setZoom }) }));
 
 const blobOf = (bytes: number[]) =>
   ({ arrayBuffer: async () => new Uint8Array(bytes).buffer }) as Blob;
@@ -299,6 +301,24 @@ describe("getDesktopBridge", () => {
       status: "unsupported",
     });
     expect(tauri.check).not.toHaveBeenCalled();
+  });
+});
+
+describe("onFileDrop", () => {
+  it("gives the drop point in CSS px, taking the webview zoom out", async () => {
+    tauri.platform.mockReturnValue("linux");
+    const { getDesktopBridge } = await loadDesktop();
+    const bridge = getDesktopBridge()!;
+    const dropped = vi.fn();
+    bridge.onFileDrop!(dropped);
+    const handler = tauri.listen.mock.calls.find(([name]) => name === "tauri://drag-drop")![1] as (event: unknown) => void;
+    const drop = () => handler({ payload: { paths: ["/a.txt"], position: { x: 125, y: 250 } } });
+
+    drop();
+    expect(dropped).toHaveBeenLastCalledWith(["/a.txt"], 125, 250);
+    await bridge.setZoom!(1.25);
+    drop();
+    expect(dropped).toHaveBeenLastCalledWith(["/a.txt"], 100, 200);
   });
 });
 

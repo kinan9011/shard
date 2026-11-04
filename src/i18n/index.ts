@@ -141,10 +141,14 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
+const pluralRules = new Map<string, Intl.PluralRules>();
+
 function find(dict: Dict | undefined, tag: string, key: string, count: number | undefined): string | undefined {
   if (!dict) return undefined;
   if (count !== undefined) {
-    const category = new Intl.PluralRules(tag).select(count);
+    let rules = pluralRules.get(tag);
+    if (!rules) pluralRules.set(tag, (rules = new Intl.PluralRules(tag)));
+    const category = rules.select(count);
     return dict[`${key}_${category}`] ?? dict[`${key}_other`] ?? dict[key];
   }
   return dict[key];

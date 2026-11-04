@@ -602,6 +602,22 @@ describe("bridge: send to a plugin", () => {
     expect(posted.some((m) => (m as { event?: string }).event === "input")).toBe(false);
   });
 
+  it("frees held text when its time is up, even if no frame ever says ready", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    try {
+      sendInputToPlugin("in-6", "forgotten");
+      vi.advanceTimersByTime(INPUT_TTL_MS);
+    } finally {
+      vi.useRealTimers();
+    }
+    // The clock was not moved, so only the timer can have dropped it.
+    const { frame, posted, contentWindow } = fakeFrame();
+    attach(frame, "in-6");
+    send(contentWindow, request("ready"));
+    await flush();
+    expect(posted.some((m) => (m as { event?: string }).event === "input")).toBe(false);
+  });
+
   it("refuses text over the size limit and holds nothing", async () => {
     expect(sendInputToPlugin("in-5", "x".repeat(MAX_INPUT_CHARS + 1))).toBe(false);
     const { frame, posted, contentWindow } = fakeFrame();
