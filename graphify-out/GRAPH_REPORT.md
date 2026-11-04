@@ -1,16 +1,16 @@
 # Graph Report - devtools  (2026-11-04)
 
 ## Corpus Check
-- 461 files · ~576,583 words
+- 461 files · ~642,291 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3963 nodes · 8978 edges · 336 communities (191 shown, 145 thin omitted)
+- 3963 nodes · 8975 edges · 343 communities (193 shown, 150 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 144 edges (avg confidence: 0.75)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8e8fd96c`
+- Built from commit: `e35de598`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -169,7 +169,7 @@
 - [[_COMMUNITY_build.yml|build.yml]]
 - [[_COMMUNITY_build-app.yml|build-app.yml]]
 - [[_COMMUNITY_ShardSdk|ShardSdk]]
-- [[_COMMUNITY_shell-integration.test.tsx|shell-integration.test.tsx]]
+- [[_COMMUNITY_plugins-cards.test.tsx|plugins-cards.test.tsx]]
 - [[_COMMUNITY_CODING AGENTS READ THIS FIRST|CODING AGENTS: READ THIS FIRST]]
 - [[_COMMUNITY_macOS|macOS]]
 - [[_COMMUNITY_releaseNotes.ts|releaseNotes.ts]]
@@ -311,7 +311,7 @@
 - [[_COMMUNITY_shard-tab-menu.test.tsx|shard-tab-menu.test.tsx]]
 - [[_COMMUNITY_x|x]]
 - [[_COMMUNITY_x|x]]
-- [[_COMMUNITY_x|x]]
+- [[_COMMUNITY_useKeyboardShortcuts.ts|useKeyboardShortcuts.ts]]
 - [[_COMMUNITY_x|x]]
 - [[_COMMUNITY_theme-colors.ts|theme-colors.ts]]
 - [[_COMMUNITY_x|x]]
@@ -332,6 +332,13 @@
 - [[_COMMUNITY_Shard v1.0.1|Shard v1.0.1]]
 - [[_COMMUNITY_FetchResponse|FetchResponse]]
 - [[_COMMUNITY_android-icons.sh|android-icons.sh]]
+- [[_COMMUNITY_plugin-template.test.ts|plugin-template.test.ts]]
+- [[_COMMUNITY_sonner.tsx|sonner.tsx]]
+- [[_COMMUNITY_phone-shell.test.tsx|phone-shell.test.tsx]]
+- [[_COMMUNITY_Props|Props]]
+- [[_COMMUNITY_FontsApi|FontsApi]]
+- [[_COMMUNITY_emitJsonSchema|emitJsonSchema]]
+- [[_COMMUNITY_desktop.test.ts|desktop.test.ts]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `t()` - 225 edges
@@ -348,14 +355,14 @@
 ## Surprising Connections (you probably didn't know these)
 - `getLineDiff()` --calls--> `flush()`  [INFERRED]
   src/utils/text-compare.ts → tests/plugins/bridge.test.ts
+- `getUnifiedDiff()` --indirect_call--> `index()`  [INFERRED]
+  src/utils/text-compare.ts → tests/plugins/schema.test.ts
 - `pasteUntilSuggested()` --calls--> `waitFor()`  [INFERRED]
   tests/app/send-to.test.tsx → e2e/selftest.js
 - `openFolders()` --calls--> `waitFor()`  [INFERRED]
   tests/tools/diff-merge-folder-view.test.tsx → e2e/selftest.js
-- `reset_targets()` --references--> `Item`  [EXTRACTED]
-  src-tauri/src/lib.rs → src/components/tools/diff-merge/folder/FolderTable.tsx
-- `readStoredIds()` --indirect_call--> `error()`  [INFERRED]
-  src/app/Shard.tsx → tests/tools/ip-cidr.test.ts
+- `startWorker()` --indirect_call--> `error()`  [INFERRED]
+  plugins/examples/hash-wasm/app.js → tests/tools/ip-cidr.test.ts
 
 ## Import Cycles
 - 1-file cycle: `src/components/ui/sonner.tsx -> src/components/ui/sonner.tsx`
@@ -367,15 +374,15 @@
 - **Plugin Architecture Subsystem** — readme_plugins, readme_official_plugins, docs_design_side_by_side_diff_merger_project_plugin_shell_dc, docs_plans_2026_11_01_plugin_shell_md [INFERRED 0.85]
 - **Side-by-Side Diff Merger Documentation & Wave Pipeline** — docs_design_side_by_side_diff_merger_readme_md, docs_design_side_by_side_diff_merger_readme_coding_agents_read_this_first, docs_design_side_by_side_diff_merger_readme_what_you_should_do_important, docs_design_side_by_side_diff_merger_readme_about_the_design_files [INFERRED 0.85]
 
-## Communities (336 total, 145 thin omitted)
+## Communities (343 total, 150 thin omitted)
 
 ### Community 0 - "store.rs"
 Cohesion: 0.09
 Nodes (62): io_err(), Error, String, valid_id(), an_entry_that_is_a_link_is_rejected(), an_update_that_drops_a_permission_drops_its_grant(), an_update_that_lists_a_new_network_host_needs_a_new_approval(), check_grant() (+54 more)
 
 ### Community 1 - "FirstRunWizard.tsx"
-Cohesion: 0.10
-Nodes (20): BrowseTab(), categoryLabel(), CompactRow(), PluginCard(), RuntimeChip, Sort, DetailsGrid(), DetailTab (+12 more)
+Cohesion: 0.13
+Nodes (15): BrowseTab(), BrowseTabProps, categoryLabel(), CompactRow(), PluginCard(), RuntimeChip, Sort, MenuState (+7 more)
 
 ### Community 2 - "Shard.tsx"
 Cohesion: 0.06
@@ -394,12 +401,12 @@ Cohesion: 0.10
 Nodes (66): File, a_finished_undo_cannot_be_replayed(), apply_folder_merge(), apply_ops(), backups_dir(), compare_contents(), compare_paths(), compare_paths_treats_folders_and_missing_files_as_different() (+58 more)
 
 ### Community 6 - "usePlugins.ts"
-Cohesion: 0.05
-Nodes (46): ajv, checkIndex, checkManifest, describe(), idString, indexSchema, manifestSchema, pathOf() (+38 more)
+Cohesion: 0.08
+Nodes (24): ajv, checkIndex, checkManifest, describe(), idString, indexSchema, manifestSchema, pathOf() (+16 more)
 
 ### Community 7 - "InstalledTab.tsx"
-Cohesion: 0.13
-Nodes (15): FAQ_KEYS, faqItems(), INDENTS, JsonViewer(), MODES, readLayout(), narrow(), useIsMobile() (+7 more)
+Cohesion: 0.08
+Nodes (25): JsonDiff(), FAQ_KEYS, faqItems(), JsonSchemaValidator(), JsonToTypeScript(), FAQ_KEYS, faqItems(), INDENTS (+17 more)
 
 ### Community 8 - "support.js"
 Cohesion: 0.06
@@ -411,35 +418,35 @@ Nodes (49): boot(), cdnScriptFor(), collectProps(), compileAttr(), compileTempla
 
 ### Community 10 - "api.ts"
 Cohesion: 0.10
-Nodes (38): Candidate, jobFor(), isDesktop(), clearDroppedZip(), decodeFrame(), FetchInit, FetchResult, FolderPreview (+30 more)
+Nodes (40): Candidate, InstallDialogProps, jobFor(), isDesktop(), clearDroppedZip(), decodeFrame(), FetchInit, FetchResult (+32 more)
 
 ### Community 11 - "zip.rs"
 Cohesion: 0.12
 Nodes (47): Limits, ManifestCheck, a_dropped_zip_is_staged_inside_the_drop_folder_and_replaced_by_the_next(), a_dropped_zip_over_the_cap_is_refused_and_not_written(), a_missing_or_ambiguous_manifest_is_rejected(), a_reinstall_from_a_zip_is_an_update(), a_zip_that_inflates_past_the_limit_is_stopped(), an_encrypted_entry_is_rejected() (+39 more)
 
 ### Community 12 - "useInstallFlow.ts"
-Cohesion: 0.08
-Nodes (31): BatchEntry, BatchPermissionDialogProps, PermissionDialog(), PermissionDialogMode, PermissionDialogProps, PermissionList(), PermissionListProps, CatalogEntry (+23 more)
+Cohesion: 0.07
+Nodes (33): BatchEntry, BatchPermissionDialogProps, PermissionDialogMode, PermissionDialogProps, PermissionList(), PermissionListProps, CatalogEntry, PERMISSION_GROUPS (+25 more)
 
 ### Community 13 - "fetch.rs"
 Cohesion: 0.06
 Nodes (64): Duration, HashMap, a_host_or_port_outside_the_list_is_refused_before_connecting(), a_redirect_to_a_blocked_host_is_an_error_and_one_to_an_allowed_host_is_followed(), a_response_over_the_cap_is_an_error(), allow(), Allowlist, allowlist_matches_host_port_and_wildcards() (+56 more)
 
 ### Community 14 - "PinnedEditor.tsx"
-Cohesion: 0.07
-Nodes (40): $(), encoder, hashOnMainThread(), sdk, show(), startWorker(), status, WASM Hash (+32 more)
+Cohesion: 0.12
+Nodes (14): $(), encoder, hashOnMainThread(), sdk, show(), startWorker(), status, WASM Hash (+6 more)
 
 ### Community 15 - "Result"
-Cohesion: 0.08
-Nodes (41): ClientBuilder, a_built_in_index_is_read_only_when_its_signature_checks_out(), a_corrupt_repos_file_is_backed_up_and_reset(), a_failed_sync_records_the_error_and_keeps_the_last_good_catalog(), a_releases_repository_becomes_a_one_plugin_catalog(), a_releases_repository_has_no_bundles(), a_repository_with_only_themes_is_added_and_its_themes_are_cataloged(), a_synced_index_keeps_its_bundles_in_the_cache() (+33 more)
+Cohesion: 0.09
+Nodes (40): ClientBuilder, a_built_in_index_is_read_only_when_its_signature_checks_out(), a_corrupt_repos_file_is_backed_up_and_reset(), a_failed_sync_records_the_error_and_keeps_the_last_good_catalog(), a_releases_repository_becomes_a_one_plugin_catalog(), a_releases_repository_has_no_bundles(), a_repository_with_only_themes_is_added_and_its_themes_are_cataloged(), a_synced_index_keeps_its_bundles_in_the_cache() (+32 more)
 
 ### Community 16 - "usePluginCatalog.ts"
-Cohesion: 0.13
-Nodes (17): PluginUpdate, pluginUpdates(), EMPTY, joinCatalog(), Loaded, listeners, NONE, publish() (+9 more)
+Cohesion: 0.06
+Nodes (22): listeners, NONE, publish(), refreshPluginUpdates(), resetPluginUpdates(), setPluginUpdates(), subscribe(), usePluginUpdates() (+14 more)
 
 ### Community 17 - "editor.ts"
-Cohesion: 0.11
-Nodes (23): PluginRestore(), ActionButton(), Heading(), Row(), Segmented(), installTheme(), saveFile(), saveTheme() (+15 more)
+Cohesion: 0.10
+Nodes (26): ActionButton(), Heading(), Row(), Segmented(), MenuItem(), RepositoriesTab(), TYPE_LABEL, installTheme() (+18 more)
 
 ### Community 18 - "RegexGenerator.tsx"
 Cohesion: 0.11
@@ -458,8 +465,8 @@ Cohesion: 0.11
 Nodes (37): buildJsonTree(), countArrays(), countKeys(), countObjects(), describeJsonValue(), escapeXml(), formatJson(), getDepth() (+29 more)
 
 ### Community 22 - "json-to-code.ts"
-Cohesion: 0.08
-Nodes (38): CodeLanguage, CodeModel, CodeOptions, CodeResult, dependencyOrder(), emitCode(), emitGo(), emitJsonSchema() (+30 more)
+Cohesion: 0.07
+Nodes (39): generateSchema(), capitalize(), CODE_LANGUAGES, CodeLanguage, CodeModel, CodeOptions, CodeResult, errorPosition() (+31 more)
 
 ### Community 23 - "lib.rs"
 Cohesion: 0.11
@@ -474,16 +481,16 @@ Cohesion: 0.06
 Nodes (18): sdk, connect(), ConnectOptions, fetch(), FetchInit, FetchResponse, loadWasm(), Locale (+10 more)
 
 ### Community 26 - "ShortcutSettings.tsx"
-Cohesion: 0.10
-Nodes (29): GlobalShortcutProps, GlobalShortcutSetting(), ShortcutSettings(), ShortcutSettingsProps, useReportRecording(), withKey(), UseKeyboardShortcutsOptions, areShortcutBindingsEqual() (+21 more)
+Cohesion: 0.22
+Nodes (16): areShortcutBindingsEqual(), bindingFromKeyboardEvent(), createBinding(), DISPLAY_KEY_LABELS, formatShortcutBinding(), getDefaultShortcutBindings(), getShortcutConflict(), getShortcutIdentifier() (+8 more)
 
 ### Community 27 - "theme-colors.ts"
-Cohesion: 0.10
-Nodes (28): PickerItem, pickerItems(), pinLimitText(), BrandMark(), BundleCard(), BundleCardData, FirstRunWizard(), Load (+20 more)
+Cohesion: 0.16
+Nodes (19): PickerItem, pickerItems(), pinLimitText(), BundleCardData, FirstRunWizard(), Load, PasteInstall(), usePasteInstall() (+11 more)
 
 ### Community 28 - "UnifiedPane.tsx"
-Cohesion: 0.09
-Nodes (27): App, CustomThemes, Props, applyFolderMerge(), closeAfterReset(), compareContents(), createTauriBridge(), FolderUndoReport (+19 more)
+Cohesion: 0.12
+Nodes (24): App, DEFAULT_SHOW, Lower, applyFolderMerge(), closeAfterReset(), compareContents(), createTauriBridge(), FolderMergeReport (+16 more)
 
 ### Community 29 - "dependencies"
 Cohesion: 0.06
@@ -494,44 +501,44 @@ Cohesion: 0.08
 Nodes (27): arch, bundleDir, fail(), findBundle(), outDir, platform, readOption(), rules (+19 more)
 
 ### Community 31 - "SettingsPage.tsx"
-Cohesion: 0.07
-Nodes (36): sonner, App(), Toaster(), ToasterProps, en, applied, applyDocument(), commit() (+28 more)
+Cohesion: 0.13
+Nodes (25): en, applied, applyDocument(), commit(), dictionaries, Dir, find(), getDir() (+17 more)
 
 ### Community 32 - "DiffPanes.tsx"
-Cohesion: 0.12
-Nodes (18): PasteInstall(), usePasteInstall(), InstallDialog(), PLUGIN_TABS, PluginsPage(), PluginsPageProps, PluginsTab, ThemeApply (+10 more)
+Cohesion: 0.14
+Nodes (13): BuiltinToolId, INERT, ToolHost(), ToolHostProps, ToolPanel, WORKSPACE_TOOL_IDS, FrameState, ToolActiveContext (+5 more)
 
 ### Community 33 - "TextToolbar.tsx"
-Cohesion: 0.08
-Nodes (25): PaneDoc, PaneMeta, CHIPS, COMPARE, FOLDER_SHORTCUTS, Mode, MODES, ModeSwitch() (+17 more)
+Cohesion: 0.07
+Nodes (31): PaneDoc, PaneMeta, CHIPS, COMPARE, FOLDER_SHORTCUTS, FolderToolbar(), FolderView(), Mode (+23 more)
 
 ### Community 34 - "schema.ts"
-Cohesion: 0.23
-Nodes (8): buildDefaultResults(), CommandPaletteProps, PaletteCommand, PaletteItem, Actions, InstallableItem, Listed, ThemeCatalogEntry
+Cohesion: 0.20
+Nodes (10): buildDefaultResults(), CommandPaletteProps, PaletteCommand, PaletteItem, Actions, buildInstallables(), InstallableItem, Listed (+2 more)
 
 ### Community 35 - "protocol.rs"
 Cohesion: 0.12
 Nodes (30): Builder, R, a_corrupt_registry_is_a_404_and_is_left_alone(), a_link_that_leaves_the_package_is_404(), csp(), csp_keeps_the_fixed_policy_and_names_only_its_own_plugin(), directories_and_missing_files_are_404(), installed() (+22 more)
 
 ### Community 36 - "JsonViewer.tsx"
-Cohesion: 0.14
-Nodes (15): buildViewport(), blockReplacement(), Direction, computeBlocks(), mapPixel(), HighlightMode, inlineRanges(), Range (+7 more)
+Cohesion: 0.16
+Nodes (14): buildViewport(), blockReplacement(), computeBlocks(), mapPixel(), HighlightMode, inlineRanges(), Range, wordRanges() (+6 more)
 
 ### Community 37 - "json-schema.ts"
 Cohesion: 0.09
-Nodes (35): selectRange(), setOwn(), AjvClass, AjvError, AjvInstance, childPointer(), CompiledSchema, compileSchema() (+27 more)
+Nodes (33): selectRange(), AjvClass, AjvError, AjvInstance, childPointer(), CompiledSchema, compileSchema(), Draft (+25 more)
 
 ### Community 38 - "installed-tab.test.tsx"
 Cohesion: 0.11
 Nodes (8): FirstRunWizardProps, Props, AccentId, GlobalShortcut, Layout, OpenToolsIn, SidebarCategoryMode, ThemePreference
 
 ### Community 39 - "diff-merge-component.test.tsx"
-Cohesion: 0.28
-Nodes (9): buildBackup(), collectPrefs(), isPrefKey(), parseBackup(), Parsed, PREF_KEYS, record(), sane() (+1 more)
+Cohesion: 0.14
+Nodes (15): CustomThemes, Props, UserThemeList, BackupSources, buildBackup(), collectPrefs(), isPrefKey(), parseBackup() (+7 more)
 
 ### Community 40 - "folder.ts"
-Cohesion: 0.13
-Nodes (28): ActionMenu(), HEADING, MenuChoice, Props, DEFAULT_SHOW, Lower, FolderEntry, FolderMergeReport (+20 more)
+Cohesion: 0.12
+Nodes (26): ActionMenu(), HEADING, MenuChoice, Props, FolderEntry, allowedActions(), byPath(), classify() (+18 more)
 
 ### Community 41 - "json-diff.ts"
 Cohesion: 0.10
@@ -554,8 +561,8 @@ Cohesion: 0.11
 Nodes (9): ConnectOptions, FetchInit, Locale, OpenOptions, Pending, ReadyInfo, SdkErrorCode, Theme (+1 more)
 
 ### Community 46 - "storage.rs"
-Cohesion: 0.09
-Nodes (34): CatalogTool, toolTint(), CATEGORY_KEYS, categoryName(), categorySearchNames(), NamedTool, TOOL_NAME_KEYS, toolName() (+26 more)
+Cohesion: 0.10
+Nodes (33): CatalogTool, toolTint(), CATEGORY_KEYS, categoryName(), categorySearchNames(), NamedTool, TOOL_NAME_KEYS, toolName() (+25 more)
 
 ### Community 47 - "devDependencies"
 Cohesion: 0.08
@@ -566,8 +573,8 @@ Cohesion: 0.08
 Nodes (26): scripts, brand:build, build, build:dev, build:web, clean, dev, dev:web (+18 more)
 
 ### Community 49 - "TextCompare.tsx"
-Cohesion: 0.12
-Nodes (6): Props, TextToolbarProps, Props, Options, IgnoreMode, DiffSettings
+Cohesion: 0.13
+Nodes (11): TextToolbarProps, Options, useDiffEditors(), IgnoreMode, BOOLEANS, DEFAULT_SETTINGS, DiffSettings, ENUMS (+3 more)
 
 ### Community 50 - "devDependencies"
 Cohesion: 0.08
@@ -582,8 +589,8 @@ Cohesion: 0.17
 Nodes (10): api, arrange(), COMPOSE, COMPOSE_UPDATE, CRON, CRON_UPDATE, HASH, listed() (+2 more)
 
 ### Community 53 - "JsonDiff.tsx"
-Cohesion: 0.06
-Nodes (45): CopyButton(), CopyButtonProps, FAQ_KEYS, faqItems(), Filter, JsonDiff(), KIND_STYLE, KINDS (+37 more)
+Cohesion: 0.08
+Nodes (31): ChangeRow(), FAQ_KEYS, faqItems(), Filter, KIND_STYLE, KINDS, EMPTY, FAQ_KEYS (+23 more)
 
 ### Community 54 - "json-repair.ts"
 Cohesion: 0.13
@@ -598,16 +605,16 @@ Cohesion: 0.11
 Nodes (16): openTool(), setValue(), waitFor(), application, children, delay(), rootDir, saveDir (+8 more)
 
 ### Community 57 - "app.js"
-Cohesion: 0.20
-Nodes (9): repoAddress(), api, arrange(), desktop, listed(), NOW, renderTab(), REPOS (+1 more)
+Cohesion: 0.24
+Nodes (12): SIZES, BUILT_IN_FONTS, clampSize(), DEFAULT_FONT_PREFS, FIELDS, fontCss(), getStoredFonts(), quote() (+4 more)
 
 ### Community 58 - "blocks.ts"
 Cohesion: 0.22
 Nodes (10): toDoc(), blockStats(), DiffOptions, InnerChange, joinEol(), splitEol(), DIFF_CONFIG, diffIgnoring() (+2 more)
 
 ### Community 60 - "settings-backup.ts"
-Cohesion: 0.25
-Nodes (8): Dict, dict, dict, dict, dict, dict, dict, dict
+Cohesion: 0.21
+Nodes (7): dict, dict, dict, dict, dict, dict, dict
 
 ### Community 61 - "CommandPalette.tsx"
 Cohesion: 0.21
@@ -615,31 +622,31 @@ Nodes (7): dict, dict, dict, dict, dict, dict, dict
 
 ### Community 62 - "FolderTable.tsx"
 Cohesion: 0.11
-Nodes (13): CHIP, EXT_ICON, FolderRow, iconFor(), Item, nameColor(), Props, RowProps (+5 more)
+Nodes (11): CHIP, EXT_ICON, FolderRow, iconFor(), Item, nameColor(), Props, RowProps (+3 more)
 
 ### Community 63 - "RepositoriesTab.tsx"
-Cohesion: 0.11
-Nodes (23): useDialogFocus(), BatchPermissionDialog(), ConfirmUninstall(), InstallDialogProps, BuiltIns(), InstalledTab(), InstalledTabProps, MenuItem() (+15 more)
+Cohesion: 0.08
+Nodes (40): BrandMark(), BundleCard(), PluginChoice(), Step(), useDialogFocus(), BatchPermissionDialog(), ConfirmUninstall(), InstallDialog() (+32 more)
 
 ### Community 64 - "Repo"
-Cohesion: 0.11
-Nodes (16): DEFAULT_HEADER, FAQ_KEYS, JwtDecoder(), Mode, parseObject(), TIME_TONE, useNow(), VERIFY_TONE (+8 more)
+Cohesion: 0.10
+Nodes (18): Frame(), DEFAULT_HEADER, FAQ_KEYS, JwtDecoder(), Mode, parseObject(), SecretField(), TIME_TONE (+10 more)
 
 ### Community 65 - "diff-merge-logic.test.ts"
-Cohesion: 0.38
-Nodes (4): built_in_repo(), PathBuf, Self, validate_index_checks_the_themes()
+Cohesion: 0.20
+Nodes (16): dependencyOrder(), emitCode(), emitGo(), emitKotlin(), emitPython(), emitRust(), emitSwift(), emitTypeScript() (+8 more)
 
 ### Community 66 - "CodePlayground.tsx"
-Cohesion: 0.15
-Nodes (17): Language, snippets, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle (+9 more)
+Cohesion: 0.13
+Nodes (19): Language, snippets, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle (+11 more)
 
 ### Community 67 - "DesktopBridge"
 Cohesion: 0.15
 Nodes (10): buildRunnerDocument(), RunHandlers, runnerCsp(), RunnerMessage, startRun(), workerMain(), WorkerScope, fromFrame() (+2 more)
 
 ### Community 68 - "bridge.ts"
-Cohesion: 0.09
-Nodes (22): FrameState, writeClipboardText(), setPluginEnabled(), badRequest(), BridgeError, CALL_TIMEOUTS, Connection, connections (+14 more)
+Cohesion: 0.11
+Nodes (17): writeClipboardText(), badRequest(), BridgeError, CALL_TIMEOUTS, Connection, connections, gated(), inputMessage() (+9 more)
 
 ### Community 69 - "components.json"
 Cohesion: 0.12
@@ -658,8 +665,8 @@ Cohesion: 0.13
 Nodes (12): attachBridge(), notifyThemeChanged(), themeSnapshot, api, attach(), desktop, detachers, flush() (+4 more)
 
 ### Community 73 - "emitCode"
-Cohesion: 0.13
-Nodes (22): Into, Routes, blocking(), FnOnce, Send, T, Mock, String (+14 more)
+Cohesion: 0.19
+Nodes (16): blocking(), FnOnce, Send, T, TempDir, an_index_repository_is_detected_cached_and_listed_in_the_catalog(), Bundle, CatalogEntry (+8 more)
 
 ### Community 74 - "sdk-wasm.test.ts"
 Cohesion: 0.22
@@ -674,8 +681,8 @@ Cohesion: 0.14
 Nodes (10): brand, mark, png(), publicDir, require, root, social, word (+2 more)
 
 ### Community 77 - "crypto-keys.ts"
-Cohesion: 0.21
-Nodes (7): dict, dict, dict, dict, dict, dict, dict
+Cohesion: 0.13
+Nodes (15): Dict, dict, dict, dict, dict, dict, dict, dict (+7 more)
 
 ### Community 78 - "shard-sdk.js"
 Cohesion: 0.15
@@ -698,12 +705,12 @@ Cohesion: 0.17
 Nodes (11): cargoTomlPath, cwd, fail(), normalizeVersion(), packageJson, packageJsonPath, packageLock, packageLockPath (+3 more)
 
 ### Community 83 - "render"
-Cohesion: 0.24
-Nodes (10): dompurify, convertMarkdown(), sanitizeHtml(), wrapListBlocks(), chooseLauncher(), startOnStep2(), setup(), renderDialog() (+2 more)
+Cohesion: 0.27
+Nodes (9): dompurify, convertMarkdown(), sanitizeHtml(), wrapListBlocks(), chooseLauncher(), startOnStep2(), renderDialog(), renderTab() (+1 more)
 
 ### Community 84 - "diff-merge-folder-view.test.tsx"
-Cohesion: 0.12
-Nodes (10): CellMarker, EMPTY, FOLD_CELL, Handlers, setUni, unifiedExtensions(), UnifiedPane(), uniField (+2 more)
+Cohesion: 0.07
+Nodes (13): FoldWidget, CellMarker, EMPTY, FOLD_CELL, Handlers, Props, setUni, unifiedExtensions() (+5 more)
 
 ### Community 85 - "compilerOptions"
 Cohesion: 0.15
@@ -763,11 +770,11 @@ Nodes (9): Deliverables requested, Diff & Merge — UI design brief, Key interac
 
 ### Community 99 - "json-to-code.test.ts"
 Cohesion: 0.05
-Nodes (33): listeners, NONE, publish(), refreshPlugins(), resetPlugins(), state, subscribe(), resetPluginUpdates() (+25 more)
+Nodes (42): PLUGIN_TABS, PluginsPage(), PluginsPageProps, PluginsTab, ThemeApply, repoAddress(), joinCatalog(), listeners (+34 more)
 
 ### Community 100 - "TextDiffView.tsx"
-Cohesion: 0.21
-Nodes (7): dict, dict, dict, dict, dict, dict, dict
+Cohesion: 0.26
+Nodes (13): readStoredIds(), persist(), load(), addFontFile(), faces, listFonts(), loadCustomFonts(), openDb() (+5 more)
 
 ### Community 101 - "MergeDialog.tsx"
 Cohesion: 0.22
@@ -778,8 +785,8 @@ Cohesion: 0.21
 Nodes (7): dict, dict, dict, dict, dict, dict, dict
 
 ### Community 103 - "global-shortcut.ts"
-Cohesion: 0.20
-Nodes (10): listeners, refreshThemeUpdates(), subscribe(), useThemeUpdateCount(), listThemes(), themeCatalog(), InstalledThemeInfo, isNewerVersion() (+2 more)
+Cohesion: 0.18
+Nodes (11): listeners, refreshThemeUpdates(), subscribe(), useThemeUpdateCount(), useThemeUpdateSync(), listThemes(), themeCatalog(), InstalledThemeInfo (+3 more)
 
 ### Community 104 - "Baseline fix report (between Wave 1 and Wave 2)"
 Cohesion: 0.22
@@ -794,8 +801,8 @@ Cohesion: 0.22
 Nodes (8): Commits, Deferred, Deviations (also in the plan's `Deviations:` notes), Review (code-review skill, medium; 1 round), Review Focus coverage, Tests, Wave 5 Report: Folder UI, docs, release (Tasks 14–17), What was built
 
 ### Community 107 - "Mock"
-Cohesion: 0.15
-Nodes (5): pickFolder(), PANE, twoChanges(), typeInto(), viewOf()
+Cohesion: 0.09
+Nodes (12): DiffMerge(), designSample(), PANE, twoChanges(), typeInto(), viewOf(), desktop, LEFT (+4 more)
 
 ### Community 108 - "pack.mjs"
 Cohesion: 0.22
@@ -812,10 +819,6 @@ Nodes (9): desktop, schemes, plugins, deep-link, updater, endpoints, pubkey, win
 ### Community 111 - "release-assets.test.ts"
 Cohesion: 0.22
 Nodes (5): bridgeScript, collectScript, manifestScript, rootDir, tempDirs
-
-### Community 112 - "key"
-Cohesion: 0.14
-Nodes (5): resetLanguageForTests(), mergeSame(), mergeShapes(), shapeOf(), key()
 
 ### Community 113 - "Wave 1 Plan: Foundations (master-plan Tasks 1–4)"
 Cohesion: 0.25
@@ -862,8 +865,8 @@ Cohesion: 0.25
 Nodes (7): App Updates, Coming from DevTools, Highlights, Known limits, Layout and Home, Plugins, Shard v1.0.0
 
 ### Community 124 - "tool-manifest.ts"
-Cohesion: 0.83
-Nodes (3): enter(), modified(), original()
+Cohesion: 0.11
+Nodes (30): DiffView, FAQ_KEYS, InlineDiffDetail, LINE_STYLES, TextCompare(), areTextsEqual(), backtrack(), calculateSimilarity() (+22 more)
 
 ### Community 125 - "CODING AGENTS: READ THIS FIRST"
 Cohesion: 0.40
@@ -882,8 +885,8 @@ Cohesion: 0.29
 Nodes (6): Adding a Tool, Commands, Desktop Runtime Rules, Project Architecture, Release, Shard: AI Development Guide
 
 ### Community 129 - "firstRun.ts"
-Cohesion: 0.07
-Nodes (65): BuiltInToolSwitches(), CommandPalette(), Home(), DestinationProps, InfoProps, pluginsLabel(), SidebarFooter(), StatusBar() (+57 more)
+Cohesion: 0.08
+Nodes (55): BuiltInToolSwitches(), CommandPalette(), Home(), DestinationProps, InfoProps, pluginsLabel(), SidebarFooter(), StatusBar() (+47 more)
 
 ### Community 130 - "Development"
 Cohesion: 0.29
@@ -918,12 +921,12 @@ Cohesion: 0.33
 Nodes (5): android.yml: concurrency, android.yml: env, android.yml: jobs, android.yml: name, android.yml: on
 
 ### Community 138 - "field-direction.test.tsx"
-Cohesion: 0.18
-Nodes (9): DirToggle(), ICON, Mode, NEXT, CodeTextarea(), Input, InputProps, Textarea (+1 more)
+Cohesion: 0.33
+Nodes (4): DirToggle(), ICON, Mode, NEXT
 
 ### Community 139 - "verify"
-Cohesion: 0.20
-Nodes (8): DiffMerge(), designSample(), desktop, LEFT, openFolders(), REPORT, RIGHT, startMerge()
+Cohesion: 0.14
+Nodes (3): english, familyOf, others
 
 ### Community 140 - "tauri.conf.json"
 Cohesion: 0.33
@@ -934,8 +937,8 @@ Cohesion: 0.33
 Nodes (6): linux, desktopTemplate, section, deb, rpm, desktopTemplate
 
 ### Community 142 - "PaneHeaderProps"
-Cohesion: 0.09
-Nodes (17): DiffPanes, DiffPanesHandle, useDiffEditors(), BOOLEANS, DEFAULT_SETTINGS, ENUMS, loadSettings(), saveSettings() (+9 more)
+Cohesion: 0.13
+Nodes (10): DiffPanes, DiffPanesHandle, desktop, doc(), DropCallback, empty(), setup(), doc() (+2 more)
 
 ### Community 143 - "spike.js"
 Cohesion: 0.50
@@ -958,8 +961,8 @@ Cohesion: 0.40
 Nodes (5): build, beforeBuildCommand, beforeDevCommand, devUrl, frontendDist
 
 ### Community 148 - "settings-page.test.tsx"
-Cohesion: 0.07
-Nodes (22): ALL_TOOLS, BuiltinToolId, TOOL_COMPONENTS, ToolDefinition, ToolId, INERT, ToolHost(), ToolHostProps (+14 more)
+Cohesion: 0.11
+Nodes (14): toolSearchNames(), ALL_TOOLS, TOOL_COMPONENTS, ToolDefinition, ToolId, DeepLinkAction, parseDeepLink(), buildToolManifest() (+6 more)
 
 ### Community 149 - "github.md"
 Cohesion: 0.50
@@ -977,9 +980,9 @@ Nodes (3): build.yml: jobs, build.yml: name, build.yml: on
 Cohesion: 0.50
 Nodes (3): build-app.yml: jobs, build-app.yml: name, build-app.yml: on
 
-### Community 154 - "shell-integration.test.tsx"
+### Community 154 - "plugins-cards.test.tsx"
 Cohesion: 0.17
-Nodes (5): api, desktopMock, KAFKA, toastMock, UPDATES
+Nodes (9): api, arrange(), CATALOG, COMPOSE_UPDATE, CRON_UPDATE, NOW, plugin(), REPOS (+1 more)
 
 ### Community 155 - "CODING AGENTS: READ THIS FIRST"
 Cohesion: 0.40
@@ -994,12 +997,12 @@ Cohesion: 0.14
 Nodes (13): CORE_NAMES, finishFirstRun(), FirstRun, read(), startFirstRun(), Store, write(), api (+5 more)
 
 ### Community 158 - "desktop.test.ts"
-Cohesion: 0.38
-Nodes (4): LANGUAGE_NAMES, LanguagePicker(), Props, languageLabel()
+Cohesion: 0.24
+Nodes (7): CopyButton(), CopyButtonProps, LANGUAGE_NAMES, LanguagePicker(), Props, PaneHeader(), languageLabel()
 
 ### Community 161 - "FetchResponse"
-Cohesion: 0.08
-Nodes (10): DesktopBridge, ToolManifest, desktopMock, desktopMock, desktopMock, desktop, toastMock, desktopMock (+2 more)
+Cohesion: 0.10
+Nodes (8): DesktopBridge, ToolManifest, desktopMock, desktopMock, desktop, toastMock, desktopMock, desktopMock
 
 ### Community 164 - "shard-drop.test.tsx"
 Cohesion: 0.29
@@ -1018,12 +1021,16 @@ Cohesion: 0.33
 Nodes (5): App Updates, For Plugin Authors, Highlights, Shard v1.1.0, Tool Improvements
 
 ### Community 302 - "x"
-Cohesion: 0.19
-Nodes (17): Default, MutexGuard, Result, canonical(), Index, IndexEntry, lock(), now_ms() (+9 more)
+Cohesion: 0.15
+Nodes (23): Default, MutexGuard, Result, built_in_repo(), canonical(), Index, IndexEntry, lock() (+15 more)
 
 ### Community 303 - "x"
-Cohesion: 0.18
-Nodes (12): generateSchema(), capitalize(), CODE_LANGUAGES, inferModel(), JsonInputError, RESERVED_TYPE_NAMES, splitWords(), toCamelCase() (+4 more)
+Cohesion: 0.26
+Nodes (7): GlobalShortcutProps, GlobalShortcutSetting(), ShortcutSettings(), useReportRecording(), withKey(), getShortcutActionDefinition(), SHORTCUT_ACTIONS
+
+### Community 304 - "useKeyboardShortcuts.ts"
+Cohesion: 0.25
+Nodes (6): ShortcutSettingsProps, UseKeyboardShortcutsOptions, isEditableElement(), ShortcutActionId, ShortcutBinding, ShortcutBindings
 
 ### Community 305 - "x"
 Cohesion: 0.31
@@ -1042,12 +1049,12 @@ Cohesion: 0.40
 Nodes (3): desktop, nord, setup()
 
 ### Community 328 - "rustField"
-Cohesion: 0.33
-Nodes (6): identifierOr(), RUST_KEYWORDS, RUST_NO_RAW, rustField(), SWIFT_KEYWORDS, swiftName()
+Cohesion: 0.22
+Nodes (5): Into, Routes, Mock, String, Vec
 
 ### Community 329 - "releaseNotes.ts"
-Cohesion: 0.40
-Nodes (3): RELEASE_NOTE_FILES, RELEASE_NOTES, ReleaseNotesEntry
+Cohesion: 0.44
+Nodes (5): narrow(), useIsMobile(), resetAppData(), isMobileApp(), isMobilePlatform()
 
 ### Community 330 - "verify"
 Cohesion: 0.53
@@ -1057,20 +1064,28 @@ Nodes (4): accepts_the_exact_body_it_signed(), String, text(), verify()
 Cohesion: 0.50
 Nodes (3): App Updates, Highlights, Shard v1.0.1
 
+### Community 337 - "sonner.tsx"
+Cohesion: 0.47
+Nodes (4): sonner, App(), Toaster(), ToasterProps
+
+### Community 341 - "emitJsonSchema"
+Cohesion: 0.50
+Nodes (5): emitJsonSchema(), findUnknown(), objectSchema(), schemaOf(), unknownNote()
+
 ## Knowledge Gaps
 - **1129 isolated node(s):** `$schema`, `style`, `rsc`, `tsx`, `config` (+1124 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **145 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **150 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Result` connect `x` to `isMobileApp`, `store.rs`, `install.rs`, `folder_compare.rs`, `emitCode`, `verify`, `zip.rs`, `fetch.rs`, `Result`, `JsonDiff.tsx`, `lib.rs`, `themes.rs`?**
-  _High betweenness centrality (0.184) - this node is a cross-community bridge._
-- **Why does `t()` connect `firstRun.ts` to `FirstRunWizard.tsx`, `Shard.tsx`, `Props`, `ip-cidr.ts`, `InstalledTab.tsx`, `api.ts`, `field-direction.test.tsx`, `useInstallFlow.ts`, `PinnedEditor.tsx`, `editor.ts`, `json.ts`, `json-to-code.ts`, `ShortcutSettings.tsx`, `theme-colors.ts`, `UnifiedPane.tsx`, `desktop.test.ts`, `SettingsPage.tsx`, `DiffPanes.tsx`, `TextToolbar.tsx`, `schema.ts`, `json-schema.ts`, `diff-merge-component.test.tsx`, `folder.ts`, `json-diff.ts`, `BackupRows.tsx`, `desktop.ts`, `global-shortcut.ts`, `storage.rs`, `theme-colors.ts`, `jwt.ts`, `JsonDiff.tsx`, `json-repair.ts`, `LenientReader`, `RepositoriesTab.tsx`, `Repo`, `DesktopBridge`, `JwtDecoder.tsx`, `diff-merge-folder-view.test.tsx`, `MergeDialog.tsx`?**
-  _High betweenness centrality (0.103) - this node is a cross-community bridge._
-- **Why does `useT()` connect `firstRun.ts` to `FirstRunWizard.tsx`, `Shard.tsx`, `ip-cidr.ts`, `Props`, `InstalledTab.tsx`, `api.ts`, `field-direction.test.tsx`, `useInstallFlow.ts`, `PinnedEditor.tsx`, `editor.ts`, `settings-page.test.tsx`, `ShortcutSettings.tsx`, `theme-colors.ts`, `UnifiedPane.tsx`, `desktop.test.ts`, `SettingsPage.tsx`, `DiffPanes.tsx`, `TextToolbar.tsx`, `schema.ts`, `folder.ts`, `desktop.ts`, `storage.rs`, `JsonDiff.tsx`, `FolderTable.tsx`, `RepositoriesTab.tsx`, `Repo`, `CodePlayground.tsx`, `bridge.ts`, `JwtDecoder.tsx`, `ActionMenu.tsx`, `MergeDialog.tsx`?**
-  _High betweenness centrality (0.058) - this node is a cross-community bridge._
+  _High betweenness centrality (0.187) - this node is a cross-community bridge._
+- **Why does `t()` connect `firstRun.ts` to `FirstRunWizard.tsx`, `Shard.tsx`, `Props`, `ip-cidr.ts`, `usePlugins.ts`, `InstalledTab.tsx`, `api.ts`, `field-direction.test.tsx`, `useInstallFlow.ts`, `editor.ts`, `json.ts`, `json-to-code.ts`, `ShortcutSettings.tsx`, `theme-colors.ts`, `UnifiedPane.tsx`, `desktop.test.ts`, `SettingsPage.tsx`, `TextToolbar.tsx`, `schema.ts`, `json-schema.ts`, `diff-merge-component.test.tsx`, `folder.ts`, `json-diff.ts`, `BackupRows.tsx`, `desktop.ts`, `global-shortcut.ts`, `storage.rs`, `x`, `theme-colors.ts`, `jwt.ts`, `JsonDiff.tsx`, `json-repair.ts`, `LenientReader`, `RepositoriesTab.tsx`, `Repo`, `DesktopBridge`, `JwtDecoder.tsx`, `diff-merge-folder-view.test.tsx`, `json-to-code.test.ts`, `TextDiffView.tsx`, `MergeDialog.tsx`, `tool-manifest.ts`?**
+  _High betweenness centrality (0.107) - this node is a cross-community bridge._
+- **Why does `useT()` connect `firstRun.ts` to `FirstRunWizard.tsx`, `Shard.tsx`, `ip-cidr.ts`, `Props`, `InstalledTab.tsx`, `api.ts`, `field-direction.test.tsx`, `useInstallFlow.ts`, `editor.ts`, `theme-colors.ts`, `UnifiedPane.tsx`, `desktop.test.ts`, `SettingsPage.tsx`, `DiffPanes.tsx`, `TextToolbar.tsx`, `schema.ts`, `folder.ts`, `desktop.ts`, `storage.rs`, `x`, `JsonDiff.tsx`, `app.js`, `FolderTable.tsx`, `RepositoriesTab.tsx`, `Repo`, `CodePlayground.tsx`, `JwtDecoder.tsx`, `ActionMenu.tsx`, `json-to-code.test.ts`, `MergeDialog.tsx`, `tool-manifest.ts`?**
+  _High betweenness centrality (0.059) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `useT()` (e.g. with `getLocale()` and `subscribe()`) actually correct?**
   _`useT()` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `$schema`, `style`, `rsc` to the rest of the system?**
@@ -1078,4 +1093,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `store.rs` be split into smaller, more focused modules?**
   _Cohesion score 0.08777969018932874 - nodes in this community are weakly interconnected._
 - **Should `FirstRunWizard.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.09971509971509972 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.13333333333333333 - nodes in this community are weakly interconnected._
