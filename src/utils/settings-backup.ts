@@ -22,6 +22,7 @@ export const PREF_KEYS: readonly string[] = [
   "shard-theme-preference",
   "shard-color-scheme",
   "shard-accent",
+  "shard-fonts",
   "shard-sidebar-categories",
   "shard-open-tools-in",
   "shard-layout",

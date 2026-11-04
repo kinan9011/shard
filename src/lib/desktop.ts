@@ -1,6 +1,7 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getVersion } from "@tauri-apps/api/app";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrent as getCurrentDeepLinks, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { platform as getOsPlatform } from "@tauri-apps/plugin-os";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
@@ -42,6 +43,8 @@ export interface DesktopBridge {
    * so it must match the app theme. Pass null to follow the system.
    */
   setWindowTheme?: (theme: "light" | "dark" | null) => Promise<void>;
+  /** Zooms the whole webview, plugin frames included. Resolves to false where the platform cannot (a phone). */
+  setZoom?: (factor: number) => Promise<boolean>;
   /**
    * Calls back with each shard:// link: the one that launched the app, then any that
    * arrive while it runs. Returns a function that stops listening.
@@ -240,6 +243,16 @@ function createTauriBridge(): DesktopBridge {
     }
   };
 
+  const setZoom = async (factor: number) => {
+    try {
+      await getCurrentWebview().setZoom(factor);
+      return true;
+    } catch (error) {
+      console.error("Failed to zoom the webview:", error);
+      return false;
+    }
+  };
+
   const onDeepLink = (callback: (url: string) => void) => {
     let active = true;
     let unlisten: (() => void) | undefined;
@@ -317,6 +330,7 @@ function createTauriBridge(): DesktopBridge {
 
   return {
     setWindowTheme,
+    setZoom,
     setGlobalShortcut,
     onOpenCommandPalette,
     onFileDrop: nodePlatform === "linux" ? onFileDrop : undefined,
@@ -556,6 +570,12 @@ export async function resetAppData(): Promise<void> {
   // The webview's own storage goes last, so it is empty even where Rust could not delete a locked file.
   localStorage.clear();
   sessionStorage.clear();
+  // Fonts the user added live in IndexedDB. A blocked delete (another connection open) is not worth stopping the reset for.
+  try {
+    indexedDB.deleteDatabase("shard-fonts");
+  } catch {
+    /* no IndexedDB here */
+  }
   // A phone has no restart command: reloading the webview starts the app over from the empty storage.
   if (isTauri() && !isMobileApp()) {
     await relaunch();

@@ -9,11 +9,13 @@ import type { GlobalShortcut } from "@/utils/global-shortcut";
 import type { ShortcutActionId, ShortcutBinding, ShortcutBindings } from "@/utils/shortcuts";
 import { BuiltInToolSwitches } from "../BuiltInToolSwitches";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import type { FontsApi } from "@/hooks/useFonts";
 import { ACCENTS, type AccentId } from "@/utils/accent";
 import { BackupRows } from "./BackupRows";
 import { CustomThemesRow, type CustomThemes } from "./CustomThemes";
+import { FontSettings } from "./FontSettings";
 import { LayoutChoice } from "./LayoutChoice";
-import { ActionButton, Heading, Row } from "./Row";
+import { ActionButton, Heading, Row, Segmented } from "./Row";
 import { GlobalShortcutSetting, ShortcutSettings } from "./ShortcutSettings";
 import { updateButtonLabel, updateStatusLabel } from "./updateLabels";
 
@@ -40,6 +42,8 @@ interface Props {
   /** The accent color picked over the scheme (null: the scheme's own). Omitted: no accent row. */
   accent?: AccentId | null;
   onAccent?(id: AccentId | null): void;
+  /** Font, zoom and field-text choices. Omitted: no font rows. */
+  fonts?: FontsApi;
   /** The themes folder. Omitted in the browser preview, which has none. */
   customThemes?: CustomThemes;
   /** The mode in effect, after "system" is resolved. */
@@ -312,6 +316,7 @@ function Appearance(p: Props) {
             </div>
           </Row>
         )}
+        {p.fonts && <FontSettings fonts={p.fonts} />}
         {p.customThemes && <CustomThemesRow themes={p.customThemes} onBrowse={() => p.onOpenPlugins("themes")} dark={p.dark} onApply={p.onScheme} />}
         <Row title="Sidebar categories" hint="Collapse categories you don’t use. Applies to the sidebar layout.">
           <Segmented
@@ -334,25 +339,3 @@ function Appearance(p: Props) {
   );
 }
 
-function Segmented<T extends string>({ label, value, onChange, options }: {
-  label: string;
-  value: T;
-  onChange(next: T): void;
-  options: readonly (readonly [T, string])[];
-}) {
-  return (
-    <div role="group" aria-label={label} className="inline-flex gap-0.5 rounded-[7px] border border-border bg-muted p-0.5">
-      {options.map(([id, text]) => (
-        <button
-          key={id}
-          type="button"
-          aria-pressed={value === id}
-          onClick={() => onChange(id)}
-          className="inline-flex h-[26px] items-center whitespace-nowrap rounded-[5px] px-3 text-xs text-muted-foreground transition-colors hover:text-foreground aria-pressed:bg-card aria-pressed:font-medium aria-pressed:text-foreground aria-pressed:shadow-[0_0_0_1px_hsl(var(--border))]"
-        >
-          {text}
-        </button>
-      ))}
-    </div>
-  );
-}

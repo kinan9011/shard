@@ -10,7 +10,7 @@ const file = (over: Record<string, unknown> = {}) => JSON.stringify({ schema: 1,
 
 describe("which keys are settings", () => {
   it("takes preferences, per-tool layouts, and nothing that belongs to one install", () => {
-    for (const key of ["shard-pinned", "shard-accent", "shard-layout", "shard-jwt-decoder-layout", "shard-diff-merge-settings"]) expect(isPrefKey(key), key).toBe(true);
+    for (const key of ["shard-pinned", "shard-accent", "shard-fonts", "shard-layout", "shard-jwt-decoder-layout", "shard-diff-merge-settings"]) expect(isPrefKey(key), key).toBe(true);
     for (const key of ["shard-first-run-done", "shard-first-run-started", "shard-whats-new-seen-version", "shard-user-themes", "other", "shard-", "__proto__"]) expect(isPrefKey(key), key).toBe(false);
   });
 

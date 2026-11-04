@@ -14,6 +14,7 @@ import { BrandMark } from "@/components/app/BrandMark";
 import { CommandPalette, type PaletteCommand } from "@/components/app/CommandPalette";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useAccent } from "@/hooks/useAccent";
+import { useFonts } from "@/hooks/useFonts";
 import { useUserThemes } from "@/hooks/useUserThemes";
 import { buildInstallables, usePaletteListed } from "@/hooks/usePaletteInstallables";
 import { refreshThemeUpdates, useThemeUpdateCount, useThemeUpdateSync } from "@/hooks/useThemeUpdates";
@@ -123,6 +124,7 @@ const Shard = () => {
   );
   const customThemes = useUserThemes();
   const [accent, setAccent] = useAccent();
+  const fonts = useFonts();
   // Installed themes whose repository lists a newer version count next to the plugin updates.
   useThemeUpdateSync(Boolean(bridge), customThemes.themes);
   const themeUpdateCount = useThemeUpdateCount();
@@ -245,7 +247,7 @@ const Shard = () => {
   useEffect(() => {
     // Plugin frames get the new colors. This runs after the two effects above, so the root already has the class and scheme.
     notifyThemeChanged();
-  }, [darkMode, activeScheme, customThemes.schemes]);
+  }, [darkMode, activeScheme, customThemes.schemes, fonts.prefs.ui]);
 
   useEffect(() => {
     // The native window material follows the window appearance, not the page theme.
@@ -970,6 +972,7 @@ const Shard = () => {
                 onScheme={setColorScheme}
                 accent={accent}
                 onAccent={setAccent}
+                fonts={fonts}
                 customThemes={bridge ? customThemes : undefined}
                 dark={darkMode}
                 layout={layout}
@@ -1134,6 +1137,7 @@ const Shard = () => {
                   onScheme={setColorScheme}
                   accent={accent}
                   onAccent={setAccent}
+                fonts={fonts}
                   customThemes={bridge ? customThemes : undefined}
                   dark={darkMode}
                   layout={layout}

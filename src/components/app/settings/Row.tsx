@@ -32,3 +32,26 @@ export function ActionButton({ className = "", ...props }: React.ButtonHTMLAttri
     />
   );
 }
+
+export function Segmented<T extends string>({ label, value, onChange, options }: {
+  label: string;
+  value: T;
+  onChange(next: T): void;
+  options: readonly (readonly [T, string])[];
+}) {
+  return (
+    <div role="group" aria-label={label} className="inline-flex gap-0.5 rounded-[7px] border border-border bg-muted p-0.5">
+      {options.map(([id, text]) => (
+        <button
+          key={id}
+          type="button"
+          aria-pressed={value === id}
+          onClick={() => onChange(id)}
+          className="inline-flex h-[26px] items-center whitespace-nowrap rounded-[5px] px-3 text-xs text-muted-foreground transition-colors hover:text-foreground aria-pressed:bg-card aria-pressed:font-medium aria-pressed:text-foreground aria-pressed:shadow-[0_0_0_1px_hsl(var(--border))]"
+        >
+          {text}
+        </button>
+      ))}
+    </div>
+  );
+}
