@@ -900,8 +900,8 @@
     "semantic_hash": ""
   },
   "src/lib/desktop.ts": {
-    "mtime": 1793801691.0662959,
-    "ast_hash": "172302813fcc0a5d00a5db5848d76679",
+    "mtime": 1793803906.5327487,
+    "ast_hash": "2d1bc4bb5a3d71b28f8f6f723271299f",
     "semantic_hash": ""
   },
   "src/lib/platform.ts": {
@@ -920,8 +920,8 @@
     "semantic_hash": ""
   },
   "src/main.tsx": {
-    "mtime": 1793728208.8638322,
-    "ast_hash": "3a0dcec0364bc6a4ce0f44dcea05674c",
+    "mtime": 1793803911.8607519,
+    "ast_hash": "92c87e1445bd326812bd9b8930d97b68",
     "semantic_hash": ""
   },
   "src/plugins/api.ts": {
@@ -930,8 +930,8 @@
     "semantic_hash": ""
   },
   "src/plugins/bridge.ts": {
-    "mtime": 1793792305.891935,
-    "ast_hash": "fb42f03021d6d44c9cd92d18536e3eb3",
+    "mtime": 1793803908.1347497,
+    "ast_hash": "1a558944eea6c3f85c0558c96db7351f",
     "semantic_hash": ""
   },
   "src/plugins/format.ts": {
@@ -1320,8 +1320,8 @@
     "semantic_hash": ""
   },
   "tests/lib/desktop.test.ts": {
-    "mtime": 1793801693.3282976,
-    "ast_hash": "196f477e90a960fa10b9d7c40f607829",
+    "mtime": 1793803923.941828,
+    "ast_hash": "c203437ec4bf91f5af1565e32b389928",
     "semantic_hash": ""
   },
   "tests/lib/global-shortcut.test.ts": {
@@ -1365,8 +1365,8 @@
     "semantic_hash": ""
   },
   "tests/plugins/bridge.test.ts": {
-    "mtime": 1793793173.1104887,
-    "ast_hash": "b57c6510adf8ec56aad7e3df43dfa42d",
+    "mtime": 1793803923.9416814,
+    "ast_hash": "85d96afa289b08b4195e27c1a6179941",
     "semantic_hash": ""
   },
   "tests/plugins/catalog-merge.test.ts": {
@@ -1820,8 +1820,8 @@
     "semantic_hash": ""
   },
   "docs/plugins/security.md": {
-    "mtime": 1793792336.3576043,
-    "ast_hash": "f8f72ffa331920b11a954a87ddb290b6",
+    "mtime": 1793803908.8786228,
+    "ast_hash": "c0664b022d8a774e29ca674dee018bb4",
     "semantic_hash": ""
   },
   "docs/release-process.md": {
@@ -2775,8 +2775,8 @@
     "semantic_hash": ""
   },
   "src/i18n/index.ts": {
-    "mtime": 1793802553.4850574,
-    "ast_hash": "3589400db4705add3df27deef26c6bb9",
+    "mtime": 1793803910.5977511,
+    "ast_hash": "90f0833cf72d9803ace53daac7b5fc0f",
     "semantic_hash": ""
   },
   "src/i18n/locales/ar.ts": {
@@ -3075,8 +3075,8 @@
     "semantic_hash": ""
   },
   "release-notes/v1.1.0.md": {
-    "mtime": 1793795906.094156,
-    "ast_hash": "b6306c254aac2eece6124b844941c827",
+    "mtime": 1793803931.958802,
+    "ast_hash": "d5aad5b29b23a939e82a249fcc7ad716",
     "semantic_hash": ""
   },
   "assets/screenshots/first-run-language.png": {
