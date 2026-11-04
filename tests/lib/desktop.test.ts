@@ -10,6 +10,7 @@ const tauri = vi.hoisted(() => ({
   relaunch: vi.fn(async () => {}),
   check: vi.fn(),
   listen: vi.fn(async () => () => {}),
+  setZoom: vi.fn(async () => {}),
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({ isTauri: tauri.isTauri, invoke: tauri.invoke }));
@@ -22,6 +23,7 @@ vi.mock("@tauri-apps/plugin-opener", () => ({
 vi.mock("@tauri-apps/plugin-process", () => ({ relaunch: tauri.relaunch }));
 vi.mock("@tauri-apps/plugin-updater", () => ({ check: tauri.check }));
 vi.mock("@tauri-apps/api/event", () => ({ listen: tauri.listen }));
+vi.mock("@tauri-apps/api/webview", () => ({ getCurrentWebview: () => ({ setZoom: tauri.setZoom }) }));
 
 const blobOf = (bytes: number[]) =>
   ({ arrayBuffer: async () => new Uint8Array(bytes).buffer }) as Blob;
@@ -302,6 +304,24 @@ describe("getDesktopBridge", () => {
   });
 });
 
+describe("onFileDrop", () => {
+  it("gives the drop point in CSS px, taking the webview zoom out", async () => {
+    tauri.platform.mockReturnValue("linux");
+    const { getDesktopBridge } = await loadDesktop();
+    const bridge = getDesktopBridge()!;
+    const dropped = vi.fn();
+    bridge.onFileDrop!(dropped);
+    const handler = tauri.listen.mock.calls.find(([name]) => name === "tauri://drag-drop")![1] as (event: unknown) => void;
+    const drop = () => handler({ payload: { paths: ["/a.txt"], position: { x: 125, y: 250 } } });
+
+    drop();
+    expect(dropped).toHaveBeenLastCalledWith(["/a.txt"], 125, 250);
+    await bridge.setZoom!(1.25);
+    drop();
+    expect(dropped).toHaveBeenLastCalledWith(["/a.txt"], 100, 200);
+  });
+});
+
 describe("saveFile", () => {
   it("sends the file bytes and encoded name to the save_file command", async () => {
     tauri.invoke.mockResolvedValue("/tmp/qr code.png");
@@ -387,7 +407,9 @@ describe("folder bridge", () => {
     const d = await loadDesktop();
     tauri.invoke.mockResolvedValue("ok");
     await d.pickFolder();
-    expect(tauri.invoke).toHaveBeenCalledWith("pick_folder");
+    expect(tauri.invoke).toHaveBeenCalledWith("pick_folder", { start: null });
+    await d.pickFolder("/l");
+    expect(tauri.invoke).toHaveBeenCalledWith("pick_folder", { start: "/l" });
     await d.compareContents("/l", "/r", ["a"]);
     expect(tauri.invoke).toHaveBeenCalledWith("compare_contents", { leftRoot: "/l", rightRoot: "/r", paths: ["a"] });
     await d.readTextFile("/l", "a");
@@ -418,14 +440,26 @@ describe("folder bridge", () => {
     expect(tauri.invoke).not.toHaveBeenCalled();
   });
 
-  it("resets in order: files first, then the webview's storage, then a restart", async () => {
+  it("resets in order: files first, then the webview's storage, and leaves the app open for a message", async () => {
     localStorage.setItem("shard-pinned", "[]");
     const order: string[] = [];
     tauri.invoke.mockImplementation(async (command: string) => void order.push(`invoke:${command}:${localStorage.length}`));
-    tauri.relaunch.mockImplementation(async () => void order.push(`relaunch:${localStorage.length}`));
+    tauri.relaunch.mockClear();
     const d = await loadDesktop();
-    await d.resetAppData();
-    expect(order).toEqual(["invoke:reset_app_data:1", "relaunch:0"]);
+    await expect(d.resetAppData()).resolves.toBe(true);
+    expect(order).toEqual(["invoke:reset_app_data:1"]);
+    expect(tauri.relaunch).not.toHaveBeenCalled();
+  });
+
+  it("closes the app after a reset, with the storage cleared again", async () => {
+    localStorage.setItem("late-write", "1");
+    const order: string[] = [];
+    tauri.invoke.mockImplementation(async (command: string) => void order.push(`invoke:${command}:${localStorage.length}`));
+    tauri.relaunch.mockClear();
+    const d = await loadDesktop();
+    await d.closeAfterReset();
+    expect(order).toEqual(["invoke:quit_now:0"]);
+    expect(tauri.relaunch).not.toHaveBeenCalled();
   });
 
   it("a reset that fails clears nothing and does not restart", async () => {

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useT } from "@/i18n";
 import type { Layout } from "@/utils/theme";
 
 function LayoutCard({ title, badge, description, preview, checked, onSelect }: {
@@ -22,7 +23,7 @@ function LayoutCard({ title, badge, description, preview, checked, onSelect }: {
         <span
           aria-hidden="true"
           className={`mt-px box-border h-4 w-4 shrink-0 rounded-full ${
-            checked ? "border-[5px] border-primary bg-primary-foreground" : "border border-input"
+            checked ? "border-[5px] border-primary-solid bg-white" : "border border-input"
           }`}
         />
         <div className="flex flex-col gap-0.5">
@@ -98,21 +99,22 @@ function LauncherPreview() {
 
 /** The Sidebar / Launcher cards of Settings → Appearance (2b) and of the first-run layout step (2a). */
 export function LayoutChoice({ layout, onLayout, className = "max-w-[820px] gap-3 sm:gap-3.5" }: { layout: Layout; onLayout(next: Layout): void; className?: string }) {
+  const t = useT();
   return (
-    <div role="radiogroup" aria-label="Layout" className={`flex flex-col sm:flex-row ${className}`}>
+    <div role="radiogroup" aria-label={t("settings.layout.label")} className={`flex flex-col sm:flex-row ${className}`}>
       <LayoutCard
         checked={layout === "sidebar"}
         onSelect={() => onLayout("sidebar")}
-        title="Sidebar"
-        badge="Default"
-        description="Tools grouped by category in a sidebar. Plugins and Settings sit at the bottom."
+        title={t("settings.layout.sidebar")}
+        badge={t("settings.layout.badgeDefault")}
+        description={t("settings.layout.sidebarDescription")}
         preview={<SidebarPreview />}
       />
       <LayoutCard
         checked={layout === "launcher"}
         onSelect={() => onLayout("launcher")}
-        title="Launcher"
-        description="No sidebar. Home shows your pinned tools; open tools appear as tabs in the top bar."
+        title={t("settings.layout.launcher")}
+        description={t("settings.layout.launcherDescription")}
         preview={<LauncherPreview />}
       />
     </div>

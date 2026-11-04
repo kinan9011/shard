@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Ban, X } from "lucide-react";
+import { useT } from "@/i18n";
 import { mergeSubtitle, planCounts, type FileRow } from "@/utils/diff-merge/folder";
 
 const FOCUSABLE = "button:not([disabled]), input:not([disabled])";
@@ -21,7 +22,7 @@ function Group({ icon, title, count, muted, children }: { icon: ReactNode; title
 
 function Paths({ rows, note }: { rows: FileRow[]; note?: (row: FileRow) => string | null }) {
   return (
-    <div className="flex flex-col gap-0.5 pl-[22px] font-mono text-muted-foreground">
+    <div className="flex flex-col gap-0.5 ps-[22px] font-mono text-muted-foreground">
       {rows.map((row) => {
         const text = note?.(row);
         return (
@@ -36,6 +37,7 @@ function Paths({ rows, note }: { rows: FileRow[]; note?: (row: FileRow) => strin
 }
 
 function Names({ rows }: { rows: FileRow[] }) {
+  const t = useT();
   const shown = rows.slice(0, MAX_NAMES);
   return (
     <>
@@ -45,7 +47,19 @@ function Names({ rows }: { rows: FileRow[] }) {
           <span className="font-mono">{row.path}</span>
         </span>
       ))}
-      {rows.length > shown.length && ` and ${rows.length - shown.length} more`}
+      {rows.length > shown.length && ` ${t("diffMerge.folder.dialog.more", { count: rows.length - shown.length })}`}
+    </>
+  );
+}
+
+/** A sentence that holds the list of names where its `{names}` placeholder stands. */
+function NamesSentence({ text, rows }: { text: string; rows: FileRow[] }) {
+  const [before, after = ""] = text.split("{names}");
+  return (
+    <>
+      {before}
+      <Names rows={rows} />
+      {after}
     </>
   );
 }
@@ -59,6 +73,7 @@ interface Props {
 }
 
 function Body({ rows, onCancel, onConfirm }: Omit<Props, "open">) {
+  const t = useT();
   const titleId = useId();
   const box = useRef<HTMLDivElement>(null);
   const [backup, setBackup] = useState(true);
@@ -107,37 +122,35 @@ function Body({ rows, onCancel, onConfirm }: Omit<Props, "open">) {
       >
         <div className="flex flex-shrink-0 items-start justify-between gap-4 px-5 pb-3 pt-[18px]">
           <div className="flex flex-col gap-1">
-            <span id={titleId} className="text-[15px] font-semibold">Start merge</span>
+            <span id={titleId} className="text-[15px] font-semibold">{t("diffMerge.folder.startMerge")}</span>
             <span className="text-xs text-muted-foreground">{mergeSubtitle(c.toRight + c.toLeft, c.replaces.length)}</span>
           </div>
-          <button type="button" aria-label="Close" className="flex rounded-[5px] p-1 text-muted-foreground hover:bg-muted" onClick={onCancel}>
+          <button type="button" aria-label={t("common.close")} className="flex rounded-[5px] p-1 text-muted-foreground hover:bg-muted" onClick={onCancel}>
             <X size={16} aria-hidden="true" />
           </button>
         </div>
         <div className="flex min-h-0 flex-col gap-[14px] overflow-y-auto px-5 pb-4 pt-1 text-xs">
           {right.length > 0 && (
-            <Group icon={<ArrowRight size={14} aria-hidden="true" />} title="Copy to the right" count={right.length}>
-              <Paths rows={right} note={(r) => (r.kind === "diff" ? "replaces the right copy" : null)} />
+            <Group icon={<ArrowRight size={14} aria-hidden="true" />} title={t("diffMerge.folder.dialog.copyRight")} count={right.length}>
+              <Paths rows={right} note={(r) => (r.kind === "diff" ? t("diffMerge.folder.dialog.replacesRight") : null)} />
             </Group>
           )}
           {left.length > 0 && (
-            <Group icon={<ArrowLeft size={14} aria-hidden="true" />} title="Copy to the left" count={left.length}>
-              <Paths rows={left} note={(r) => (r.kind === "diff" ? "replaces the left copy" : null)} />
+            <Group icon={<ArrowLeft size={14} aria-hidden="true" />} title={t("diffMerge.folder.dialog.copyLeft")} count={left.length}>
+              <Paths rows={left} note={(r) => (r.kind === "diff" ? t("diffMerge.folder.dialog.replacesLeft") : null)} />
             </Group>
           )}
           {ignored.length + none.length > 0 && (
-            <Group icon={<Ban size={14} aria-hidden="true" />} title="Not changed" count={ignored.length + none.length} muted>
-              <div className="pl-[22px] text-muted-foreground">
+            <Group icon={<Ban size={14} aria-hidden="true" />} title={t("diffMerge.folder.dialog.notChanged")} count={ignored.length + none.length} muted>
+              <div className="ps-[22px] text-muted-foreground">
                 {ignored.length > 0 && (
                   <>
-                    <Names rows={ignored} />
-                    {ignored.length === 1 ? " is" : " are"} ignored.{" "}
+                    <NamesSentence text={t("diffMerge.folder.dialog.ignored", { count: ignored.length, names: "{names}" })} rows={ignored} />{" "}
                   </>
                 )}
                 {none.length > 0 && (
                   <>
-                    <Names rows={none} />
-                    {none.length === 1 ? " has" : " have"} no action yet.
+                    <NamesSentence text={t("diffMerge.folder.dialog.noAction", { count: none.length, names: "{names}" })} rows={none} />
                   </>
                 )}
               </div>
@@ -145,15 +158,15 @@ function Body({ rows, onCancel, onConfirm }: Omit<Props, "open">) {
           )}
           <label className="flex items-center gap-2 pt-1">
             <input type="checkbox" checked={backup} onChange={(e) => setBackup(e.target.checked)} className="h-4 w-4 accent-primary" />
-            Back up files before replacing them
+            {t("diffMerge.folder.dialog.backup")}
           </label>
         </div>
         <div className="flex flex-shrink-0 justify-end gap-2 border-t px-5 py-3" style={{ borderColor: "hsl(var(--border) / .7)", background: "hsl(var(--muted) / .35)" }}>
           <button type="button" data-cancel onClick={onCancel} className="flex h-8 items-center whitespace-nowrap rounded-md border border-input bg-card px-3 text-[13px] font-medium">
-            Cancel
+            {t("common.cancel")}
           </button>
-          <button type="button" onClick={() => onConfirm(backup)} className="flex h-8 items-center whitespace-nowrap rounded-md bg-primary px-3 text-[13px] font-medium text-primary-foreground">
-            Start merge
+          <button type="button" onClick={() => onConfirm(backup)} className="flex h-8 items-center whitespace-nowrap rounded bg-primary-solid px-3 text-[13px] font-medium text-primary-solid-foreground">
+            {t("diffMerge.folder.startMerge")}
           </button>
         </div>
       </div>

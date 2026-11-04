@@ -4,7 +4,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AnchoredPanel } from "@/components/tools/diff-merge/Panels";
 import { PermissionDialog } from "@/components/plugins/PermissionDialog";
-import { MAX_PINNED, pickerItems, pinLimitMessage, type PickerItem } from "@/app/pinned";
+import { MAX_PINNED, pickerItems, pinLimitText, type PickerItem } from "@/app/pinned";
+import { toolName } from "@/app/toolNames";
+import { useT } from "@/i18n";
 import type { CatalogTool } from "@/app/catalog";
 import { useReorder } from "@/app/useReorder";
 import { installingLabel, useInstallFlow } from "@/plugins/useInstallFlow";
@@ -12,7 +14,7 @@ import { usePluginCatalog, type CatalogRow } from "@/plugins/usePluginCatalog";
 import { searchTools } from "@/utils/tool-search";
 import { cn } from "@/lib/utils";
 
-const tagFor = (item: PickerItem) => (item.kind === "install" ? "Not installed" : item.tool.source === "plugin" ? "Plugin" : "Built-in");
+const tagFor = (item: PickerItem, t: ReturnType<typeof useT>) => (item.kind === "install" ? t("shell.pinned.tagNotInstalled") : item.tool.source === "plugin" ? t("shell.tag.plugin") : t("shell.pinned.tagBuiltIn"));
 
 interface PickerProps {
   open: boolean;
@@ -27,11 +29,12 @@ interface PickerProps {
 }
 
 export function PickerBody({ items, pinned, progress, onPick, listClassName }: Omit<PickerProps, "open" | "onClose" | "anchorRef">) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const visible = useMemo(() => {
     if (!query.trim()) return items;
-    const matches = new Set(searchTools(items.map((item) => ({ id: item.id, name: item.name, category: item.kind === "tool" ? item.tool.category : item.row.entry.category, keywords: item.kind === "tool" ? item.tool.keywords : [] })), query).map((hit) => hit.id));
+    const matches = new Set(searchTools(items.map((item) => ({ id: item.id, name: item.kind === "tool" ? item.tool.name : item.name, category: item.kind === "tool" ? item.tool.category : item.row.entry.category, keywords: item.kind === "tool" ? item.tool.keywords : [] })), query).map((hit) => hit.id));
     return items.filter((item) => matches.has(item.id));
   }, [items, query]);
   const current = Math.min(active, Math.max(0, visible.length - 1));
@@ -57,13 +60,13 @@ export function PickerBody({ items, pinned, progress, onPick, listClassName }: O
             aria-expanded="true"
             aria-controls="pin-picker-list"
             aria-activedescendant={visible[current] ? `pin-option-${visible[current].id}` : undefined}
-            aria-label="Search tools to pin"
-            placeholder="Search tools…"
+            aria-label={t("shell.picker.searchLabel")}
+            placeholder={t("shell.picker.searchPlaceholder")}
             className="min-w-0 flex-1 !border-transparent bg-transparent text-sm !shadow-none !outline-none placeholder:text-muted-foreground"
           />
         </div>
       </div>
-      <div id="pin-picker-list" role="listbox" aria-label="Tools" className={cn("flex flex-col overflow-y-auto px-1.5 pb-1.5", listClassName ?? "max-h-[280px]")}>
+      <div id="pin-picker-list" role="listbox" aria-label={t("shell.picker.listLabel")} className={cn("flex flex-col overflow-y-auto px-1.5 pb-1.5", listClassName ?? "max-h-[280px]")}>
         {visible.map((item, index) => {
           const isPinned = pinned.includes(item.id);
           const percent = progress[item.id];
@@ -78,7 +81,7 @@ export function PickerBody({ items, pinned, progress, onPick, listClassName }: O
               className={cn("flex h-10 cursor-pointer items-center gap-2.5 rounded-md px-2 text-sm", index === current && "bg-accent")}
             >
               {item.kind === "tool" ? (
-                <span className={cn("grid h-4 w-4 shrink-0 place-items-center rounded border", isPinned ? "border-primary bg-primary text-primary-foreground" : "border-input")} aria-hidden="true">
+                <span className={cn("grid h-4 w-4 shrink-0 place-items-center rounded border", isPinned ? "border-primary-solid bg-primary-solid text-primary-solid-foreground" : "border-input")} aria-hidden="true">
                   {isPinned && <span className="text-[10px] leading-none">✓</span>}
                 </span>
               ) : (
@@ -87,15 +90,15 @@ export function PickerBody({ items, pinned, progress, onPick, listClassName }: O
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-primary/15 text-primary" aria-hidden="true">
                 {item.kind === "tool" ? <item.tool.icon size={13} /> : <Puzzle size={13} />}
               </span>
-              <span className="flex-1 truncate">{item.name}</span>
-              <span className="text-2xs text-muted-foreground">{percent !== undefined ? installingLabel(percent) : tagFor(item)}</span>
+              <span className="flex-1 truncate">{item.kind === "tool" ? toolName(item.tool) : item.name}</span>
+              <span className="text-2xs text-muted-foreground">{percent !== undefined ? installingLabel(percent) : tagFor(item, t)}</span>
             </div>
           );
         })}
-        {visible.length === 0 && <p className="px-2 py-3 text-xs text-muted-foreground" role="status">No tools match “{query.trim()}”.</p>}
+        {visible.length === 0 && <p className="px-2 py-3 text-xs text-muted-foreground" role="status">{t("shell.picker.noMatch", { query: query.trim() })}</p>}
       </div>
       <div className="border-t border-border px-3.5 py-[9px] text-xs text-muted-foreground">
-        {pinned.length} of {MAX_PINNED} pinned · Enter to pin
+        {t("shell.picker.footer", { count: pinned.length, max: MAX_PINNED })}
       </div>
     </>
   );
@@ -116,6 +119,7 @@ interface PinnedEditorProps {
 
 /** Home → Pinned tools in edit mode (design screen 2c). */
 export function PinnedEditor({ tools, pinned, pinnedTools, startWithPicker, onPin, onUnpin, onMove, onPinInstalled, onOpenPlugin, onDone }: PinnedEditorProps) {
+  const t = useT();
   const [pickerOpen, setPickerOpen] = useState(startWithPicker);
   const addRef = useRef<HTMLButtonElement>(null);
   const { dragging, announcement, tileProps, gridProps } = useReorder({ tools: pinnedTools, onMove });
@@ -129,7 +133,7 @@ export function PinnedEditor({ tools, pinned, pinnedTools, startWithPicker, onPi
       if (pinned.includes(item.id)) onUnpin(item.id);
       else onPin(item.id);
     } else if (pinned.length >= MAX_PINNED) {
-      toast.error(pinLimitMessage);
+      toast.error(pinLimitText());
     } else {
       setPickerOpen(false);
       install.request(item.row);
@@ -140,15 +144,15 @@ export function PinnedEditor({ tools, pinned, pinnedTools, startWithPicker, onPi
     <div className="relative">
       <div className="mb-3 flex items-center justify-between">
         <span className="flex items-baseline gap-2.5">
-          <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Pinned tools</h2>
-          <span className="text-xs text-muted-foreground">Drag to reorder</span>
+          <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">{t("shell.pinnedEditor.title")}</h2>
+          <span className="text-xs text-muted-foreground">{t("shell.pinnedEditor.dragHint")}</span>
         </span>
         <span className="flex gap-2">
           <Button ref={addRef} type="button" variant="secondary" size="sm" className="h-7 gap-[7px] px-3 text-sm" aria-haspopup="dialog" aria-expanded={pickerOpen} onClick={() => setPickerOpen((open) => !open)}>
             <Plus size={14} aria-hidden="true" />
-            Add tool
+            {t("shell.pinnedEditor.addTool")}
           </Button>
-          <Button type="button" size="sm" className="h-7 px-3 text-sm" onClick={onDone}>Done</Button>
+          <Button type="button" size="sm" className="h-7 px-3 text-sm" onClick={onDone}>{t("shell.pinnedEditor.done")}</Button>
         </span>
       </div>
 
@@ -157,12 +161,12 @@ export function PinnedEditor({ tools, pinned, pinnedTools, startWithPicker, onPi
           <div
             key={tool.id}
             role="group"
-            aria-label={tool.name}
-            aria-roledescription="reorderable tile"
+            aria-label={toolName(tool)}
+            aria-roledescription={t("shell.pinnedEditor.tileRole")}
             tabIndex={0}
             {...tileProps(tool, index)}
             className={cn(
-              "flex h-14 cursor-grab items-center gap-2.5 rounded-lg border border-border bg-muted pl-1.5 pr-2.5 transition-[transform,box-shadow]",
+              "flex h-14 cursor-grab items-center gap-2.5 rounded-lg border border-border bg-muted ps-1.5 pe-2.5 transition-[transform,box-shadow]",
               dragging === tool.id && "z-[1] translate-x-1.5 -translate-y-[3px] border-primary/60 shadow-[0_8px_24px_rgba(0,0,0,.35)]",
             )}
           >
@@ -170,10 +174,10 @@ export function PinnedEditor({ tools, pinned, pinnedTools, startWithPicker, onPi
             <span className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[7px] bg-primary/15 text-primary" aria-hidden="true">
               <tool.icon size={15} />
             </span>
-            <span className="flex-1 truncate text-sm font-medium text-foreground">{tool.name}</span>
+            <span className="flex-1 truncate text-sm font-medium text-foreground">{toolName(tool)}</span>
             <button
               type="button"
-              aria-label={`Unpin ${tool.name}`}
+              aria-label={t("shell.pinnedEditor.unpin", { name: toolName(tool) })}
               onClick={() => onUnpin(tool.id)}
               className="grid h-[22px] w-[22px] place-items-center rounded-[5px] text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
             >
@@ -183,16 +187,16 @@ export function PinnedEditor({ tools, pinned, pinnedTools, startWithPicker, onPi
         ))}
         <button
           type="button"
-          aria-label="Add tool to pinned"
+          aria-label={t("shell.pinnedEditor.addToPinned")}
           onClick={() => setPickerOpen(true)}
           className="flex h-14 items-center justify-center gap-2 rounded-lg border-[1.5px] border-dashed border-input text-sm text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground"
         >
           <Plus size={14} aria-hidden="true" />
-          Add tool
+          {t("shell.pinnedEditor.addTool")}
         </button>
       </div>
       <p className="mt-3.5 text-xs text-muted-foreground">
-        Pinned tools show on Home in both layouts. In the sidebar layout they also appear in a Pinned group at the top of the sidebar.
+        {t("shell.pinnedEditor.hint")}
       </p>
       <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
 

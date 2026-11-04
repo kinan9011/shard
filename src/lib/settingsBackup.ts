@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { installTheme, listThemes, saveFile, saveTheme } from "@/lib/desktop";
 import { addRepo, listPlugins, listRepos, repoSettings, setRepoEnabled, setRepoSettings, syncRepos } from "@/plugins/api";
 import { buildBackup, type Backup } from "@/utils/settings-backup";
@@ -31,7 +32,7 @@ export async function restoreBackup(backup: Backup, native: boolean): Promise<Re
   const lines: string[] = [];
   const prefs = Object.entries(backup.prefs);
   for (const [key, value] of prefs) localStorage.setItem(key, value);
-  if (prefs.length) lines.push(`Restored ${prefs.length} ${prefs.length === 1 ? "setting" : "settings"}.`);
+  if (prefs.length) lines.push(t("settings.backup.restoredSettings", { count: prefs.length }));
   if (!native) return { lines, plugins: [], needsReload: prefs.length > 0 };
 
   const have = new Set((await listRepos()).map((repo) => repo.url));
@@ -43,15 +44,15 @@ export async function restoreBackup(backup: Backup, native: boolean): Promise<Re
       if (!repo.enabled) await setRepoEnabled(repo.url, false);
       added++;
     } catch (error) {
-      lines.push(`Repository ${repo.url}: ${message(error)}`);
+      lines.push(t("settings.backup.repoError", { url: repo.url, message: message(error) }));
     }
   }
-  if (added) lines.push(`Added ${added} ${added === 1 ? "repository" : "repositories"}.`);
+  if (added) lines.push(t("settings.backup.addedRepos", { count: added }));
   if (backup.repoSettings) {
     try {
       await setRepoSettings(backup.repoSettings);
     } catch (error) {
-      lines.push(`Repository settings: ${message(error)}`);
+      lines.push(t("settings.backup.repoSettingsError", { message: message(error) }));
     }
   }
 
@@ -67,10 +68,10 @@ export async function restoreBackup(backup: Backup, native: boolean): Promise<Re
       else if (item.repo) await installTheme(item.repo, item.id);
       themes++;
     } catch (error) {
-      lines.push(`Theme ${item.id}: ${message(error)}`);
+      lines.push(t("settings.backup.themeError", { id: item.id, message: message(error) }));
     }
   }
-  if (themes) lines.push(`Restored ${themes} ${themes === 1 ? "theme" : "themes"}.`);
+  if (themes) lines.push(t("settings.backup.restoredThemes", { count: themes }));
 
   const installed = new Set((await listPlugins()).map((plugin) => plugin.id));
   return { lines, plugins: backup.plugins.filter((plugin) => !installed.has(plugin.id)), needsReload: prefs.length > 0 };

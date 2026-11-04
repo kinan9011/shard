@@ -12,8 +12,10 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { BrandMark } from "@/components/app/BrandMark";
 import { CommandPalette, type PaletteCommand } from "@/components/app/CommandPalette";
+import { useFieldDirShortcut } from "@/hooks/useFieldDirShortcut";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useAccent } from "@/hooks/useAccent";
+import { useFonts } from "@/hooks/useFonts";
 import { useUserThemes } from "@/hooks/useUserThemes";
 import { buildInstallables, usePaletteListed } from "@/hooks/usePaletteInstallables";
 import { refreshThemeUpdates, useThemeUpdateCount, useThemeUpdateSync } from "@/hooks/useThemeUpdates";
@@ -21,20 +23,25 @@ import { pruneToolIds, type CatalogTool } from "@/app/catalog";
 import { INSTALLABLE_PLUGIN_IDS, INSTALLABLE_TOOLS, type InstallableTool } from "@/app/installableTools";
 import { setToolHidden, useToolCatalog } from "@/app/useToolCatalog";
 import { getReleaseNotes } from "@/data/releaseNotes";
+import { OPEN_TABS_STORAGE_KEY, rememberInputsEnabled } from "@/hooks/usePersistedInput";
 import { parseDeepLink } from "@/utils/deep-link";
 import { buildToolManifest } from "@/utils/tool-manifest";
 import { detectPastedContent, type PasteSuggestion } from "@/utils/clipboard-detect";
 import { PasteSuggestions } from "@/components/app/PasteSuggestions";
 import { PasteInstall } from "@/components/app/PasteInstall";
 import { Sidebar } from "@/components/app/Sidebar";
-import { MAX_PINNED, PINNED_STORAGE_KEY, loadPinned, moveId, pinLimitMessage } from "@/app/pinned";
+import { SidebarFooter, StatusBar, ToolStripe } from "@/components/app/IdeChrome";
+import { MAX_PINNED, PINNED_STORAGE_KEY, loadPinned, moveId, pinLimitText } from "@/app/pinned";
 import { Home } from "@/components/app/Home";
 import { LauncherHome } from "@/components/app/LauncherHome";
 import { FirstRunWizard } from "@/components/app/FirstRunWizard";
 import { finishFirstRun, startFirstRun, type FirstRun } from "@/app/firstRun";
 import { TopTabs } from "@/components/app/TopTabs";
 import { ToolHost } from "@/components/app/ToolHost";
-import { notifyThemeChanged } from "@/plugins/bridge";
+import { notifyLocaleChanged, notifyThemeChanged, sendInputToPlugin } from "@/plugins/bridge";
+import { onLocaleApplied, useLocale, useT } from "@/i18n";
+import { categoryName, toolName } from "@/app/toolNames";
+import { SendToProvider, type SendToApi } from "@/components/tools/SendToMenu";
 import { pluginUpdates, setPluginEnabled, syncRepos } from "@/plugins/api";
 import { refreshPlugins } from "@/plugins/usePlugins";
 import { setPluginUpdates, usePluginUpdates } from "@/plugins/usePluginUpdates";
@@ -88,6 +95,17 @@ const AUTO_UPDATE_STORAGE_KEY = "shard-auto-update";
 const MAX_RECENT_TOOLS = 6;
 
 const RECENT_TOOLS_STORAGE_KEY = "shard-recent-tools";
+
+/** The tabs saved by the last session. Anything unreadable counts as none. */
+function readSavedTabs(): { open: string[]; active: string | null } {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(OPEN_TABS_STORAGE_KEY) ?? "null");
+    const open = Array.isArray(parsed?.open) ? parsed.open.filter((id: unknown): id is string => typeof id === "string").slice(0, 50) : [];
+    return { open, active: typeof parsed?.active === "string" ? parsed.active : null };
+  } catch {
+    return { open: [], active: null };
+  }
+}
 const WHATS_NEW_SEEN_STORAGE_KEY = "shard-whats-new-seen-version";
 
 /** The string ids stored under `key` (duplicates dropped). Unreadable storage gives an empty list. */
@@ -104,7 +122,22 @@ function readStoredIds(key: string, what: string): string[] {
 // parseDeepLink only calls has(): any tool id passes, so a link to a tool that is not loaded yet still parses.
 const ANY_TOOL_ID: ReadonlySet<string> = { has: () => true } as unknown as ReadonlySet<string>;
 
+const CRUMB_KEYS = {
+  general: "shell.crumb.general",
+  appearance: "shell.crumb.appearance",
+  tools: "shell.crumb.tools",
+  plugins: "shell.crumb.plugins",
+  shortcuts: "shell.crumb.shortcuts",
+  about: "shell.crumb.about",
+  browse: "shell.crumb.browse",
+  installed: "shell.crumb.installed",
+  themes: "shell.crumb.themes",
+  repositories: "shell.crumb.repositories",
+} as const;
+
 const Shard = () => {
+  const t = useT();
+  const { locale } = useLocale();
   const bridge = getDesktopBridge();
   // The phone app has the native side (plugins, themes, deep links) but none of the desktop-only features:
   // updates, shortcuts, the tray, folders. `desktop` is the bridge only where those exist.
@@ -122,6 +155,8 @@ const Shard = () => {
   );
   const customThemes = useUserThemes();
   const [accent, setAccent] = useAccent();
+  const fonts = useFonts();
+  useFieldDirShortcut();
   // Installed themes whose repository lists a newer version count next to the plugin updates.
   useThemeUpdateSync(Boolean(bridge), customThemes.themes);
   const themeUpdateCount = useThemeUpdateCount();
@@ -185,6 +220,32 @@ const Shard = () => {
     setIdsPruned(true);
   }, [pluginsReady, idsPruned, toolById]);
 
+  // Reopen last session's tabs, once the plugins are known (a plugin tool is not in the catalog before that).
+  // Ids that are gone are skipped. Saving waits for this, so the empty first render cannot erase them.
+  // ponytail: if the plugins fail to load, nothing is restored or saved, so a later start still has the old tabs.
+  const [tabsRestored, setTabsRestored] = useState(false);
+  useEffect(() => {
+    if (!pluginsReady || tabsRestored) return;
+    const saved = rememberInputsEnabled() ? readSavedTabs() : { open: [], active: null };
+    const restored = saved.open.map((id) => toolById.get(id)).filter((tool): tool is CatalogTool => Boolean(tool));
+    if (restored.length) {
+      setOpenTools((previous) => [...restored, ...previous.filter((entry) => !restored.some((tool) => tool.id === entry.id))]);
+      const active = restored.find((tool) => tool.id === saved.active);
+      // Only from Home: a deep link or a tool the user already opened wins.
+      if (active) setView((current) => (current.kind === "home" ? toolView(active) : current));
+    }
+    setTabsRestored(true);
+  }, [pluginsReady, tabsRestored, toolById]);
+  useEffect(() => {
+    if (!tabsRestored) return;
+    try {
+      if (!rememberInputsEnabled() || openTools.length === 0) localStorage.removeItem(OPEN_TABS_STORAGE_KEY);
+      else localStorage.setItem(OPEN_TABS_STORAGE_KEY, JSON.stringify({ open: openTools.map((tool) => tool.id), active: view.kind === "tool" ? view.id : null }));
+    } catch {
+      // Storage blocked: tabs just aren't remembered.
+    }
+  }, [tabsRestored, openTools, view]);
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem(WHATS_NEW_SEEN_STORAGE_KEY);
@@ -244,7 +305,7 @@ const Shard = () => {
   useEffect(() => {
     // Plugin frames get the new colors. This runs after the two effects above, so the root already has the class and scheme.
     notifyThemeChanged();
-  }, [darkMode, activeScheme, customThemes.schemes]);
+  }, [darkMode, activeScheme, customThemes.schemes, fonts.prefs.ui]);
 
   useEffect(() => {
     // The native window material follows the window appearance, not the page theme.
@@ -388,7 +449,7 @@ const Shard = () => {
       await desktop.checkForUpdates();
     } catch (error) {
       console.error("Failed to run update action:", error);
-      toast.error("Unable to complete the update action.");
+      toast.error(t("shell.update.actionFailed"));
     }
   };
 
@@ -434,13 +495,13 @@ const Shard = () => {
 
   const resetShortcutBindings = () => {
     setShortcutBindings(getDefaultShortcutBindings(platform));
-    toast.success("Keyboard shortcuts reset to defaults.");
+    toast.success(t("shell.shortcuts.reset"));
   };
 
   const pinTool = (toolId: string): boolean => {
     if (pinned.includes(toolId)) return true;
     if (pinned.length >= MAX_PINNED) {
-      toast.error(pinLimitMessage);
+      toast.error(pinLimitText());
       return false;
     }
     setPinned([...pinned, toolId]);
@@ -453,7 +514,7 @@ const Shard = () => {
   const pinInstalledRef = useRef((_toolId: string) => {});
   pinInstalledRef.current = (toolId) => {
     if (pinned.includes(toolId)) return;
-    if (pinned.length >= MAX_PINNED) toast.error(pinLimitMessage, { description: "The plugin is installed but not pinned." });
+    if (pinned.length >= MAX_PINNED) toast.error(pinLimitText(), { description: t("shell.pinned.installedNotPinned") });
     else setPinned((prev) => (prev.includes(toolId) || prev.length >= MAX_PINNED ? prev : [...prev, toolId]));
   };
 
@@ -528,7 +589,7 @@ const Shard = () => {
     enabled: !showCommandPalette && !recordingShortcut && !showWhatsNew && firstRun !== "wizard",
   });
 
-  const openSettings = (section = "appearance") => {
+  const openSettings = (section = "general") => {
     setShowCommandPalette(false);
     if (window.innerWidth < 640) setSidebarOpen(false);
     setView({ kind: "settings", section });
@@ -558,10 +619,10 @@ const Shard = () => {
       if (failure) {
         toast.error(failure instanceof Error ? failure.message : String(failure));
       } else if (found.length === 0) {
-        toast.success("All plugins are up to date.");
+        toast.success(t("shell.updates.allUpToDate"));
       } else {
-        toast(`${found.length} plugin ${found.length === 1 ? "update is" : "updates are"} available.`, {
-          action: { label: "Review", onClick: () => openPlugins("installed") },
+        toast(t("shell.updates.available", { count: found.length }), {
+          action: { label: t("shell.updates.review"), onClick: () => openPlugins("installed") },
         });
       }
     } catch (error) {
@@ -572,8 +633,8 @@ const Shard = () => {
   checkPluginUpdatesRef.current = checkPluginUpdates;
 
   const paletteCommands: PaletteCommand[] = [
-    { id: "open-plugins", label: "Open Plugins", icon: Puzzle, run: () => openPlugins("browse") },
-    { id: "check-plugin-updates", label: "Check for plugin updates", icon: RefreshCw, run: () => void checkPluginUpdatesRef.current() },
+    { id: "open-plugins", label: t("shell.palette.openPlugins"), icon: Puzzle, run: () => openPlugins("browse") },
+    { id: "check-plugin-updates", label: t("shell.palette.checkUpdates"), icon: RefreshCw, run: () => void checkPluginUpdatesRef.current() },
   ];
 
   // selectTool is memoized into long-lived handlers (shortcuts, deep links), so it reads these from a ref.
@@ -636,6 +697,15 @@ const Shard = () => {
 
   // System-wide "Show Shard" shortcut. Paused while a shortcut is being recorded, so recording
   // a new combination cannot trigger the old one.
+  // The tray menu and the plugin frames are not React: tell them when the language changes (and once at start).
+  useEffect(
+    () =>
+      onLocaleApplied(() => {
+        void desktop?.setTrayLabels?.({ open: t("shell.tray.open"), search: t("shell.tray.search"), quit: t("shell.tray.quit") });
+        notifyLocaleChanged();
+      }),
+    [desktop, t],
+  );
   const [globalShortcut, setGlobalShortcut] = useState<GlobalShortcut>(() =>
     loadGlobalShortcut(typeof window !== "undefined" ? window.localStorage : undefined, platform),
   );
@@ -674,7 +744,8 @@ const Shard = () => {
     [pluginsReady, pluginsFailed, installedIds],
   );
   // The plugin a paste suggestion is installing (`nonce` restarts the flow when the same tool is asked for again).
-  const [pasteInstall, setPasteInstall] = useState<{ tool: InstallableTool; nonce: number } | null>(null);
+  // `text` is what the user pasted: it goes to the plugin once it is installed and opened.
+  const [pasteInstall, setPasteInstall] = useState<{ tool: InstallableTool; nonce: number; text?: string } | null>(null);
   // "Install Nord" in the command palette: the plugins and themes the repositories list and the user does not have.
   const paletteListed = usePaletteListed(showCommandPalette);
   const paletteInstallables = useMemo(
@@ -687,13 +758,15 @@ const Shard = () => {
             async () => {
               await customThemes.reload();
               void refreshThemeUpdates();
-              toast.success(`Installed ${entry.name}`, { action: { label: "Apply", onClick: () => setColorScheme(entry.id) } });
+              toast.success(t("shell.theme.installed", { name: entry.name }), { action: { label: t("shell.theme.apply"), onClick: () => setColorScheme(entry.id) } });
             },
-            (error) => toast.error(`Couldn't install ${entry.name}`, { description: error instanceof Error ? error.message : String(error) }),
+            (error) => toast.error(t("shell.theme.installFailed", { name: entry.name }), { description: error instanceof Error ? error.message : String(error) }),
           );
         },
       }),
-    [paletteListed, installedIds, customThemes],
+    // `locale`: the rows carry translated text.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [paletteListed, installedIds, customThemes, locale],
   );
   useEffect(() => {
     if (pasteBlocked) return;
@@ -716,7 +789,7 @@ const Shard = () => {
   useEffect(() => {
     const isZip = (name: string) => /\.zip$/i.test(name);
     const hint = () =>
-      toast("To install a plugin, drop it on Install plugin.", { action: { label: "Open", onClick: () => openPluginsRef.current("browse", true) } });
+      toast(t("shell.drop.hint"), { action: { label: t("shell.drop.open"), onClick: () => openPluginsRef.current("browse", true) } });
     // Only files (and file:// links) are ours. Text dragged into a field is left alone.
     const isFileDrag = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).some((type) => type === "Files" || type === "text/uri-list");
     const handleDragOver = (event: DragEvent) => {
@@ -742,28 +815,26 @@ const Shard = () => {
       window.removeEventListener("drop", handleDrop);
       stopNative?.();
     };
-  }, []);
+  }, [t]);
 
   const dismissPasted = useCallback(() => setPasted(null), []);
-  const openPastedIn = useCallback((toolId: string) => {
-    const wantsInstall = pasted?.suggestions.find((item) => item.toolId === toolId)?.install;
+  // Opens a tool with `text` in its main input. Used by a paste suggestion and by another tool's "Send to…".
+  const sendToTool = (toolId: string, text: string) => {
     const tool = toolById.get(toolId);
-    const text = pasted?.text ?? "";
-    setPasted(null);
-    if (wantsInstall) {
-      // Not installed: the install flow of the Home banners (permission dialog, then install). The pasted text is not carried over.
-      const installable = INSTALLABLE_TOOLS.find((item) => item.pluginId === toolId);
-      if (installable) setPasteInstall((current) => ({ tool: installable, nonce: (current?.nonce ?? 0) + 1 }));
-      return;
-    }
     if (!tool) return;
     selectTool(tool);
+    if (tool.source === "plugin") {
+      // A plugin's frame takes it at its handshake, so this works before the frame has loaded (see sendInputToPlugin).
+      if (!sendInputToPlugin(tool.pluginId ?? tool.id, text)) toast.error(t("shell.sendTo.tooLarge"));
+      return;
+    }
     // Tools load lazily. Wait for the panel's main input, then fill it the way typing would.
     const started = Date.now();
     const fill = () => {
-      const field = document.querySelector<HTMLTextAreaElement | HTMLInputElement>(
-        `#panel-${tool.id} textarea:not([readonly]), #panel-${tool.id} input[type="text"]:not([readonly])`,
-      );
+      // A textarea first: JSON Viewer has a JSONPath box above its input, and the text is not meant for that one.
+      const panel = document.querySelector(`#panel-${tool.id}`);
+      const field =
+        panel?.querySelector<HTMLTextAreaElement>("textarea:not([readonly])") ?? panel?.querySelector<HTMLInputElement>('input[type="text"]:not([readonly])') ?? null;
       if (!field) {
         if (Date.now() - started < 3000) window.setTimeout(fill, 50);
         return;
@@ -774,7 +845,38 @@ const Shard = () => {
       field.focus();
     };
     window.setTimeout(fill, 0);
-  }, [pasted, toolById]);
+  };
+  // Long-lived callbacks (the install toast's Open button) call the latest one.
+  const sendToToolRef = useRef(sendToTool);
+  sendToToolRef.current = sendToTool;
+  const sendToApi = useMemo<SendToApi>(
+    () => ({
+      send: (toolId, text) => sendToToolRef.current(toolId, text),
+      // Installed tools only: an uninstalled one would need the install flow first.
+      targets: (text) =>
+        detectPastedContent(text, toolIds)
+          .sort((a, b) => b.score - a.score)
+          .flatMap((item) => {
+            const tool = toolById.get(item.toolId);
+            return tool ? [{ toolId: item.toolId, name: toolName(tool), what: item.label }] : [];
+          }),
+    }),
+    [toolIds, toolById],
+  );
+
+  const openPastedIn = useCallback((toolId: string) => {
+    const wantsInstall = pasted?.suggestions.find((item) => item.toolId === toolId)?.install;
+    const text = pasted?.text ?? "";
+    setPasted(null);
+    if (wantsInstall) {
+      // Not installed: the install flow of the Home banners (permission dialog, then install). The text waits in `pasteInstall`
+      // and goes to the plugin when the user opens it from the "Installed" toast.
+      const installable = INSTALLABLE_TOOLS.find((item) => item.pluginId === toolId);
+      if (installable) setPasteInstall((current) => ({ tool: installable, nonce: (current?.nonce ?? 0) + 1, text }));
+      return;
+    }
+    sendToToolRef.current(toolId, text);
+  }, [pasted]);
 
   // Automatic updates: download in the background and install on quit. On by default.
   const [autoUpdate, setAutoUpdate] = useState(() => {
@@ -801,13 +903,13 @@ const Shard = () => {
     if (updateState.status !== "downloaded" || !updateState.version) return;
     if (announcedUpdateRef.current === updateState.version) return;
     announcedUpdateRef.current = updateState.version;
-    toast(`Shard ${updateState.version} is ready`, {
+    toast(t("shell.update.readyTitle", { version: updateState.version }), {
       id: "update-ready",
-      description: "It installs when you quit Shard.",
+      description: t("shell.update.readyBody"),
       duration: 20000,
-      action: { label: "Restart now", onClick: () => installUpdateRef.current() },
+      action: { label: t("shell.update.restartNow"), onClick: () => installUpdateRef.current() },
     });
-  }, [updateState.status, updateState.version]);
+  }, [t, updateState.status, updateState.version]);
 
   // Close several tabs at once. When the selected tab closes, select `fallback` or the nearest tab left open.
   const closeTools = useCallback((ids: ReadonlySet<string>, fallback?: CatalogTool) => {
@@ -827,14 +929,14 @@ const Shard = () => {
   const hideTool = useCallback((tool: CatalogTool) => {
     if (tool.pluginId) {
       setPluginEnabled(tool.pluginId, false).then(
-        () => Promise.allSettled([refreshPlugins()]).then(() => toast.success(`${tool.name} is off`, { description: "Turn it back on in Plugins → Installed.", action: { label: "Undo", onClick: () => void setPluginEnabled(tool.pluginId!, true).then(() => refreshPlugins()) } })),
-        (error) => toast.error(`Couldn't turn off ${tool.name}`, { description: error instanceof Error ? error.message : String(error) }),
+        () => Promise.allSettled([refreshPlugins()]).then(() => toast.success(t("shell.hide.pluginOff", { name: toolName(tool) }), { description: t("shell.hide.pluginOffHint"), action: { label: t("shell.toast.undo"), onClick: () => void setPluginEnabled(tool.pluginId!, true).then(() => refreshPlugins()) } })),
+        (error) => toast.error(t("shell.hide.pluginOffFailed", { name: toolName(tool) }), { description: error instanceof Error ? error.message : String(error) }),
       );
       return;
     }
     setToolHidden(tool.id, true);
-    toast.success(`${tool.name} is hidden`, { description: "Show it again in Settings → Built-in tools.", action: { label: "Undo", onClick: () => setToolHidden(tool.id, false) } });
-  }, []);
+    toast.success(t("shell.hide.toolHidden", { name: toolName(tool) }), { description: t("shell.hide.toolHiddenHint"), action: { label: t("shell.toast.undo"), onClick: () => setToolHidden(tool.id, false) } });
+  }, [t]);
 
   // A tool that was hidden (or whose plugin was turned off) while its tab was open: close the tab.
   useEffect(() => {
@@ -886,6 +988,8 @@ const Shard = () => {
         platform={platform}
         layout={layout}
         onLayout={setLayout}
+        preference={themePreference}
+        onPreference={setThemePreference}
         onPin={pinTool}
         onUnpin={unpinTool}
         onPinInstalled={(id) => pinInstalledRef.current(id)}
@@ -896,9 +1000,29 @@ const Shard = () => {
   }
 
   const phoneDestination: PhoneDestination = selectedTool ? "tool" : view.kind === "plugins" ? "plugins" : view.kind === "settings" ? "settings" : "home";
-  return (
-    <div data-platform={platform} data-phone={phone || undefined} data-sidebar-open={layout === "sidebar" && sidebarOpen} data-layout={layout} className="workspace h-screen overflow-hidden bg-background flex">
-      {layout === "sidebar" && <Sidebar
+  const capitalize = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
+  const crumbName = (id: string) => (id in CRUMB_KEYS ? t(CRUMB_KEYS[id as keyof typeof CRUMB_KEYS]) : capitalize(id));
+  const crumbs = selectedTool ? ["Shard", categoryName(selectedTool.category), toolName(selectedTool)]
+    : view.kind === "plugins" ? ["Shard", t("shell.stripe.plugins"), crumbName(view.tab)]
+    : view.kind === "settings" ? ["Shard", t("shell.stripe.settings"), crumbName(view.section)]
+    : ["Shard", t("shell.sidebar.home")];
+  const destinations = {
+    pluginsOpen: view.kind === "plugins",
+    onOpenPlugins: () => openPlugins("browse"),
+    updateCount: updates.length + themeUpdateCount,
+    settingsOpen: view.kind === "settings",
+    onOpenSettings: () => openSettings(),
+  };
+  const statusInfo = {
+    version: desktop ? (appVersion ? `v${appVersion}` : t("shell.status.loading")) : t("shell.status.browserPreview"),
+    updateNotice,
+    onUpdateNotice: () => openSettings("general"),
+    hasReleaseNotes: Boolean(releaseNotes),
+    hasUnreadWhatsNew,
+    onWhatsNew: openWhatsNew,
+  };
+  const sidebarFooter = <SidebarFooter {...destinations} {...statusInfo} />;
+  const sidebarEl = layout === "sidebar" && <Sidebar
         open={sidebarOpen}
         onOpenChange={setSidebarOpen}
         searchQuery={searchQuery}
@@ -912,27 +1036,22 @@ const Shard = () => {
         onTogglePinned={togglePinned}
         onOpenPalette={openCommandPalette}
         paletteShortcutLabel={commandPaletteShortcutLabel}
-        isDesktop={Boolean(desktop)}
-        appVersion={appVersion}
-        updateNotice={updateNotice}
-        hasReleaseNotes={Boolean(releaseNotes)}
-        hasUnreadWhatsNew={hasUnreadWhatsNew}
-        onWhatsNew={openWhatsNew}
         onOpenPlugins={() => openPlugins("browse")}
-        pluginsOpen={view.kind === "plugins"}
-        updateCount={updates.length + themeUpdateCount}
-        onOpenSettings={openSettings}
-        settingsOpen={view.kind === "settings"}
+        footer={phone ? sidebarFooter : undefined}
         categoryMode={sidebarCategories}
         empty={empty}
-      />}
+      />;
 
-      {/* Main Content */}
-      <main className="flex-1 min-h-0 flex flex-col min-w-0">
-        {phone ? (
-          <PhoneHeader
+  return (
+    <SendToProvider value={sendToApi}>
+    <div data-platform={platform} data-phone={phone || undefined} data-sidebar-open={layout === "sidebar" && sidebarOpen} data-layout={layout} className="workspace h-screen overflow-hidden bg-background flex">
+      {phone ? (
+        <>
+          {sidebarEl}
+          <main className="flex-1 min-h-0 flex flex-col min-w-0">
+              <PhoneHeader
             destination={phoneDestination}
-            title={selectedTool?.name ?? (view.kind === "plugins" ? "Plugins" : view.kind === "settings" ? "Settings" : "Shard")}
+            title={selectedTool ? toolName(selectedTool) : view.kind === "plugins" ? t("shell.stripe.plugins") : view.kind === "settings" ? t("shell.stripe.settings") : "Shard"}
             onBack={() => setView(HOME_VIEW)}
             onMenu={layout === "sidebar" ? () => setSidebarOpen(!sidebarOpen) : undefined}
             onSearch={openCommandPalette}
@@ -943,160 +1062,272 @@ const Shard = () => {
             onSelectTool={selectTool}
             onCloseTool={closeTool}
           />
-        ) : layout === "launcher" ? (
-        <header data-tauri-drag-region className="workspace-titlebar launcher-titlebar">
-          <div data-tauri-drag-region className="flex items-center gap-2.5 pr-2.5">
-            <BrandMark className="h-[22px] w-[22px]" />
-            <span className="font-semibold text-foreground">Shard</span>
-          </div>
-          <div className="launcher-tabs" role="presentation">
-            <button type="button" className="workspace-tab launcher-home-tab" aria-current={view.kind === "home" ? "page" : undefined} onClick={() => setView(HOME_VIEW)}>
-              <House size={15} aria-hidden="true" />
-              <span>Home</span>
-            </button>
-            <TopTabs tools={openTools} selectedId={selectedTool?.id ?? null} onSelect={selectTool} onClose={closeTool} onCloseMany={closeTools} onHide={hideTool} />
-          </div>
-          <button type="button" className="chrome-button" aria-label="Open a tool" title="Open a tool" onClick={openCommandPalette}><Plus size={16} /></button>
-          <div className="flex min-w-0 flex-1 justify-center">
-            <button type="button" className="launcher-search h-8 w-[360px] max-w-full" onClick={openCommandPalette}>
-              <Search size={15} aria-hidden="true" />
-              <span className="flex-1 truncate text-left">Find a tool or command</span>
-              <kbd>{commandPaletteShortcutLabel}</kbd>
-            </button>
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
-            {selectedTool && <button type="button" className="chrome-button" aria-label={pinned.includes(selectedTool.id) ? "Unpin from Home" : "Pin to Home"} onClick={() => togglePinned(selectedTool.id)}><Pin size={15} className={pinned.includes(selectedTool.id) ? "fill-current text-primary" : ""} /></button>}
-            <button type="button" className="chrome-button relative" title="Plugins" aria-current={view.kind === "plugins" ? "page" : undefined} onClick={() => openPlugins("browse")}>
-              <Puzzle size={16} aria-hidden="true" />
-              <span className="sr-only">Plugins</span>
-              {updates.length + themeUpdateCount > 0 && <span className="launcher-badge" title={`${updates.length + themeUpdateCount} plugin and theme ${updates.length + themeUpdateCount === 1 ? "update" : "updates"}`}>{updates.length + themeUpdateCount}</span>}
-            </button>
-            <button type="button" className="chrome-button" aria-label="Settings" title="Settings" aria-current={view.kind === "settings" ? "page" : undefined} onClick={() => openSettings()}><Settings size={16} aria-hidden="true" /></button>
-            <button type="button" className="chrome-button" aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} onClick={() => setThemePreference(darkMode ? "light" : "dark")}>
-              {darkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
-            </button>
-          </div>
-        </header>
-        ) : (
-        <header data-tauri-drag-region className="workspace-titlebar">
-          <button type="button" className="chrome-button" aria-label="Toggle sidebar" onClick={() => setSidebarOpen(!sidebarOpen)}><PanelLeft size={16} /></button>
-          <TopTabs tools={openTools} selectedId={selectedTool?.id ?? null} onSelect={selectTool} onClose={closeTool} onCloseMany={closeTools} onHide={hideTool} />
-          <button type="button" className="chrome-button" aria-label="Open a tool" title="Open a tool" onClick={openCommandPalette}><Plus size={17} /></button>
-          <div className="ml-auto flex shrink-0 items-center gap-1">
-            {selectedTool && <button type="button" className="chrome-button" aria-label={pinned.includes(selectedTool.id) ? "Unpin from Home" : "Pin to Home"} onClick={() => togglePinned(selectedTool.id)}><Pin size={15} className={pinned.includes(selectedTool.id) ? "fill-current text-primary" : ""} /></button>}
-            <button type="button" className="chrome-button" aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} onClick={() => setThemePreference(darkMode ? "light" : "dark")}>
-              {darkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
-            </button>
-          </div>
-        </header>
-        )}
 
-        {/* Content */}
-        <div className={`workspace-content ${!selectedTool && view.kind !== "plugins" && view.kind !== "settings" ? "is-home" : ""}`}>
-          {view.kind === "settings" ? (
-            <SettingsPage
-              section={view.section}
-              onSection={(section) => setView({ kind: "settings", section })}
-              preference={themePreference}
-              onPreference={setThemePreference}
-              scheme={activeScheme}
-              onScheme={setColorScheme}
-              accent={accent}
-              onAccent={setAccent}
-              customThemes={bridge ? customThemes : undefined}
-              dark={darkMode}
-              layout={layout}
-              onLayout={setLayout}
-              sidebarCategories={sidebarCategories}
-              onSidebarCategories={setSidebarCategories}
-              openToolsIn={openToolsIn}
-              onOpenToolsIn={setOpenToolsIn}
-              platform={platform}
-              isDesktop={Boolean(desktop)}
-              hasNative={Boolean(bridge)}
-              appVersion={appVersion}
-              updateState={updateState}
-              onUpdateAction={handleUpdateAction}
-              autoUpdate={autoUpdate}
-              onAutoUpdateChange={setAutoUpdate}
-              globalShortcut={desktop?.setGlobalShortcut ? globalShortcut : undefined}
-              globalShortcutError={globalShortcutError}
-              onChangeGlobalShortcut={changeGlobalShortcut}
-              shortcutBindings={shortcutBindings}
-              onUpdateShortcut={updateShortcutBinding}
-              onResetShortcuts={resetShortcutBindings}
-              onRecordingShortcut={setRecordingShortcut}
-              recordingPaused={showCommandPalette || showWhatsNew}
-              onOpenPlugins={(tab) => openPlugins(tab)}
-              onCheckPluginUpdates={() => void checkPluginUpdates()}
-              hasReleaseNotes={Boolean(releaseNotes)}
-              onWhatsNew={openWhatsNew}
+          {/* Content */}
+          <div className={`workspace-content ${!selectedTool && view.kind !== "plugins" && view.kind !== "settings" ? "is-home" : ""}`}>
+            {view.kind === "settings" ? (
+              <SettingsPage
+                section={view.section}
+                onSection={(section) => setView({ kind: "settings", section })}
+                preference={themePreference}
+                onPreference={setThemePreference}
+                scheme={activeScheme}
+                onScheme={setColorScheme}
+                accent={accent}
+                onAccent={setAccent}
+                fonts={fonts}
+                customThemes={bridge ? customThemes : undefined}
+                dark={darkMode}
+                layout={layout}
+                onLayout={setLayout}
+                sidebarCategories={sidebarCategories}
+                onSidebarCategories={setSidebarCategories}
+                openToolsIn={openToolsIn}
+                onOpenToolsIn={setOpenToolsIn}
+                platform={platform}
+                isDesktop={Boolean(desktop)}
+                hasNative={Boolean(bridge)}
+                appVersion={appVersion}
+                updateState={updateState}
+                onUpdateAction={handleUpdateAction}
+                autoUpdate={autoUpdate}
+                onAutoUpdateChange={setAutoUpdate}
+                globalShortcut={desktop?.setGlobalShortcut ? globalShortcut : undefined}
+                globalShortcutError={globalShortcutError}
+                onChangeGlobalShortcut={changeGlobalShortcut}
+                shortcutBindings={shortcutBindings}
+                onUpdateShortcut={updateShortcutBinding}
+                onResetShortcuts={resetShortcutBindings}
+                onRecordingShortcut={setRecordingShortcut}
+                recordingPaused={showCommandPalette || showWhatsNew}
+                onOpenPlugins={(tab) => openPlugins(tab)}
+                onCheckPluginUpdates={() => void checkPluginUpdates()}
+                hasReleaseNotes={Boolean(releaseNotes)}
+                onWhatsNew={openWhatsNew}
+              />
+            ) : view.kind === "plugins" ? (
+              <PluginsPage variant={layout === "launcher" || phone ? "cards" : "list"} customThemes={bridge ? customThemes : undefined} themeApply={{ scheme: activeScheme, onScheme: setColorScheme, dark: darkMode }} startInstall={view.install} tab={view.tab} onTabChange={(tab) => setView({ kind: "plugins", tab })} onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }} />
+            ) : !selectedTool && layout === "launcher" ? (
+              <LauncherHome
+                tools={catalogTools}
+                categories={categories}
+                pinned={pinned}
+                pinnedTools={pinnedTools}
+                onPin={pinTool}
+                onUnpin={unpinTool}
+                onMovePinned={movePinned}
+                onPinInstalled={(id) => pinInstalledRef.current(id)}
+                onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }}
+                platform={platform}
+                paletteShortcutLabel={commandPaletteShortcutLabel}
+                onSelect={selectTool}
+                onOpenPalette={openCommandPalette}
+                updates={updates}
+                onReviewUpdates={() => openPlugins("installed")}
+                empty={empty}
+                onBrowsePlugins={() => openPlugins("browse")}
+                onInstallFromFile={() => openPlugins("browse", true)}
+              />
+            ) : !selectedTool ? (
+              <Home
+                recentTools={recentTools}
+                tools={catalogTools}
+                pinned={pinned}
+                pinnedTools={pinnedTools}
+                onPin={pinTool}
+                onUnpin={unpinTool}
+                onMovePinned={movePinned}
+                onPinInstalled={(id) => pinInstalledRef.current(id)}
+                onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }}
+                quickAccessTools={quickAccessTools}
+                platform={platform}
+                paletteShortcutLabel={commandPaletteShortcutLabel}
+                onSelect={selectTool}
+                onOpenPalette={openCommandPalette}
+                updates={updates}
+                onReviewUpdates={() => openPlugins("installed")}
+                empty={empty}
+                onBrowsePlugins={() => openPlugins("browse")}
+                onInstallFromFile={() => openPlugins("browse", true)}
+              />
+            ) : null}
+            <ToolHost tools={openTools} selectedId={selectedTool?.id ?? null} />
+          </div>
+          </main>
+          {phone && layout === "launcher" && (
+            <MobileNav
+              destination={phoneDestination}
+              onHome={() => setView(HOME_VIEW)}
+              onSearch={openCommandPalette}
+              onPlugins={() => openPlugins("browse")}
+              onSettings={() => openSettings()}
+              badge={updates.length + themeUpdateCount}
             />
-          ) : view.kind === "plugins" ? (
-            <PluginsPage variant={layout === "launcher" || phone ? "cards" : "list"} customThemes={bridge ? customThemes : undefined} themeApply={{ scheme: activeScheme, onScheme: setColorScheme, dark: darkMode }} startInstall={view.install} tab={view.tab} onTabChange={(tab) => setView({ kind: "plugins", tab })} onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }} />
-          ) : !selectedTool && layout === "launcher" ? (
-            <LauncherHome
-              tools={catalogTools}
-              categories={categories}
-              pinned={pinned}
-              pinnedTools={pinnedTools}
-              onPin={pinTool}
-              onUnpin={unpinTool}
-              onMovePinned={movePinned}
-              onPinInstalled={(id) => pinInstalledRef.current(id)}
-              onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }}
-              platform={platform}
-              paletteShortcutLabel={commandPaletteShortcutLabel}
-              onSelect={selectTool}
-              onOpenPalette={openCommandPalette}
-              updates={updates}
-              onReviewUpdates={() => openPlugins("installed")}
-              empty={empty}
-              onBrowsePlugins={() => openPlugins("browse")}
-              onInstallFromFile={() => openPlugins("browse", true)}
-            />
-          ) : !selectedTool ? (
-            <Home
-              recentTools={recentTools}
-              tools={catalogTools}
-              pinned={pinned}
-              pinnedTools={pinnedTools}
-              onPin={pinTool}
-              onUnpin={unpinTool}
-              onMovePinned={movePinned}
-              onPinInstalled={(id) => pinInstalledRef.current(id)}
-              onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }}
-              quickAccessTools={quickAccessTools}
-              platform={platform}
-              paletteShortcutLabel={commandPaletteShortcutLabel}
-              onSelect={selectTool}
-              onOpenPalette={openCommandPalette}
-              updates={updates}
-              onReviewUpdates={() => openPlugins("installed")}
-              empty={empty}
-              onBrowsePlugins={() => openPlugins("browse")}
-              onInstallFromFile={() => openPlugins("browse", true)}
-            />
-          ) : null}
-          <ToolHost tools={openTools} selectedId={selectedTool?.id ?? null} />
-        </div>
-      </main>
+          )}
+        </>
+      ) : (
+        <>
+          {layout === "launcher" ? (
+                    <header data-tauri-drag-region className="workspace-titlebar launcher-titlebar">
+                      <div data-tauri-drag-region className="titlebar-brand">
+                        <BrandMark className="h-[18px] w-[18px]" />
+                        <span>Shard</span>
+                      </div>
+                      <div className="launcher-tabs" role="presentation">
+                        <button type="button" className="workspace-tab launcher-home-tab" aria-current={view.kind === "home" ? "page" : undefined} onClick={() => setView(HOME_VIEW)}>
+                          <House size={15} aria-hidden="true" />
+                          <span>{t("shell.sidebar.home")}</span>
+                        </button>
+                        <TopTabs tools={openTools} selectedId={selectedTool?.id ?? null} onSelect={selectTool} onClose={closeTool} onCloseMany={closeTools} onHide={hideTool} />
+                      </div>
+                      <button type="button" className="chrome-button" aria-label={t("shell.titlebar.openTool")} title={t("shell.titlebar.openTool")} onClick={openCommandPalette}><Plus size={16} /></button>
+                      <div className="flex min-w-0 flex-1 justify-center">
+                        <button type="button" className="launcher-search h-8 w-[360px] max-w-full" onClick={openCommandPalette}>
+                          <Search size={15} aria-hidden="true" />
+                          <span className="flex-1 truncate text-start">{t("shell.titlebar.find")}</span>
+                          <kbd>{commandPaletteShortcutLabel}</kbd>
+                        </button>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        {selectedTool && <button type="button" className="chrome-button" aria-label={pinned.includes(selectedTool.id) ? t("shell.sidebar.unpinFromHome") : t("shell.sidebar.pinToHome")} onClick={() => togglePinned(selectedTool.id)}><Pin size={15} className={pinned.includes(selectedTool.id) ? "fill-current text-primary" : ""} /></button>}
+                        <button type="button" className="chrome-button relative" title={t("shell.stripe.plugins")} aria-current={view.kind === "plugins" ? "page" : undefined} onClick={() => openPlugins("browse")}>
+                          <Puzzle size={16} aria-hidden="true" />
+                          <span className="sr-only">{t("shell.stripe.plugins")}</span>
+                          {updates.length + themeUpdateCount > 0 && <span className="launcher-badge" title={t("shell.stripe.updatesBadge", { count: updates.length + themeUpdateCount })}>{updates.length + themeUpdateCount}</span>}
+                        </button>
+                        <button type="button" className="chrome-button" aria-label={t("shell.stripe.settings")} title={t("shell.stripe.settings")} aria-current={view.kind === "settings" ? "page" : undefined} onClick={() => openSettings()}><Settings size={16} aria-hidden="true" /></button>
+                        <button type="button" className="chrome-button" aria-label={darkMode ? t("shell.titlebar.toLight") : t("shell.titlebar.toDark")} title={darkMode ? t("shell.titlebar.toLight") : t("shell.titlebar.toDark")} onClick={() => setThemePreference(darkMode ? "light" : "dark")}>
+                          {darkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+                        </button>
+                      </div>
+                    </header>
+          ) : (
+            <header data-tauri-drag-region className="workspace-titlebar">
+              <button type="button" className="chrome-button" aria-label={t("shell.titlebar.toggleSidebar")} onClick={() => setSidebarOpen(!sidebarOpen)}><PanelLeft size={16} /></button>
+              <div data-tauri-drag-region className="titlebar-brand">
+                <BrandMark className="h-[18px] w-[18px]" />
+                <span>Shard</span>
+              </div>
+              <div data-tauri-drag-region className="titlebar-spacer" />
+              <div className="flex shrink-0 items-center gap-1">
+                {selectedTool && <button type="button" className="chrome-button" aria-label={pinned.includes(selectedTool.id) ? t("shell.sidebar.unpinFromHome") : t("shell.sidebar.pinToHome")} onClick={() => togglePinned(selectedTool.id)}><Pin size={15} className={pinned.includes(selectedTool.id) ? "fill-current text-primary" : ""} /></button>}
+                <button type="button" className="chrome-button" aria-label={darkMode ? t("shell.titlebar.toLight") : t("shell.titlebar.toDark")} title={darkMode ? t("shell.titlebar.toLight") : t("shell.titlebar.toDark")} onClick={() => setThemePreference(darkMode ? "light" : "dark")}>
+                  {darkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+                </button>
+              </div>
+            </header>
+          )}
+          <div className="workspace-body">
+            {layout === "sidebar" && <ToolStripe sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} {...destinations} />}
+            {sidebarEl}
+            <main className="flex-1 min-h-0 flex flex-col min-w-0">
+              {layout === "sidebar" && (
+                <div className="workspace-tab-row">
+                  <TopTabs tools={openTools} selectedId={selectedTool?.id ?? null} onSelect={selectTool} onClose={closeTool} onCloseMany={closeTools} onHide={hideTool} />
+                  <button type="button" className="chrome-button" aria-label={t("shell.titlebar.openTool")} title={t("shell.titlebar.openTool")} onClick={openCommandPalette}><Plus size={16} /></button>
+                </div>
+              )}
 
-      {phone && layout === "launcher" && (
-        <MobileNav
-          destination={phoneDestination}
-          onHome={() => setView(HOME_VIEW)}
-          onSearch={openCommandPalette}
-          onPlugins={() => openPlugins("browse")}
-          onSettings={() => openSettings()}
-          badge={updates.length + themeUpdateCount}
-        />
+            {/* Content */}
+            <div className={`workspace-content ${!selectedTool && view.kind !== "plugins" && view.kind !== "settings" ? "is-home" : ""}`}>
+              {view.kind === "settings" ? (
+                <SettingsPage
+                  section={view.section}
+                  onSection={(section) => setView({ kind: "settings", section })}
+                  preference={themePreference}
+                  onPreference={setThemePreference}
+                  scheme={activeScheme}
+                  onScheme={setColorScheme}
+                  accent={accent}
+                  onAccent={setAccent}
+                fonts={fonts}
+                  customThemes={bridge ? customThemes : undefined}
+                  dark={darkMode}
+                  layout={layout}
+                  onLayout={setLayout}
+                  sidebarCategories={sidebarCategories}
+                  onSidebarCategories={setSidebarCategories}
+                  openToolsIn={openToolsIn}
+                  onOpenToolsIn={setOpenToolsIn}
+                  platform={platform}
+                  isDesktop={Boolean(desktop)}
+                  hasNative={Boolean(bridge)}
+                  appVersion={appVersion}
+                  updateState={updateState}
+                  onUpdateAction={handleUpdateAction}
+                  autoUpdate={autoUpdate}
+                  onAutoUpdateChange={setAutoUpdate}
+                  globalShortcut={desktop?.setGlobalShortcut ? globalShortcut : undefined}
+                  globalShortcutError={globalShortcutError}
+                  onChangeGlobalShortcut={changeGlobalShortcut}
+                  shortcutBindings={shortcutBindings}
+                  onUpdateShortcut={updateShortcutBinding}
+                  onResetShortcuts={resetShortcutBindings}
+                  onRecordingShortcut={setRecordingShortcut}
+                  recordingPaused={showCommandPalette || showWhatsNew}
+                  onOpenPlugins={(tab) => openPlugins(tab)}
+                  onCheckPluginUpdates={() => void checkPluginUpdates()}
+                  hasReleaseNotes={Boolean(releaseNotes)}
+                  onWhatsNew={openWhatsNew}
+                />
+              ) : view.kind === "plugins" ? (
+                <PluginsPage variant={layout === "launcher" || phone ? "cards" : "list"} customThemes={bridge ? customThemes : undefined} themeApply={{ scheme: activeScheme, onScheme: setColorScheme, dark: darkMode }} startInstall={view.install} tab={view.tab} onTabChange={(tab) => setView({ kind: "plugins", tab })} onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }} />
+              ) : !selectedTool && layout === "launcher" ? (
+                <LauncherHome
+                  tools={catalogTools}
+                  categories={categories}
+                  pinned={pinned}
+                  pinnedTools={pinnedTools}
+                  onPin={pinTool}
+                  onUnpin={unpinTool}
+                  onMovePinned={movePinned}
+                  onPinInstalled={(id) => pinInstalledRef.current(id)}
+                  onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }}
+                  platform={platform}
+                  paletteShortcutLabel={commandPaletteShortcutLabel}
+                  onSelect={selectTool}
+                  onOpenPalette={openCommandPalette}
+                  updates={updates}
+                  onReviewUpdates={() => openPlugins("installed")}
+                  empty={empty}
+                  onBrowsePlugins={() => openPlugins("browse")}
+                  onInstallFromFile={() => openPlugins("browse", true)}
+                />
+              ) : !selectedTool ? (
+                <Home
+                  recentTools={recentTools}
+                  tools={catalogTools}
+                  pinned={pinned}
+                  pinnedTools={pinnedTools}
+                  onPin={pinTool}
+                  onUnpin={unpinTool}
+                  onMovePinned={movePinned}
+                  onPinInstalled={(id) => pinInstalledRef.current(id)}
+                  onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }}
+                  quickAccessTools={quickAccessTools}
+                  platform={platform}
+                  paletteShortcutLabel={commandPaletteShortcutLabel}
+                  onSelect={selectTool}
+                  onOpenPalette={openCommandPalette}
+                  updates={updates}
+                  onReviewUpdates={() => openPlugins("installed")}
+                  empty={empty}
+                  onBrowsePlugins={() => openPlugins("browse")}
+                  onInstallFromFile={() => openPlugins("browse", true)}
+                />
+              ) : null}
+              <ToolHost tools={openTools} selectedId={selectedTool?.id ?? null} />
+            </div>
+            </main>
+          </div>
+          <StatusBar crumbs={crumbs} {...statusInfo} />
+        </>
       )}
 
       {pasted && (
         <PasteSuggestions
           suggestions={pasted.suggestions}
-          toolName={(toolId) => toolById.get(toolId)?.name ?? INSTALLABLE_TOOLS.find((item) => item.pluginId === toolId)?.name ?? toolId}
+          toolName={(toolId) => { const tool = toolById.get(toolId); return tool ? toolName(tool) : INSTALLABLE_TOOLS.find((item) => item.pluginId === toolId)?.name ?? toolId; }}
           onOpen={openPastedIn}
           onDismiss={dismissPasted}
         />
@@ -1105,7 +1336,10 @@ const Shard = () => {
         <PasteInstall
           key={pasteInstall.nonce}
           tool={pasteInstall.tool}
-          onOpenPlugin={(id) => openPluginRef.current(id)}
+          onOpenPlugin={(id) => {
+            openPluginRef.current(id);
+            if (pasteInstall.text) sendToToolRef.current(id, pasteInstall.text);
+          }}
           onDone={() => setPasteInstall(null)}
         />
       )}
@@ -1140,26 +1374,27 @@ const Shard = () => {
                 type="button"
                 onClick={closeWhatsNew}
                 className={`rounded-md p-1 hover:bg-accent text-muted-foreground transition-colors hover:text-foreground`}
-                aria-label="Close what's new"
+                aria-label={t("shell.whatsNew.close")}
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <div
-              className={`modal-body release-body min-h-0 overflow-y-auto px-6 py-4 prose prose-sm prose-neutral max-w-none text-sm dark:prose-invert prose-headings:text-inherit prose-p:text-inherit prose-strong:text-inherit prose-code:text-inherit prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-blockquote:text-muted-foreground [&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:tracking-wide [&_h2]:text-foreground [&_p]:my-1 [&_p]:text-sm [&_p]:leading-5 [&_ul]:my-1 [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5 [&_li]:pl-0.5 [&_li]:text-sm [&_li]:leading-5 [&_li::marker]:text-primary text-muted-foreground`}
+              className={`modal-body release-body min-h-0 overflow-y-auto px-6 py-4 prose prose-sm prose-neutral max-w-none text-sm dark:prose-invert prose-headings:text-inherit prose-p:text-inherit prose-strong:text-inherit prose-code:text-inherit prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-blockquote:text-muted-foreground [&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:tracking-wide [&_h2]:text-foreground [&_p]:my-1 [&_p]:text-sm [&_p]:leading-5 [&_ul]:my-1 [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:ps-5 [&_li]:my-0.5 [&_li]:ps-0.5 [&_li]:text-sm [&_li]:leading-5 [&_li::marker]:text-primary text-muted-foreground`}
               dangerouslySetInnerHTML={{ __html: whatsNewHtml }}
             />
 
             <div className="modal-footer flex justify-end">
               <Button type="button" onClick={closeWhatsNew}>
-                Got it
+                {t("shell.whatsNew.gotIt")}
               </Button>
             </div>
           </div>
         </div>
       )}
     </div>
+    </SendToProvider>
   );
 };
 

@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KeyRound, PenLine } from "lucide-react";
-import { ToolFaqSection, type ToolFaqItem } from "@/components/tools/ToolFaq";
+import { ToolFaqSection } from "@/components/tools/ToolFaq";
+import { t, useLocale, useT, type TKey } from "@/i18n";
 import { CopyButton } from "@/components/tools/CopyButton";
+import { SendToMenu } from "@/components/tools/SendToMenu";
 import { CodeTextarea, EditorPane, PaneEmpty, ToolWorkspace } from "@/components/tools/ToolWorkspace";
 import {
   JWT_ALGORITHMS,
@@ -24,35 +26,14 @@ import {
   type JwtVerifyResult,
 } from "@/utils/jwt";
 
-const FAQ_ITEMS: ToolFaqItem[] = [
-  {
-    q: "What is a JWT?",
-    a: "A JSON Web Token is a compact string with a header, payload, and signature. It is commonly used to carry claims between applications and APIs.",
-  },
-  {
-    q: "Does decoding a JWT prove it is authentic?",
-    a: "No. Decoding only reveals the token contents. Enter the key to check the signature. HS256, HS384, and HS512 tokens use the shared secret. RS*, PS*, ES*, and EdDSA tokens use the public key of the issuer.",
-  },
-  {
-    q: "Which key formats can I use to verify?",
-    a: "For HS* tokens, enter the secret as text or as Base64. For the other algorithms, paste a PEM public key, an X.509 certificate, a JWK, or a JWKS. With a JWKS, the tool picks the key that matches the `kid` in the token header. If the token has no `kid`, the tool tries each key that fits the algorithm.",
-  },
-  {
-    q: "How do I create a test token?",
-    a: "Open the Encode tab, or select Edit and sign on a decoded token. Edit the header and payload as JSON, and the token updates as you type. HS* tokens use a secret. Other algorithms use a PEM (PKCS#8, PKCS#1, or SEC1) or JWK private key. Select Generate key pair to make a new one. The matching public key appears under the token.",
-  },
-  {
-    q: "How are exp, nbf, and iat shown?",
-    a: "The tool shows each time claim in your local time, with the distance from now. The status shows whether the token is valid now, expired, or not valid yet. A warning appears when a value looks like milliseconds, because JWT times are in seconds.",
-  },
-  {
-    q: "Are JWTs encrypted by default?",
-    a: "No. Most JWTs are only base64url-encoded, so their contents are easy to inspect. Signed tokens protect integrity, not confidentiality.",
-  },
-  {
-    q: "What does this tool actually validate?",
-    a: "This tool checks the signature with the key you enter, and checks `exp` and `nbf` against your clock. It does not check issuer, audience, or key trust. It never fetches a JWKS URL. Your tokens and keys stay on your device.",
-  },
+const FAQ_KEYS: [TKey, TKey][] = [
+  ["jwt.faq.what.q", "jwt.faq.what.a"],
+  ["jwt.faq.authentic.q", "jwt.faq.authentic.a"],
+  ["jwt.faq.keyFormats.q", "jwt.faq.keyFormats.a"],
+  ["jwt.faq.create.q", "jwt.faq.create.a"],
+  ["jwt.faq.timeClaims.q", "jwt.faq.timeClaims.a"],
+  ["jwt.faq.encrypted.q", "jwt.faq.encrypted.a"],
+  ["jwt.faq.validates.q", "jwt.faq.validates.a"],
 ];
 
 const PLACEHOLDER =
@@ -91,13 +72,13 @@ function useNow(active: boolean) {
 }
 
 /** Parses JSON text that must hold an object, for the encoder fields. */
-function parseObject(text: string, name: string): { value?: Record<string, unknown>; error?: string } {
+function parseObject(text: string, name: "header" | "payload"): { value?: Record<string, unknown>; error?: string } {
   try {
     const value = JSON.parse(text);
-    if (!value || typeof value !== "object" || Array.isArray(value)) return { error: `${name} must be a JSON object.` };
+    if (!value || typeof value !== "object" || Array.isArray(value)) return { error: t(name === "header" ? "jwt.encode.headerNotObject" : "jwt.encode.payloadNotObject") };
     return { value };
   } catch (error) {
-    return { error: `${name} is not valid JSON: ${(error as Error).message}` };
+    return { error: t(name === "header" ? "jwt.encode.headerBadJson" : "jwt.encode.payloadBadJson", { message: (error as Error).message }) };
   }
 }
 
@@ -115,13 +96,14 @@ function PaneSection({ label, htmlFor, actions, grow, children }: { label: strin
 }
 
 function SecretField({ id, value, onChange, base64, onBase64Change }: { id: string; value: string; onChange: (v: string) => void; base64: boolean; onBase64Change: (v: boolean) => void }) {
+  const t = useT();
   return (
     <PaneSection
-      label="Secret"
+      label={t("jwt.secret")}
       htmlFor={id}
       actions={
         <label className="option-switch" htmlFor={`${id}-base64`}>
-          Base64 secret
+          {t("jwt.base64Secret")}
           <Switch id={`${id}-base64`} checked={base64} onCheckedChange={onBase64Change} />
         </label>
       }
@@ -132,7 +114,7 @@ function SecretField({ id, value, onChange, base64, onBase64Change }: { id: stri
           type="password"
           autoComplete="off"
           spellCheck={false}
-          placeholder="your-256-bit-secret"
+          placeholder={t("jwt.secret.placeholder")}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="h-7 w-full font-mono text-xs"
@@ -151,9 +133,12 @@ function KeyField({ id, label, value, onChange, placeholder, actions }: { id: st
 }
 
 export function JwtDecoder() {
+  const t = useT();
+  const { locale } = useLocale();
   const [mode, setMode] = useState<Mode>("decode");
 
   // Decode
+  // Not usePersistedInput: a pasted token is a credential and must not be written to disk.
   const [input, setInput] = useState("");
   const [secret, setSecret] = useState("");
   const [secretIsBase64, setSecretIsBase64] = useState(false);
@@ -177,7 +162,9 @@ export function JwtDecoder() {
   const debouncedSignSecret = useDebouncedValue(signSecret);
   const debouncedPrivateKey = useDebouncedValue(privateKey);
 
-  const decoded = useMemo(() => (token.trim() ? decodeJwt(token) : null), [token]);
+  // The messages are built when the token is decoded, so a new language decodes it again.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const decoded = useMemo(() => (token.trim() ? decodeJwt(token) : null), [token, locale]);
   const valid = decoded && !decoded.error ? decoded : null;
   const alg = valid && typeof valid.header.alg === "string" ? valid.header.alg : "";
   const asymmetric = isAsymmetricAlgorithm(alg);
@@ -203,15 +190,17 @@ export function JwtDecoder() {
     return () => {
       cancelled = true;
     };
-  }, [valid, token, alg, asymmetric, verifyKey, secretIsBase64]);
+  }, [valid, token, alg, asymmetric, verifyKey, secretIsBase64, locale]);
 
-  const header = useMemo(() => parseObject(debouncedHeader, "Header"), [debouncedHeader]);
-  const payload = useMemo(() => parseObject(debouncedPayload, "Payload"), [debouncedPayload]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const header = useMemo(() => parseObject(debouncedHeader, "header"), [debouncedHeader, locale]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const payload = useMemo(() => parseObject(debouncedPayload, "payload"), [debouncedPayload, locale]);
   const signAlg = typeof header.value?.alg === "string" ? header.value.alg : "";
   const signAsymmetric = isAsymmetricAlgorithm(signAlg);
   const signKey = signAsymmetric ? debouncedPrivateKey : debouncedSignSecret;
   const liveSignAlg = (() => {
-    const parsed = parseObject(headerText, "Header").value?.alg;
+    const parsed = parseObject(headerText, "header").value?.alg;
     return typeof parsed === "string" ? parsed : "";
   })();
 
@@ -228,7 +217,7 @@ export function JwtDecoder() {
     return () => {
       cancelled = true;
     };
-  }, [header, payload, signKey, signSecretIsBase64]);
+  }, [header, payload, signKey, signSecretIsBase64, locale]);
 
   const kid = typeof header.value?.kid === "string" ? header.value.kid : undefined;
   useEffect(() => {
@@ -280,13 +269,17 @@ export function JwtDecoder() {
     }
   };
 
-  const renderJson = (obj: Record<string, unknown>, title: string) => {
+  const renderJson = (obj: Record<string, unknown>, kind: "header" | "payload") => {
+    const title = t(kind === "header" ? "jwt.header" : "jwt.payload");
     const json = JSON.stringify(obj, null, 2);
     return (
       <section className="border-b border-border/50" aria-label={title}>
         <div className="flex items-center justify-between px-4 pt-2">
           <span className="result-row-label">{title}</span>
-          <CopyButton value={json} iconOnly label={`Copy ${title.toLowerCase()}`} />
+          <span className="flex items-center gap-1">
+            <SendToMenu text={json} from="jwt-decoder" label={t(kind === "header" ? "jwt.sendHeader" : "jwt.sendPayload")} />
+            <CopyButton value={json} iconOnly label={t(kind === "header" ? "jwt.copyHeader" : "jwt.copyPayload")} />
+          </span>
         </div>
         <pre className="overflow-x-auto px-4 pb-3 pt-1 font-mono text-sm leading-[22px]">
           <code>{json}</code>
@@ -302,15 +295,15 @@ export function JwtDecoder() {
         {value}
         {extra}
       </span>
-      <CopyButton value={copyValue} iconOnly label={`Copy ${label}`} />
+      <CopyButton value={copyValue} iconOnly label={t("jwt.copyLabel", { label })} />
     </div>
   );
 
   const modeTabs = (
     <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)}>
-      <TabsList aria-label="Mode">
-        <TabsTrigger value="decode">Decode</TabsTrigger>
-        <TabsTrigger value="encode">Encode</TabsTrigger>
+      <TabsList aria-label={t("jwt.mode")}>
+        <TabsTrigger value="decode">{t("jwt.mode.decode")}</TabsTrigger>
+        <TabsTrigger value="encode">{t("jwt.mode.encode")}</TabsTrigger>
       </TabsList>
     </Tabs>
   );
@@ -326,16 +319,16 @@ export function JwtDecoder() {
           <>
             {modeTabs}
             <label className="indent-control">
-              Algorithm
-              <select aria-label="Algorithm" value={algValue} onChange={(e) => setHeaderText(setHeaderAlgorithm(headerText, e.target.value))}>
-                {!algValue && <option value="">{liveSignAlg || "Choose"}</option>}
+              {t("jwt.algorithm")}
+              <select aria-label={t("jwt.algorithm")} value={algValue} onChange={(e) => setHeaderText(setHeaderAlgorithm(headerText, e.target.value))}>
+                {!algValue && <option value="">{liveSignAlg || t("jwt.algorithm.choose")}</option>}
                 {JWT_ALGORITHMS.map((a) => (
                   <option key={a} value={a}>{a}</option>
                 ))}
               </select>
             </label>
             <button type="button" className="toolbar-text-button indent-control" onClick={() => setPayloadText(refreshTimeClaims(payloadText, nowSeconds()))}>
-              Refresh iat and exp
+              {t("jwt.refreshTimes")}
             </button>
           </>
         }
@@ -345,23 +338,23 @@ export function JwtDecoder() {
           ) : undefined
         }
         first={
-          <EditorPane title="Claims" scroll={false}>
-            <PaneSection label="Header" htmlFor="jwt-header">
-              <CodeTextarea id="jwt-header" aria-label="Header JSON" className="h-28 !flex-none" value={headerText} onChange={(e) => setHeaderText(e.target.value)} />
+          <EditorPane title={t("jwt.claims")} scroll={false}>
+            <PaneSection label={t("jwt.header")} htmlFor="jwt-header">
+              <CodeTextarea id="jwt-header" aria-label={t("jwt.headerJson")} className="h-28 !flex-none" value={headerText} onChange={(e) => setHeaderText(e.target.value)} />
             </PaneSection>
-            <PaneSection label="Payload" htmlFor="jwt-payload" grow>
-              <CodeTextarea id="jwt-payload" aria-label="Payload JSON" value={payloadText} onChange={(e) => setPayloadText(e.target.value)} />
+            <PaneSection label={t("jwt.payload")} htmlFor="jwt-payload" grow>
+              <CodeTextarea id="jwt-payload" aria-label={t("jwt.payloadJson")} value={payloadText} onChange={(e) => setPayloadText(e.target.value)} />
             </PaneSection>
             {liveAsymmetric ? (
               <KeyField
                 id="jwt-private-key"
-                label="Private key"
+                label={t("jwt.privateKey")}
                 value={privateKey}
                 onChange={setPrivateKey}
-                placeholder="-----BEGIN PRIVATE KEY----- (PKCS#8, PKCS#1, SEC1, or a JWK)"
+                placeholder={t("jwt.privateKey.placeholder")}
                 actions={
                   <button type="button" className="toolbar-text-button" onClick={generateKeyPair} disabled={generating}>
-                    {generating ? "Generating…" : "Generate key pair"}
+                    {generating ? t("jwt.generating") : t("jwt.generateKeyPair")}
                   </button>
                 }
               />
@@ -372,34 +365,34 @@ export function JwtDecoder() {
         }
         second={
           <EditorPane
-            title="Token"
+            title={t("jwt.token")}
             actions={
               signed?.token ? (
                 <>
-                  <button type="button" className="toolbar-text-button" onClick={openInDecoder}>Decode</button>
-                  <CopyButton value={signed.token} label="Copy token" />
+                  <button type="button" className="toolbar-text-button" onClick={openInDecoder}>{t("jwt.mode.decode")}</button>
+                  <CopyButton value={signed.token} label={t("jwt.copyToken")} />
                 </>
               ) : undefined
             }
           >
             {signed?.token ? (
               <div className="result-list">
-                <pre className="whitespace-pre-wrap break-all border-b border-border/50 px-4 py-3 font-mono text-sm leading-[22px]" aria-label="Signed token">
+                <pre className="whitespace-pre-wrap break-all border-b border-border/50 px-4 py-3 font-mono text-sm leading-[22px]" aria-label={t("jwt.signedToken")}>
                   <code>{signed.token}</code>
                 </pre>
                 {signAsymmetric && derived && (
                   <>
-                    <section className="border-b border-border/50" aria-label="Public key">
+                    <section className="border-b border-border/50" aria-label={t("jwt.publicKey")}>
                       <div className="flex items-center justify-between px-4 pt-2">
-                        <span className="result-row-label">Public key (PEM)</span>
-                        <CopyButton value={derived.pem} iconOnly label="Copy public key" />
+                        <span className="result-row-label">{t("jwt.publicKeyPem")}</span>
+                        <CopyButton value={derived.pem} iconOnly label={t("jwt.copyPublicKey")} />
                       </div>
                       <pre className="overflow-x-auto px-4 pb-3 pt-1 font-mono text-xs leading-[18px]"><code>{derived.pem}</code></pre>
                     </section>
-                    <section className="border-b border-border/50" aria-label="Public JWK">
+                    <section className="border-b border-border/50" aria-label={t("jwt.publicJwk")}>
                       <div className="flex items-center justify-between px-4 pt-2">
-                        <span className="result-row-label">Public JWK</span>
-                        <CopyButton value={derived.jwk} iconOnly label="Copy public JWK" />
+                        <span className="result-row-label">{t("jwt.publicJwk")}</span>
+                        <CopyButton value={derived.jwk} iconOnly label={t("jwt.copyPublicJwk")} />
                       </div>
                       <pre className="overflow-x-auto px-4 pb-3 pt-1 font-mono text-xs leading-[18px]"><code>{derived.jwk}</code></pre>
                     </section>
@@ -409,8 +402,8 @@ export function JwtDecoder() {
             ) : (
               <PaneEmpty
                 icon={<PenLine size={20} aria-hidden="true" />}
-                title={missingKey ? (liveAsymmetric ? "Enter or generate a private key" : "Enter a secret to sign the token") : "Fix the error to sign the token"}
-                hint="The signed token updates as you edit the header, payload, and key."
+                title={missingKey ? (liveAsymmetric ? t("jwt.empty.privateKey") : t("jwt.empty.secret")) : t("jwt.empty.fix")}
+                hint={t("jwt.empty.hint")}
               />
             )}
           </EditorPane>
@@ -418,10 +411,10 @@ export function JwtDecoder() {
         status={
           <>
             {liveSignAlg && <span>{liveSignAlg}</span>}
-            <span>{signed?.token ? `${signed.token.length} characters` : "Not signed"}</span>
+            <span>{signed?.token ? t("jwt.characters", { count: signed.token.length }) : t("jwt.notSigned")}</span>
           </>
         }
-        help={<ToolFaqSection items={FAQ_ITEMS} />}
+        help={<ToolFaqSection items={FAQ_KEYS.map(([q, a]) => ({ q: t(q), a: t(a) }))} />}
       />
     );
   }
@@ -436,8 +429,8 @@ export function JwtDecoder() {
         ) : undefined
       }
       first={
-        <EditorPane title="Token" htmlFor="jwt-input" scroll={false}
-          actions={input ? <button type="button" className="toolbar-text-button" onClick={() => setInput("")}>Clear</button> : undefined}>
+        <EditorPane title={t("jwt.token")} htmlFor="jwt-input" scroll={false}
+          actions={input ? <button type="button" className="toolbar-text-button" onClick={() => setInput("")}>{t("common.clear")}</button> : undefined}>
           <CodeTextarea
             id="jwt-input"
             className="break-all"
@@ -448,10 +441,10 @@ export function JwtDecoder() {
           {valid && alg !== "none" && (asymmetric ? (
             <KeyField
               id="jwt-public-key"
-              label="Public key"
+              label={t("jwt.publicKey")}
               value={publicKey}
               onChange={setPublicKey}
-              placeholder="PEM public key, certificate, JWK, or JWKS"
+              placeholder={t("jwt.publicKey.placeholder")}
             />
           ) : (
             <SecretField id="jwt-secret" value={secret} onChange={setSecret} base64={secretIsBase64} onBase64Change={setSecretIsBase64} />
@@ -460,13 +453,13 @@ export function JwtDecoder() {
       }
       second={
         <EditorPane
-          title="Decoded"
-          actions={valid ? <button type="button" className="toolbar-text-button" onClick={editAndSign}>Edit and sign</button> : undefined}
+          title={t("jwt.decoded")}
+          actions={valid ? <button type="button" className="toolbar-text-button" onClick={editAndSign}>{t("jwt.editAndSign")}</button> : undefined}
         >
           {valid && time ? (
             <div className="result-list">
               <div className="result-row">
-                <span className="result-row-label">Status</span>
+                <span className="result-row-label">{t("jwt.status")}</span>
                 <span className={`result-row-value ${TIME_TONE[time.state]}`}>{time.summary}</span>
                 <span />
               </div>
@@ -479,15 +472,15 @@ export function JwtDecoder() {
                   claim.warning && <span className="block text-warning">{claim.warning}</span>
                 )
               )}
-              {renderJson(valid.header, "Header")}
-              {renderJson(valid.payload, "Payload")}
-              {renderRow("signature", "Signature", valid.signature, valid.signature)}
+              {renderJson(valid.header, "header")}
+              {renderJson(valid.payload, "payload")}
+              {renderRow("signature", t("jwt.signature"), valid.signature, valid.signature)}
             </div>
           ) : (
             <PaneEmpty
               icon={<KeyRound size={20} aria-hidden="true" />}
-              title="Paste a JWT to decode it"
-              hint="The claims, the expiry, and the signature check appear here as you type."
+              title={t("jwt.empty.decodeTitle")}
+              hint={t("jwt.empty.decodeHint")}
             />
           )}
         </EditorPane>
@@ -498,14 +491,14 @@ export function JwtDecoder() {
             {alg && <span>{alg}</span>}
             <span className={TIME_TONE[time.state]}>{time.summary}</span>
             <span role="status" className={verify ? VERIFY_TONE[verify.status] : undefined}>
-              {verify ? verify.message : "Signature not checked"}
+              {verify ? verify.message : t("jwt.notChecked")}
             </span>
           </>
         ) : (
-          <span>{decoded?.error ? "Invalid token" : "Ready"}</span>
+          <span>{decoded?.error ? t("jwt.invalidToken") : t("jwt.ready")}</span>
         )
       }
-      help={<ToolFaqSection items={FAQ_ITEMS} />}
+      help={<ToolFaqSection items={FAQ_KEYS.map(([q, a]) => ({ q: t(q), a: t(a) }))} />}
     />
   );
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRightLeft, Check, FileX, Folder, FolderSearch, ShieldCheck } from "lucide-react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { toast } from "sonner";
+import { useLocale, useT } from "@/i18n";
 import {
   applyFolderMerge,
   compareContents,
@@ -44,7 +45,6 @@ import { FolderToolbar } from "./FolderToolbar";
 
 const BATCH = 500;
 const DEFAULT_SHOW: ReadonlySet<RowKind> = new Set<RowKind>(["left", "right", "diff"]);
-const HINT = "Click an action or press Space to switch it, right-click for more. Select several rows to change them together. Ctrl+Enter starts the merge.";
 
 type Lower =
   | { path: string; status: "loading" }
@@ -54,12 +54,13 @@ type Lower =
 const messageOf = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const toDoc = (name: string, raw: string): PaneDoc => ({ name, ...splitEol(raw), language: null });
 
-function PathBar({ label, path, onBrowse }: { label: string; path: string | null; onBrowse(): void }) {
+function PathBar({ side, path, onBrowse }: { side: "left" | "right"; path: string | null; onBrowse(): void }) {
+  const t = useT();
   return (
-    <div className="flex h-[30px] min-w-0 items-center gap-2 rounded-md border border-input bg-card pl-2.5 pr-1">
+    <div className="flex h-[30px] min-w-0 items-center gap-2 rounded-md border border-input bg-card ps-2.5 pe-1">
       <Folder size={14} className="flex-shrink-0 text-muted-foreground" aria-hidden="true" />
       <span className="min-w-0 flex-1 truncate font-mono text-xs" title={path ?? undefined}>{path}</span>
-      <button type="button" aria-label={`Browse for the ${label} folder`} className="toolbar-text-button" onClick={onBrowse}>Browse</button>
+      <button type="button" aria-label={t(side === "left" ? "diffMerge.folder.browseLeft" : "diffMerge.folder.browseRight")} className="toolbar-text-button" onClick={onBrowse}>{t("diffMerge.folder.browse")}</button>
     </div>
   );
 }
@@ -70,6 +71,8 @@ interface Props {
 }
 
 export function FolderView({ onOpenInText, onModeChange }: Props) {
+  const t = useT();
+  const { locale } = useLocale();
   const desktop = isDesktop();
   const roots = useRef<{ left: string | null; right: string | null }>({ left: null, right: null });
   const [shown, setShown] = useState<{ left: string | null; right: string | null }>(roots.current);
@@ -124,7 +127,8 @@ export function FolderView({ onOpenInText, onModeChange }: Props) {
   const browse = async (side: "left" | "right") => {
     let path: string | null;
     try {
-      path = await pickFolder();
+      // Open where the user last was: this side's folder, else the other side's.
+      path = await pickFolder(roots.current[side] ?? roots.current[side === "left" ? "right" : "left"] ?? undefined);
     } catch (e) {
       toast.error(messageOf(e));
       return;
@@ -176,7 +180,9 @@ export function FolderView({ onOpenInText, onModeChange }: Props) {
   }, []);
 
   const visible = useMemo(() => filterRows(rows, show, query), [rows, show, query]);
-  const groups = useMemo(() => groupRows(visible), [visible]);
+  // The group summaries are built when the rows are grouped, so a new language groups them again.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const groups = useMemo(() => groupRows(visible), [visible, locale]);
   const order = useMemo(() => groups.flatMap((g) => g.rows), [groups]);
   const shownPaths = useMemo(() => new Set(order.map((r) => r.path)), [order]);
   const counts = useMemo(() => {
@@ -311,10 +317,10 @@ export function FolderView({ onOpenInText, onModeChange }: Props) {
       rescan();
       // Files that could not be restored keep the journal, so the notice stays for another try.
       if (report.unrestorable.length) {
-        toast.error(`${report.unrestorable.length} ${report.unrestorable.length === 1 ? "file" : "files"} could not be restored because ${report.unrestorable.length === 1 ? "it was" : "they were"} not backed up.`);
+        toast.error(t("diffMerge.folder.unrestorable", { count: report.unrestorable.length }));
       } else {
         setNotice(null);
-        toast.info("Merge undone.");
+        toast.info(t("diffMerge.folder.undone"));
       }
     } catch (e) {
       toast.error(messageOf(e));
@@ -360,8 +366,8 @@ export function FolderView({ onOpenInText, onModeChange }: Props) {
         <FolderToolbarShell onModeChange={onModeChange} />
         <PaneEmpty
           icon={<FolderSearch size={22} aria-hidden="true" />}
-          title="Folder compare needs the desktop app"
-          hint="Download Shard for macOS, Windows or Linux to compare folders."
+          title={t("diffMerge.folder.desktopOnly.title")}
+          hint={t("diffMerge.folder.desktopOnly.hint")}
         />
       </div>
     );
@@ -373,7 +379,7 @@ export function FolderView({ onOpenInText, onModeChange }: Props) {
   const withLower = lower !== null;
 
   return (
-    <div data-testid="diff-merge-folders" className="json-workspace dm-root relative outline-none">
+    <div dir="ltr" data-testid="diff-merge-folders" className="json-workspace dm-root relative outline-none">
       <FolderToolbar
         onModeChange={(m) => onModeChange?.(m)}
         counts={counts}
@@ -397,9 +403,9 @@ export function FolderView({ onOpenInText, onModeChange }: Props) {
         >
           <Check size={14} strokeWidth={2.4} className="text-success" aria-hidden="true" />
           <span className="flex-1">{doneNotice(notice)}</span>
-          <button type="button" disabled={busy} className="rounded-[5px] px-1.5 py-1 font-medium text-foreground hover:bg-muted disabled:opacity-60" onClick={() => void undoMerge()}>Undo merge</button>
+          <button type="button" disabled={busy} className="rounded-[5px] px-1.5 py-1 font-medium text-foreground hover:bg-muted disabled:opacity-60" onClick={() => void undoMerge()}>{t("diffMerge.folder.undoMerge")}</button>
           {notice.backupDir && (
-            <button type="button" className="rounded-[5px] px-1.5 py-1 text-muted-foreground hover:bg-muted" onClick={() => void showBackup()}>Show backup</button>
+            <button type="button" className="rounded-[5px] px-1.5 py-1 text-muted-foreground hover:bg-muted" onClick={() => void showBackup()}>{t("diffMerge.folder.showBackup")}</button>
           )}
         </div>
       )}
@@ -407,14 +413,14 @@ export function FolderView({ onOpenInText, onModeChange }: Props) {
         className="grid flex-shrink-0 border-b px-3 py-2"
         style={{ gridTemplateColumns: "minmax(0,1fr) 44px minmax(0,1fr)", background: "hsl(var(--muted) / .35)", borderColor: "hsl(var(--border) / .5)" }}
       >
-        <PathBar label="left" path={shown.left} onBrowse={() => void browse("left")} />
-        <button type="button" aria-label="Swap folders" title="Swap folders" disabled={!ready} className="grid place-items-center text-muted-foreground hover:text-foreground disabled:opacity-60" onClick={swapRoots}>
+        <PathBar side="left" path={shown.left} onBrowse={() => void browse("left")} />
+        <button type="button" aria-label={t("diffMerge.folder.swap")} title={t("diffMerge.folder.swap")} disabled={!ready} className="grid place-items-center text-muted-foreground hover:text-foreground disabled:opacity-60" onClick={swapRoots}>
           <ArrowRightLeft size={14} aria-hidden="true" />
         </button>
-        <PathBar label="right" path={shown.right} onBrowse={() => void browse("right")} />
+        <PathBar side="right" path={shown.right} onBrowse={() => void browse("right")} />
       </div>
       {!ready ? (
-        <PaneEmpty icon={<FolderSearch size={22} aria-hidden="true" />} title="Choose two folders to compare" hint="Pick the left and right folder with Browse." />
+        <PaneEmpty icon={<FolderSearch size={22} aria-hidden="true" />} title={t("diffMerge.folder.choose.title")} hint={t("diffMerge.folder.choose.hint")} />
       ) : (
         <div className="min-h-0 flex-1">
           <PanelGroup direction="vertical" autoSaveId="diff-merge-folder-split">
@@ -428,28 +434,28 @@ export function FolderView({ onOpenInText, onModeChange }: Props) {
                   className="flex h-[26px] flex-shrink-0 items-center justify-center gap-1.5 border-t border-border text-[11px] text-muted-foreground"
                   style={{ borderBottom: "1px solid hsl(var(--border) / .6)", background: "hsl(var(--muted) / .3)" }}
                 >
-                  {HINT}
+                  {t("diffMerge.folder.hint")}
                 </div>
               </div>
             </Panel>
             {withLower && (
               <>
-                <PanelResizeHandle className="editor-resize" aria-label="Resize file list and file compare" />
+                <PanelResizeHandle className="editor-resize" aria-label={t("diffMerge.folder.resize")} />
                 <Panel minSize={20} defaultSize={55} order={2} id="folder-compare">
                   {lower?.status === "ready" ? (
                     <div className="flex h-full min-h-0 flex-col">
                       <div
-                        className="flex h-9 flex-shrink-0 items-center gap-3 whitespace-nowrap pl-[14px] pr-3 text-xs"
+                        className="flex h-9 flex-shrink-0 items-center gap-3 whitespace-nowrap ps-[14px] pe-3 text-xs"
                         style={{ background: "hsl(var(--muted) / .35)", borderBottom: "1px solid hsl(var(--border) / .5)" }}
                       >
                         <span className="font-medium">{lower.docs[0].name}</span>
-                        <button type="button" className="toolbar-text-button ml-auto" onClick={() => text.current && onOpenInText(text.current.getDocs())}>Open in Text view</button>
-                        <button type="button" className="toolbar-text-button" onClick={() => void saveBoth()}>Save both</button>
+                        <button type="button" className="toolbar-text-button ms-auto" onClick={() => text.current && onOpenInText(text.current.getDocs())}>{t("diffMerge.folder.openInText")}</button>
+                        <button type="button" className="toolbar-text-button" onClick={() => void saveBoth()}>{t("diffMerge.folder.saveBoth")}</button>
                       </div>
                       <TextDiffView key={lower.path} ref={text} embedded focusOnLoad={lower.focus} initial={lower.docs} />
                     </div>
                   ) : lower?.status === "binary" ? (
-                    <PaneEmpty icon={<FileX size={22} aria-hidden="true" />} title="Binary or non-text file" hint="Only text files can be merged line by line." />
+                    <PaneEmpty icon={<FileX size={22} aria-hidden="true" />} title={t("diffMerge.folder.binary.title")} hint={t("diffMerge.folder.binary.hint")} />
                   ) : null}
                 </Panel>
               </>
@@ -460,20 +466,20 @@ export function FolderView({ onOpenInText, onModeChange }: Props) {
       <MergeDialog rows={planRows} open={dialogOpen} onCancel={() => setDialogOpen(false)} onConfirm={(backup) => void confirmMerge(backup)} />
       <footer className="flex h-8 flex-shrink-0 items-center gap-4 whitespace-nowrap border-t border-border px-4 text-[11px] tabular-nums text-muted-foreground">
         {progress ? (
-          <span>{`Comparing… ${progress.done}/${progress.total}`}</span>
+          <span>{t("diffMerge.folder.comparing", { done: progress.done, total: progress.total })}</span>
         ) : (
           <>
-            <span>{`${total} ${total === 1 ? "difference" : "differences"}`}</span>
+            <span>{t("diffMerge.folder.differences", { count: total })}</span>
             <span className="flex gap-1">
-              <span className="text-destructive">{`${counts.left} left only`}</span>·<span className="text-success">{`${counts.right} right only`}</span>·<span className="text-warning">{`${counts.diff} different`}</span>
-              {!show.has("same") && <>·<span>{`${counts.same} identical hidden`}</span></>}
+              <span className="text-destructive">{t("diffMerge.folder.count.leftOnly", { count: counts.left })}</span>·<span className="text-success">{t("diffMerge.folder.count.rightOnly", { count: counts.right })}</span>·<span className="text-warning">{t("diffMerge.folder.count.different", { count: counts.diff })}</span>
+              {!show.has("same") && <>·<span>{t("diffMerge.folder.count.identicalHidden", { count: counts.same })}</span></>}
             </span>
             <span className="text-foreground">{plannedText(plan)}</span>
           </>
         )}
-        <span className="ml-auto flex items-center gap-1.5">
+        <span className="ms-auto flex items-center gap-1.5">
           <ShieldCheck size={13} aria-hidden="true" />
-          Local processing
+          {t("toolWorkspace.localProcessing")}
         </span>
       </footer>
     </div>

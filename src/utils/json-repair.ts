@@ -5,6 +5,8 @@
  * meaning is refused with a line and column, so a repair never changes the data silently.
  */
 
+import { t, type TKey } from "@/i18n";
+
 /** An integer above 2^53 (or a number that overflows a double), kept as its exact text. */
 export class LosslessNumber {
   constructor(readonly text: string) {}
@@ -46,27 +48,25 @@ type Repair =
   | "controlChar"
   | "wrapper";
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
 /** Notice text for each repair, in the order the notice lists them. */
-const REPAIR_TEXT: [Repair, (n: number) => string][] = [
-  ["unquotedKey", (n) => `quoted ${plural(n, "key", "keys")}`],
-  ["singleQuote", (n) => `converted ${plural(n, "single-quoted string", "single-quoted strings")}`],
-  ["stringPrefix", (n) => `removed ${plural(n, "string prefix", "string prefixes")}`],
-  ["pythonConstant", (n) => `converted ${plural(n, "Python constant", "Python constants")}`],
-  ["tuple", (n) => `converted ${plural(n, "tuple to an array", "tuples to arrays")}`],
-  ["rubyArrow", (n) => `replaced ${plural(n, "=> separator", "=> separators")} with colons`],
-  ["symbol", (n) => `converted ${plural(n, "symbol", "symbols")} to strings`],
-  ["nil", (n) => `converted ${plural(n, "nil", "nils")} to null`],
-  ["comment", (n) => `removed ${plural(n, "comment", "comments")}`],
-  ["trailingComma", (n) => `removed ${plural(n, "trailing comma", "trailing commas")}`],
-  ["missingComma", (n) => `added ${plural(n, "missing comma", "missing commas")}`],
-  ["undefinedProperty", (n) => `dropped ${plural(n, "undefined property", "undefined properties")}`],
-  ["undefinedItem", (n) => `changed ${plural(n, "undefined array item", "undefined array items")} to null`],
-  ["number", (n) => `rewrote ${plural(n, "number", "numbers")} in JSON form`],
-  ["escape", (n) => `fixed ${plural(n, "string escape", "string escapes")}`],
-  ["controlChar", (n) => `escaped ${plural(n, "control character", "control characters")}`],
-  ["wrapper", () => "removed the code around the value"],
+const REPAIR_TEXT: [Repair, TKey][] = [
+  ["unquotedKey", "jsonRepair.fix.unquotedKey"],
+  ["singleQuote", "jsonRepair.fix.singleQuote"],
+  ["stringPrefix", "jsonRepair.fix.stringPrefix"],
+  ["pythonConstant", "jsonRepair.fix.pythonConstant"],
+  ["tuple", "jsonRepair.fix.tuple"],
+  ["rubyArrow", "jsonRepair.fix.rubyArrow"],
+  ["symbol", "jsonRepair.fix.symbol"],
+  ["nil", "jsonRepair.fix.nil"],
+  ["comment", "jsonRepair.fix.comment"],
+  ["trailingComma", "jsonRepair.fix.trailingComma"],
+  ["missingComma", "jsonRepair.fix.missingComma"],
+  ["undefinedProperty", "jsonRepair.fix.undefinedProperty"],
+  ["undefinedItem", "jsonRepair.fix.undefinedItem"],
+  ["number", "jsonRepair.fix.number"],
+  ["escape", "jsonRepair.fix.escape"],
+  ["controlChar", "jsonRepair.fix.controlChar"],
+  ["wrapper", "jsonRepair.fix.wrapper"],
 ];
 
 /** Repairs that only one language explains, and the repairs that its name covers in the notice. */
@@ -110,7 +110,7 @@ class LenientReader {
 
   fail(message: string, offset = this.pos): never {
     const ended = offset >= this.src.length;
-    throw new ReadError(ended ? `${message.replace(/\.$/, "")}, but the input ended.` : message, offset);
+    throw new ReadError(ended ? t("jsonRepair.err.ended", { message: message.replace(/\.$/, "") }) : message, offset);
   }
 
   /** Skips spaces and comments. Returns true when it crossed a line break. */
@@ -130,12 +130,12 @@ class LenientReader {
         this.repair("comment");
       } else if (ch === "/" && src[this.pos + 1] === "*") {
         const end = src.indexOf("*/", this.pos + 2);
-        if (end === -1) this.fail("Unclosed comment.");
+        if (end === -1) this.fail(t("jsonRepair.err.unclosedComment"));
         if (src.slice(this.pos, end).includes("\n")) newline = true;
         this.pos = end + 2;
         this.repair("comment");
       } else if (ch === "#") {
-        if (src[this.pos + 1] === "<") this.fail("Ruby objects (#<...>) have no JSON form.");
+        if (src[this.pos + 1] === "<") this.fail(t("jsonRepair.err.rubyObject"));
         const end = src.indexOf("\n", this.pos);
         this.pos = end === -1 ? src.length : end;
         this.repair("comment");
@@ -178,7 +178,7 @@ class LenientReader {
     }
     // More values, each on its own line, are NDJSON.
     while (this.pos < this.src.length) {
-      if (!newline || !this.startsValue()) this.fail("Unexpected text after the value.");
+      if (!newline || !this.startsValue()) this.fail(t("jsonRepair.err.textAfterValue"));
       values.push(this.readTop());
       newline = this.skip();
     }
@@ -188,7 +188,7 @@ class LenientReader {
   private readTop(): unknown {
     const start = this.pos;
     const value = this.readValue();
-    if (value === UNDEFINED) this.fail('"undefined" has no JSON form.', start);
+    if (value === UNDEFINED) this.fail(t("jsonRepair.err.noJsonForm", { name: "undefined" }), start);
     return value;
   }
 
@@ -198,7 +198,7 @@ class LenientReader {
 
   readValue(): unknown {
     const ch = this.ch;
-    if (ch === undefined) this.fail("Expected a value.");
+    if (ch === undefined) this.fail(t("jsonRepair.err.expectedValue"));
     if (ch === "{") return this.readObject();
     if (ch === "[") return this.readList("]");
     if (ch === "(") return this.readList(")");
@@ -207,7 +207,7 @@ class LenientReader {
     if (/[\d.+-]/.test(ch)) return this.readNumber();
     const ident = this.match(IDENT);
     if (ident) return this.readName(ident);
-    return this.fail("Expected a value.");
+    return this.fail(t("jsonRepair.err.expectedValue"));
   }
 
   private readName(name: string): unknown {
@@ -218,7 +218,7 @@ class LenientReader {
       this.repair("stringPrefix");
       return this.readString();
     }
-    if ((name === "b" || name === "B") && (next === "'" || next === '"')) this.fail("Python bytes have no JSON form.");
+    if ((name === "b" || name === "B") && (next === "'" || next === '"')) this.fail(t("jsonRepair.err.pythonBytes"));
     this.pos += name.length;
     if (name === "true") return true;
     if (name === "false") return false;
@@ -232,8 +232,8 @@ class LenientReader {
       return null;
     }
     if (name === "undefined") return UNDEFINED;
-    if (NO_JSON_FORM.has(name)) this.fail(`"${name}" has no JSON form.`, start);
-    return this.fail(`Unquoted text "${name}". Put it in quotes if it is a string.`, start);
+    if (NO_JSON_FORM.has(name)) this.fail(t("jsonRepair.err.noJsonForm", { name }), start);
+    return this.fail(t("jsonRepair.err.unquotedText", { name }), start);
   }
 
   private readSymbol(): string {
@@ -246,7 +246,7 @@ class LenientReader {
       return value;
     }
     const ident = this.match(IDENT);
-    if (!ident) this.fail("Expected a value.", start);
+    if (!ident) this.fail(t("jsonRepair.err.expectedValue"), start);
     this.pos += ident.length;
     this.repair("symbol");
     return ident;
@@ -260,10 +260,10 @@ class LenientReader {
     let out = "";
     let i = start + 1;
     for (;;) {
-      if (i >= src.length) this.fail("Unclosed string.", start);
+      if (i >= src.length) this.fail(t("jsonRepair.err.unclosedString"), start);
       const ch = src[i];
       if (ch === quote) break;
-      if (ch === "\n" || ch === "\r") this.fail("Unclosed string.", start);
+      if (ch === "\n" || ch === "\r") this.fail(t("jsonRepair.err.unclosedString"), start);
       if (ch !== "\\") {
         // Copy a run of plain characters at once.
         let end = i;
@@ -278,7 +278,7 @@ class LenientReader {
         continue;
       }
       const next = src[i + 1];
-      if (next === undefined) this.fail("Unclosed string.", start);
+      if (next === undefined) this.fail(t("jsonRepair.err.unclosedString"), start);
       if (next in SIMPLE_ESCAPES) {
         out += SIMPLE_ESCAPES[next];
         i += 2;
@@ -300,14 +300,14 @@ class LenientReader {
         i += 2;
       } else if ((match = /^x([\da-fA-F]{2})/.exec(rest)) || (match = /^U([\da-fA-F]{8})/.exec(rest)) || (match = /^u\{([\da-fA-F]{1,6})\}/.exec(rest))) {
         const code = parseInt(match[1], 16);
-        if (code > 0x10ffff) this.fail("Invalid Unicode escape.", i);
+        if (code > 0x10ffff) this.fail(t("jsonRepair.err.invalidUnicode"), i);
         out += String.fromCodePoint(code);
         i += 1 + match[0].length;
       } else if (next === "\n" || next === "\r") {
         // A backslash before a line break continues the string.
         i += src.startsWith("\r\n", i + 1) ? 3 : 2;
       } else {
-        this.fail(`Unknown escape "\\${next}".`, i);
+        this.fail(t("jsonRepair.err.unknownEscape", { escape: `\\${next}` }), i);
       }
     }
     this.pos = i + 1;
@@ -320,16 +320,16 @@ class LenientReader {
     if (!/\d/.test(text)) {
       // A sign before a name, as in -Infinity.
       const ident = /^[+-]/.test(text) ? this.match(IDENT, start + 1) : null;
-      if (ident && NO_JSON_FORM.has(ident)) this.fail(`"${ident}" has no JSON form.`, start + 1);
-      this.fail("Expected a value.");
+      if (ident && NO_JSON_FORM.has(ident)) this.fail(t("jsonRepair.err.noJsonForm", { name: ident }), start + 1);
+      this.fail(t("jsonRepair.err.expectedValue"));
     }
-    if (IDENT_CHAR.test(this.src[start + text.length] ?? "")) this.fail("Invalid number.", start);
+    if (IDENT_CHAR.test(this.src[start + text.length] ?? "")) this.fail(t("jsonRepair.err.invalidNumber"), start);
     this.pos += text.length;
     if (STRICT_NUMBER.test(text)) return this.toNumber(text);
     const negative = text.startsWith("-");
     const body = text.replace(/^[+-]/, "").replace(/_/g, "").replace(/n$/, "");
-    if (/^0\d/.test(body)) this.fail("Leading zeros are ambiguous: some languages read them as octal.", start);
-    if (text.endsWith("n") && !/^(0[xob][\da-f]+|\d+)$/i.test(body)) this.fail("Invalid number.", start);
+    if (/^0\d/.test(body)) this.fail(t("jsonRepair.err.leadingZeros"), start);
+    if (text.endsWith("n") && !/^(0[xob][\da-f]+|\d+)$/i.test(body)) this.fail(t("jsonRepair.err.invalidNumber"), start);
     this.repair("number");
     const sign = negative ? "-" : "";
     if (/^0[xob]/i.test(body)) return this.toNumber(sign + BigInt(body.toLowerCase()).toString());
@@ -366,8 +366,8 @@ class LenientReader {
       return value instanceof LosslessNumber ? value.text : String(value);
     }
     const name = this.match(IDENT);
-    if (!name) this.fail(ch === undefined ? "Expected a key." : 'Expected a key or "}".');
-    if (name === "True" || name === "False" || name === "None") this.fail(`The key ${name} is ambiguous. Put it in quotes.`, start);
+    if (!name) this.fail(ch === undefined ? t("jsonRepair.err.expectedKey") : t("jsonRepair.err.expectedKeyOrBrace"));
+    if (name === "True" || name === "False" || name === "None") this.fail(t("jsonRepair.err.ambiguousKey", { name }), start);
     if ((name === "u" || name === "U") && (this.src[start + 1] === "'" || this.src[start + 1] === '"')) {
       this.pos++;
       this.repair("stringPrefix");
@@ -389,7 +389,7 @@ class LenientReader {
         this.pos++;
         return object;
       }
-      if (this.ch === ",") this.fail('Expected a key or "}".');
+      if (this.ch === ",") this.fail(t("jsonRepair.err.expectedKeyOrBrace"));
       const key = this.readKey();
       this.skip();
       if (this.src.startsWith("=>", this.pos)) {
@@ -397,7 +397,7 @@ class LenientReader {
         this.repair("rubyArrow");
       } else if (this.ch === ":") {
         this.pos++;
-      } else this.fail('Expected ":" after the key.');
+      } else this.fail(t("jsonRepair.err.expectedColon"));
       this.skip();
       const value = this.readValue();
       if (value === UNDEFINED) this.repair("undefinedProperty");
@@ -412,7 +412,7 @@ class LenientReader {
         continue;
       } else if (newline && this.ch !== undefined && this.startsValue()) {
         this.repair("missingComma");
-      } else this.fail('Expected "," or "}".');
+      } else this.fail(t("jsonRepair.err.expectedCommaOr", { closer: "}" }));
     }
   }
 
@@ -426,7 +426,7 @@ class LenientReader {
       this.skip();
       if (this.ch === closer) {
         if (closer === ")") {
-          if (list.length === 1 && !afterComma) this.fail('A single value in parentheses is not a tuple. Add a comma, as in (1,).', start);
+          if (list.length === 1 && !afterComma) this.fail(t("jsonRepair.err.singleTuple"), start);
           this.repair("tuple");
         }
         // Python requires the comma in a one-item tuple, so it is not a repair.
@@ -449,9 +449,9 @@ class LenientReader {
         continue;
       } else if (newline && this.ch !== undefined && this.startsValue()) {
         const nextString = this.ch === '"' || this.ch === "'";
-        if (isString && nextString) this.fail("Add a comma between the strings. Python joins strings that are next to each other.");
+        if (isString && nextString) this.fail(t("jsonRepair.err.joinedStrings"));
         this.repair("missingComma");
-      } else this.fail(`Expected "," or "${closer}".`);
+      } else this.fail(t("jsonRepair.err.expectedCommaOr", { closer }));
     }
   }
 }
@@ -484,13 +484,13 @@ const buildNotice = (repairs: Map<Repair, number>, lines: number): string | unde
   const parts: string[] = [];
   const found = DIALECTS.filter((dialect) => dialect.markers.some((marker) => repairs.has(marker)));
   const dialect = found.length === 1 ? found[0] : undefined;
-  if (dialect) parts.push(`converted from a ${dialect.name} literal`);
+  if (dialect) parts.push(t("jsonRepair.dialect", { dialect: dialect.name }));
   for (const [kind, text] of REPAIR_TEXT) {
     const count = repairs.get(kind);
-    if (count && !dialect?.implies.includes(kind)) parts.push(text(count));
+    if (count && !dialect?.implies.includes(kind)) parts.push(t(text, { count }));
   }
-  const repaired = parts.length ? `Repaired: ${parts.join("; ")}.` : "";
-  const ndjson = lines > 1 ? `Read ${lines} NDJSON lines as an array.` : "";
+  const repaired = parts.length ? t("jsonRepair.repaired", { parts: parts.join(t("jsonRepair.listSeparator")) }) : "";
+  const ndjson = lines > 1 ? t("jsonRepair.ndjson", { count: lines }) : "";
   return [ndjson, repaired].filter(Boolean).join(" ") || undefined;
 };
 

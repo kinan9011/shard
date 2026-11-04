@@ -15,7 +15,7 @@ export default {
       },
     },
     extend: {
-      // One role scale for the whole app, built on the 13px macOS body size.
+      // One role scale for the whole app, built on the 13px body size.
       // Overriding the Tailwind steps keeps every tool on the same ramp.
       fontSize: {
         "2xs": ["11px", { lineHeight: "16px" }],
@@ -40,6 +40,11 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+        },
+        // The accent as a fill under white text. A theme that does not set it gets --primary.
+        "primary-solid": {
+          DEFAULT: "hsl(var(--primary-solid, var(--primary)))",
+          foreground: "hsl(var(--primary-solid-foreground, var(--primary-foreground)))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",

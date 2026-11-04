@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Check, Puzzle } from "lucide-react";
+import { useT } from "@/i18n";
 import { useDialogFocus } from "@/components/app/useDialogFocus";
 import { permissionRows, type PermissionGroupKey } from "@/plugins/permissions";
 import { grantsFor } from "@/plugins/useInstallFlow";
@@ -19,6 +20,7 @@ interface BatchPermissionDialogProps {
 
 /** The first-run wizard's single approval for several plugins: each one's permissions, one section per plugin. */
 export function BatchPermissionDialog({ entries, repoName, onCancel, onConfirm }: BatchPermissionDialogProps) {
+  const t = useT();
   const [enabled, setEnabled] = useState<Readonly<Record<string, ReadonlySet<PermissionGroupKey>>>>(() =>
     Object.fromEntries(entries.map((entry) => [entry.id, new Set(permissionRows(entry).filter((row) => !row.required).map((row) => row.key))])),
   );
@@ -29,7 +31,7 @@ export function BatchPermissionDialog({ entries, repoName, onCancel, onConfirm }
       if (!next.delete(key)) next.add(key);
       return { ...current, [id]: next };
     });
-  const title = entries.length === 1 ? `Allow ${entries[0].name} to:` : `Allow ${entries.length} plugins to:`;
+  const title = entries.length === 1 ? t("plugins.permissionDialog.title", { name: entries[0].name }) : t("plugins.batch.titleMany", { count: entries.length });
 
   return (
     <div
@@ -45,7 +47,7 @@ export function BatchPermissionDialog({ entries, repoName, onCancel, onConfirm }
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <h2 className="text-base font-semibold text-foreground">{title}</h2>
-            <span className="truncate text-xs text-muted-foreground">From {repoName}</span>
+            <span className="truncate text-xs text-muted-foreground">{t("plugins.batch.from", { repoName })}</span>
           </div>
         </div>
         <div className="flex max-h-[50vh] flex-col gap-3 overflow-y-auto px-5 pb-1 pt-2">
@@ -56,10 +58,10 @@ export function BatchPermissionDialog({ entries, repoName, onCancel, onConfirm }
               <section key={entry.id} aria-label={entry.name}>
                 <h3 className="flex items-baseline gap-2 text-sm font-medium text-foreground">
                   {entry.name}
-                  <span className="text-xs font-normal text-muted-foreground">Version {entry.version}</span>
+                  <span className="text-xs font-normal text-muted-foreground">{t("plugins.permissionDialog.version", { version: entry.version })}</span>
                 </h3>
                 {rows.length === 0 ? (
-                  <p className="border-t border-border py-2.5 text-xs text-muted-foreground">Asks for no permissions.</p>
+                  <p className="border-t border-border py-2.5 text-xs text-muted-foreground">{t("plugins.batch.noPermissions")}</p>
                 ) : (
                   <PermissionList rows={rows} toggles={{ enabled: set, onToggle: (key) => toggle(entry.id, key) }} roomy />
                 )}
@@ -70,20 +72,20 @@ export function BatchPermissionDialog({ entries, repoName, onCancel, onConfirm }
         <div className="mx-5 mb-4 mt-2 flex flex-col gap-2 rounded-lg bg-secondary p-3 text-xs text-foreground">
           <span className="flex items-center gap-2">
             <Check size={14} strokeWidth={2.5} aria-hidden="true" className="shrink-0 text-success" />
-            SHA-256 checksums are checked against the {repoName} listing.
+            {t("plugins.batch.checksums", { repoName })}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-border px-5 py-3">
-          <span className="min-w-[12rem] flex-1 text-xs text-muted-foreground">Optional permissions can be changed later in Installed.</span>
-          <button type="button" onClick={onCancel} className="ml-auto inline-flex h-[30px] items-center rounded-md border border-input bg-secondary px-3 text-sm font-medium text-secondary-foreground">
-            Cancel
+          <span className="min-w-[12rem] flex-1 text-xs text-muted-foreground">{t("plugins.permissionDialog.optionalNote")}</span>
+          <button type="button" onClick={onCancel} className="ms-auto inline-flex h-[30px] items-center rounded-md border border-input bg-secondary px-3 text-sm font-medium text-secondary-foreground">
+            {t("common.cancel")}
           </button>
           <button
             type="button"
             onClick={() => onConfirm(Object.fromEntries(entries.map((entry) => [entry.id, grantsFor(permissionRows(entry), enabled[entry.id] ?? new Set())])))}
-            className="inline-flex h-[30px] items-center whitespace-nowrap rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary-foreground"
+            className="inline-flex h-[30px] items-center whitespace-nowrap rounded-md border border-primary-solid bg-primary-solid px-3 text-sm font-medium text-primary-foreground"
           >
-            Allow and install
+            {t("plugins.permissionDialog.allowInstall")}
           </button>
         </div>
       </div>

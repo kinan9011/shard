@@ -6,6 +6,7 @@
 import { afterEach, vi } from 'vitest';
 import { cleanup, configure } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
+import { resetLanguageForTests } from '../src/i18n';
 
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers);
@@ -16,6 +17,14 @@ configure({ asyncUtilTimeout: 5000 });
 // Cleanup after each test
 afterEach(() => {
   cleanup();
+  // A test that switched the language must not leave the next one in it.
+  resetLanguageForTests();
+  // Remembered tool inputs and open tabs must not leak from one test into the next.
+  try {
+    localStorage.clear();
+  } catch {
+    // No storage in this environment.
+  }
 });
 
 // Mock navigator.clipboard

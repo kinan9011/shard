@@ -1,11 +1,14 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getVersion } from "@tauri-apps/api/app";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrent as getCurrentDeepLinks, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { platform as getOsPlatform } from "@tauri-apps/plugin-os";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
+import { t } from "@/i18n";
+import { FONT_DB } from "@/lib/customFonts";
 import { isMobileApp } from "@/lib/platform";
 import type { UserTheme } from "@/utils/theme";
 import type { ToolManifest } from "@/utils/tool-manifest";
@@ -42,6 +45,8 @@ export interface DesktopBridge {
    * so it must match the app theme. Pass null to follow the system.
    */
   setWindowTheme?: (theme: "light" | "dark" | null) => Promise<void>;
+  /** Zooms the whole webview, plugin frames included. Resolves to false where the platform cannot (a phone). */
+  setZoom?: (factor: number) => Promise<boolean>;
   /**
    * Calls back with each shard:// link: the one that launched the app, then any that
    * arrive while it runs. Returns a function that stops listening.
@@ -54,6 +59,8 @@ export interface DesktopBridge {
    * it off with null. Resolves to an error message when the system refuses it, otherwise null.
    */
   setGlobalShortcut?: (accelerator: string | null) => Promise<string | null>;
+  /** Sets the tray menu's labels in the current language. */
+  setTrayLabels?: (labels: { open: string; search: string; quit: string }) => Promise<void>;
   /** Calls back when the tray menu or the global shortcut asks for the command palette. */
   onOpenCommandPalette?: (callback: () => void) => () => void;
   /**
@@ -110,7 +117,7 @@ function createTauriBridge(): DesktopBridge {
     if (isDev) {
       setUpdateState({
         status: "unsupported",
-        message: "Update checks are disabled in development builds.",
+        message: t("shell.update.checksDisabled"),
       });
       return withCurrentVersion();
     }
@@ -137,7 +144,7 @@ function createTauriBridge(): DesktopBridge {
       console.error("Update check failed:", error);
       setUpdateState({
         status: "error",
-        message: error instanceof Error ? error.message : String(error ?? "Unable to check for updates."),
+        message: error instanceof Error ? error.message : String(error ?? t("shell.update.checkFailed")),
       });
     }
 
@@ -183,7 +190,7 @@ function createTauriBridge(): DesktopBridge {
       if (isDev) {
         setUpdateState({
           status: "unsupported",
-          message: "Updates are disabled in development builds.",
+          message: t("shell.update.disabled"),
         });
       }
       return false;
@@ -217,7 +224,7 @@ function createTauriBridge(): DesktopBridge {
       console.error("Update download failed:", error);
       setUpdateState({
         status: "error",
-        message: error instanceof Error ? error.message : String(error ?? "Unable to download the update."),
+        message: error instanceof Error ? error.message : String(error ?? t("shell.update.downloadFailed")),
       });
       throw error;
     }
@@ -237,6 +244,19 @@ function createTauriBridge(): DesktopBridge {
       await invoke("set_window_theme", { theme });
     } catch (error) {
       console.error("Failed to set the window theme:", error);
+    }
+  };
+
+  // The webview zoom last applied. A native drop point is not scaled by it, a CSS point is.
+  let webviewZoom = 1;
+  const setZoom = async (factor: number) => {
+    try {
+      await getCurrentWebview().setZoom(factor);
+      webviewZoom = factor;
+      return true;
+    } catch (error) {
+      console.error("Failed to zoom the webview:", error);
+      return false;
     }
   };
 
@@ -263,12 +283,13 @@ function createTauriBridge(): DesktopBridge {
 
   // Linux only (tauri.linux.conf.json): WebKitGTK gives a page no File and no path for a file dragged from a file manager,
   // so the window hands the drop to Tauri, which sends the real paths and the point where it landed.
-  // ponytail: the point is in CSS px on Linux. Divide by devicePixelRatio before turning native drag-drop on elsewhere.
+  // ponytail: GTK gives the point in window px that display scaling has already taken out, so only the webview zoom is
+  // divided out to get CSS px. Divide by devicePixelRatio too before turning native drag-drop on elsewhere.
   const onFileDrop = (callback: (paths: string[], x: number, y: number) => void) => {
     let active = true;
     let unlisten: (() => void) | undefined;
     listen<{ paths: string[]; position: { x: number; y: number } }>("tauri://drag-drop", ({ payload }) => {
-      if (active) callback(payload.paths, payload.position.x, payload.position.y);
+      if (active) callback(payload.paths, payload.position.x / webviewZoom, payload.position.y / webviewZoom);
     })
       .then((stop) => {
         if (active) unlisten = stop;
@@ -298,6 +319,14 @@ function createTauriBridge(): DesktopBridge {
     }
   };
 
+  const setTrayLabels = async ({ open, search, quit }: { open: string; search: string; quit: string }) => {
+    try {
+      await invoke("set_tray_labels", { open, search, quit });
+    } catch (error) {
+      console.error("Failed to set the tray labels:", error);
+    }
+  };
+
   const onOpenCommandPalette = (callback: () => void) => {
     let active = true;
     let unlisten: (() => void) | undefined;
@@ -317,7 +346,9 @@ function createTauriBridge(): DesktopBridge {
 
   return {
     setWindowTheme,
+    setZoom,
     setGlobalShortcut,
+    setTrayLabels,
     onOpenCommandPalette,
     onFileDrop: nodePlatform === "linux" ? onFileDrop : undefined,
     writeToolManifest,
@@ -433,14 +464,14 @@ export const isDesktop = (): boolean => isTauri();
 
 function requireDesktop(): void {
   if (!isTauri()) {
-    throw new Error("Folder compare needs the desktop app.");
+    throw new Error(t("shell.desktop.folderCompare"));
   }
 }
 
-/** Asks for a folder with the native dialog. Resolves to null when the user cancels. */
-export async function pickFolder(): Promise<string | null> {
+/** Asks for a folder with the native dialog, opened in `start` when given. Resolves to null when the user cancels. */
+export async function pickFolder(start?: string): Promise<string | null> {
   requireDesktop();
-  return invoke<string | null>("pick_folder");
+  return invoke<string | null>("pick_folder", { start: start ?? null });
 }
 
 export async function scanFolder(root: string): Promise<FolderEntry[]> {
@@ -502,7 +533,7 @@ export async function listThemes(): Promise<UserThemeList> {
 /** Asks for a theme file and adds it. Resolves to null when the user cancels; rejects with the reason a file is refused. */
 export async function importTheme(): Promise<UserTheme | null> {
   if (!isTauri()) {
-    throw new Error("Custom themes need the desktop app.");
+    throw new Error(t("shell.desktop.themes"));
   }
   return invoke<UserTheme | null>("theme_import");
 }
@@ -547,8 +578,8 @@ export async function openThemesFolder(): Promise<void> {
   await invoke("theme_open_dir");
 }
 
-/** Wipes all Shard data and restarts. The browser preview clears its storage and reloads. */
-export async function resetAppData(): Promise<void> {
+/** Wipes all Shard data. Resolves true on a desktop, where the app is left open: show a message, then call `closeAfterReset`. The browser preview and a phone reload instead and resolve false. */
+export async function resetAppData(): Promise<boolean> {
   if (isTauri()) {
     // Files first: if this fails nothing has been cleared and the caller can say why.
     await invoke("reset_app_data");
@@ -556,12 +587,26 @@ export async function resetAppData(): Promise<void> {
   // The webview's own storage goes last, so it is empty even where Rust could not delete a locked file.
   localStorage.clear();
   sessionStorage.clear();
-  // A phone has no restart command: reloading the webview starts the app over from the empty storage.
-  if (isTauri() && !isMobileApp()) {
-    await relaunch();
-  } else {
-    location.reload();
+  // Fonts the user added live in IndexedDB. A blocked delete (another connection open) is not worth stopping the reset for.
+  try {
+    indexedDB.deleteDatabase(FONT_DB);
+  } catch {
+    /* no IndexedDB here */
   }
+  // A desktop app stays open for the caller to say so and then call closeAfterReset(). A phone and the browser
+  // have no close command: reloading starts the app over from the empty storage.
+  if (!isTauri() || isMobileApp()) {
+    location.reload();
+    return false;
+  }
+  return true;
+}
+
+/** Closes the desktop app after a reset. Storage is cleared again, in case something wrote to it since the reset. */
+export async function closeAfterReset(): Promise<void> {
+  localStorage.clear();
+  sessionStorage.clear();
+  await invoke("quit_now");
 }
 
 /** Opens http(s) and mailto links in the system browser instead of the app window. */

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { RotateCcw } from "lucide-react";
+import { useT, type TKey } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -23,9 +24,16 @@ import {
 import { Row } from "./Row";
 
 const GROUPS = [
-  ["general", "General", "Core app actions available from anywhere in the app."],
-  ["favorites", "Pinned tools", "These follow the current order of your pinned tools on Home."],
-] as const;
+  ["general", "settings.shortcuts.groupGeneral", "settings.shortcuts.groupGeneralHint"],
+  ["favorites", "settings.shortcuts.groupPinned", "settings.shortcuts.groupPinnedHint"],
+] as const satisfies readonly (readonly [string, TKey, TKey])[];
+
+/** Text with one `{key}` slot, around a node (a key name in bold). */
+const KEY_SLOT = "\u0001";
+function withKey(text: string, node: ReactNode): ReactNode {
+  const [before = "", after = ""] = text.split(KEY_SLOT);
+  return <>{before}{node}{after}</>;
+}
 
 /** While a shortcut is being recorded, the app must not act on key presses (or the system-wide shortcut). */
 function useReportRecording(recording: boolean, onRecordingChange: (recording: boolean) => void) {
@@ -67,6 +75,7 @@ interface ShortcutSettingsProps {
 
 /** The app's keyboard shortcuts: click one to record a new key combination. */
 export function ShortcutSettings({ platform, bindings, onUpdateBinding, onResetDefaults, onRecordingChange, paused }: ShortcutSettingsProps) {
+  const t = useT();
   const [recordingActionId, setRecordingActionId] = useState<ShortcutActionId | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const defaultBindings = useMemo(() => getDefaultShortcutBindings(platform), [platform]);
@@ -88,12 +97,12 @@ export function ShortcutSettings({ platform, bindings, onUpdateBinding, onResetD
       const candidate = bindingFromKeyboardEvent(event);
       if (!candidate) return;
       if (isReservedShortcut(candidate, platform)) {
-        setErrorMessage("That shortcut is reserved by the app or operating system.");
+        setErrorMessage(t("settings.shortcuts.reserved"));
         return;
       }
       const conflict = getShortcutConflict(bindings, candidate, recordingActionId);
       if (conflict) {
-        setErrorMessage(`That shortcut is already assigned to ${getShortcutActionDefinition(conflict).label}.`);
+        setErrorMessage(t("settings.shortcuts.conflict", { action: getShortcutActionDefinition(conflict).label }));
         return;
       }
       onUpdateBinding(recordingActionId, candidate);
@@ -102,7 +111,7 @@ export function ShortcutSettings({ platform, bindings, onUpdateBinding, onResetD
     };
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [bindings, onUpdateBinding, platform, recordingActionId]);
+  }, [bindings, onUpdateBinding, platform, recordingActionId, t]);
 
   const actionRow = (actionId: ShortcutActionId) => {
     const action = getShortcutActionDefinition(actionId);
@@ -116,24 +125,24 @@ export function ShortcutSettings({ platform, bindings, onUpdateBinding, onResetD
             aria-pressed={isRecording}
             variant={isRecording ? "default" : "outline"}
             size="sm"
-            aria-label={isRecording ? `Cancel recording for ${action.label}` : `Record ${action.label}`}
+            aria-label={isRecording ? t("settings.shortcuts.cancelRecording", { action: action.label }) : t("settings.shortcuts.record", { action: action.label })}
             onClick={() => {
               setRecordingActionId(isRecording ? null : actionId);
               setErrorMessage("");
             }}
           >
-            {isRecording ? "Press keys…" : formatShortcutBinding(bindings[actionId], platform)}
+            {isRecording ? t("settings.shortcuts.pressKeys") : formatShortcutBinding(bindings[actionId], platform)}
           </Button>
           <Button
             type="button"
             variant="ghost"
             size="sm"
             className="px-2 text-xs text-muted-foreground"
-            aria-label={`Clear ${action.label}`}
+            aria-label={t("settings.shortcuts.clear", { action: action.label })}
             onClick={() => onUpdateBinding(actionId, null)}
             disabled={bindings[actionId] === null}
           >
-            Clear
+            {t("settings.shortcuts.clearButton")}
           </Button>
           {defaultBindings[actionId] === null ? <span /> : (
             <Button
@@ -141,10 +150,10 @@ export function ShortcutSettings({ platform, bindings, onUpdateBinding, onResetD
               variant="ghost"
               size="sm"
               className="px-2 text-xs text-muted-foreground"
-              aria-label={`Reset ${action.label}`}
+              aria-label={t("settings.shortcuts.reset", { action: action.label })}
               onClick={() => onUpdateBinding(actionId, defaultBindings[actionId])}
             >
-              Reset
+              {t("settings.shortcuts.resetButton")}
             </Button>
           )}
         </div>
@@ -154,10 +163,10 @@ export function ShortcutSettings({ platform, bindings, onUpdateBinding, onResetD
 
   const mod = platform === "darwin" ? "⌘" : "Ctrl+";
   const fixedTabs = [
-    ["Close tab", "Close the tool you are using.", `${mod}W`],
-    ["Next tab", "Move to the next open tool.", "Ctrl+Tab"],
-    ["Previous tab", "Move to the previous open tool.", "Ctrl+Shift+Tab"],
-    ["Move between tabs", "Use when a tab has focus. Delete closes it.", "← → Home End"],
+    [t("settings.shortcuts.closeTab"), t("settings.shortcuts.closeTabHint"), `${mod}W`],
+    [t("settings.shortcuts.nextTab"), t("settings.shortcuts.nextTabHint"), "Ctrl+Tab"],
+    [t("settings.shortcuts.previousTab"), t("settings.shortcuts.previousTabHint"), "Ctrl+Shift+Tab"],
+    [t("settings.shortcuts.moveTabs"), t("settings.shortcuts.moveTabsHint"), "← → Home End"],
   ];
 
   return (
@@ -166,15 +175,15 @@ export function ShortcutSettings({ platform, bindings, onUpdateBinding, onResetD
         <Status tone="error">{errorMessage}</Status>
       ) : recordingActionId ? (
         <Status tone="info">
-          Recording for {getShortcutActionDefinition(recordingActionId).label}. Press <strong>Esc</strong> to cancel.
+          {withKey(t("settings.shortcuts.recordingFor", { action: getShortcutActionDefinition(recordingActionId).label, esc: KEY_SLOT }), <strong>Esc</strong>)}
         </Status>
       ) : null}
       {GROUPS.map(([group, title, hint]) => (
-        <Section key={group} title={title} hint={hint}>
+        <Section key={group} title={t(title)} hint={t(hint)}>
           {SHORTCUT_ACTIONS.filter((action) => action.group === group).map((action) => actionRow(action.id))}
         </Section>
       ))}
-      <Section title="Tabs" hint="These shortcuts are fixed. They work when a tool tab is open.">
+      <Section title={t("settings.shortcuts.tabs")} hint={t("settings.shortcuts.tabsHint")}>
         {fixedTabs.map(([label, description, keys]) => (
           <Row key={label} title={label} hint={description}>
             <kbd className="shrink-0 whitespace-nowrap rounded-[5px] border border-input bg-muted px-2 py-1 font-sans text-xs text-foreground">{keys}</kbd>
@@ -183,8 +192,8 @@ export function ShortcutSettings({ platform, bindings, onUpdateBinding, onResetD
       </Section>
       <div>
         <Button type="button" variant="ghost" onClick={onResetDefaults}>
-          <RotateCcw className="mr-2 h-4 w-4" />
-          Reset All Defaults
+          <RotateCcw className="me-2 h-4 w-4" />
+          {t("settings.shortcuts.resetAll")}
         </Button>
       </div>
     </div>
@@ -202,6 +211,8 @@ interface GlobalShortcutProps {
 
 /** The system-wide "Show Shard" shortcut. */
 export function GlobalShortcutSetting({ platform, shortcut, error, onChange, onRecordingChange, paused }: GlobalShortcutProps) {
+  const t = useT();
+  const title = t("settings.globalShortcut.title");
   const [recording, setRecording] = useState(false);
   useReportRecording(recording, onRecordingChange);
   useEffect(() => {
@@ -228,7 +239,7 @@ export function GlobalShortcutSetting({ platform, shortcut, error, onChange, onR
 
   return (
     <>
-      <Row title="Show Shard" htmlFor="global-shortcut-enabled" hint="Works in every app while Shard runs. Opens Shard with the command palette. Press it again to hide Shard.">
+      <Row title={title} htmlFor="global-shortcut-enabled" hint={t("settings.globalShortcut.hint")}>
         <div className="flex shrink-0 items-center gap-2">
           <Button
             type="button"
@@ -237,15 +248,15 @@ export function GlobalShortcutSetting({ platform, shortcut, error, onChange, onR
             variant={recording ? "default" : "outline"}
             size="sm"
             disabled={!shortcut.enabled}
-            aria-label={recording ? "Cancel recording for Show Shard" : "Record Show Shard"}
+            aria-label={recording ? t("settings.shortcuts.cancelRecording", { action: title }) : t("settings.shortcuts.record", { action: title })}
             onClick={() => setRecording((value) => !value)}
           >
-            {recording ? "Press keys…" : formatGlobalShortcut(shortcut, platform)}
+            {recording ? t("settings.shortcuts.pressKeys") : formatGlobalShortcut(shortcut, platform)}
           </Button>
           <Switch
             id="global-shortcut-enabled"
             checked={shortcut.enabled}
-            aria-label="Use the Show Shard shortcut"
+            aria-label={t("settings.globalShortcut.use")}
             onCheckedChange={(enabled) => onChange({ ...shortcut, enabled })}
           />
           <Button
@@ -253,20 +264,20 @@ export function GlobalShortcutSetting({ platform, shortcut, error, onChange, onR
             variant="ghost"
             size="sm"
             className="px-2 text-xs text-muted-foreground"
-            aria-label="Reset Show Shard"
+            aria-label={t("settings.shortcuts.reset", { action: title })}
             onClick={() => onChange(getDefaultGlobalShortcut(platform))}
           >
-            Reset
+            {t("settings.shortcuts.resetButton")}
           </Button>
         </div>
       </Row>
       {recording ? (
         <Status tone="info">
-          Press a combination with Cmd, Ctrl, or {platform === "darwin" ? "Option" : "Alt"}. Press <strong>Esc</strong> to cancel.
+          {withKey(t("settings.globalShortcut.recordingHint", { key: platform === "darwin" ? "Option" : "Alt", esc: KEY_SLOT }), <strong>Esc</strong>)}
         </Status>
       ) : error ? (
         <Status tone="error">
-          {formatGlobalShortcut(shortcut, platform)} could not be registered. Another app may use it, or this desktop does not support global shortcuts. Choose a different combination.
+          {t("settings.globalShortcut.error", { shortcut: formatGlobalShortcut(shortcut, platform) })}
         </Status>
       ) : null}
     </>

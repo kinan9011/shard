@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { useToolActive } from "@/hooks/useToolActive";
 import { setPluginEnabled } from "@/plugins/api";
@@ -17,6 +18,7 @@ function Notice({ children }: { children: React.ReactNode }) {
 }
 
 function Frame({ id, src, name, granted, onReload }: { id: string; src: string; name: string; granted: readonly string[]; onReload: () => void }) {
+  const t = useT();
   const [state, setState] = useState<FrameState>("loading");
   const [disabling, setDisabling] = useState(false);
   // A plugin that was only slow (the 10 s ran out, then it said ready) recovers. One that reported an error stays on the crash screen.
@@ -69,7 +71,7 @@ function Frame({ id, src, name, granted, onReload }: { id: string; src: string; 
       await refreshPlugins();
     } catch (error) {
       setDisabling(false);
-      toast.error(`Couldn't turn off ${name}`, { description: error instanceof Error ? error.message : String(error) });
+      toast.error(t("plugins.frame.disableFailed", { name }), { description: error instanceof Error ? error.message : String(error) });
     }
   };
 
@@ -85,19 +87,19 @@ function Frame({ id, src, name, granted, onReload }: { id: string; src: string; 
       />
       {state === "loading" && (
         <div className="absolute inset-0 bg-background">
-          <Notice>Loading {name}…</Notice>
+          <Notice>{t("plugins.frame.loading", { name })}</Notice>
         </div>
       )}
       {state === "crashed" && (
         <div className="absolute inset-0 bg-background">
           <Notice>
             <div role="alert" className="flex flex-col items-center gap-1">
-              <p className="font-medium text-foreground">This plugin stopped working</p>
-              <p>{name} did not respond or hit an error.</p>
+              <p className="font-medium text-foreground">{t("plugins.frame.crashedTitle")}</p>
+              <p>{t("plugins.frame.crashedBody", { name })}</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={onReload}>Reload</Button>
-              <Button variant="outline" size="sm" disabled={disabling} onClick={() => void disable()}>Disable</Button>
+              <Button variant="outline" size="sm" onClick={onReload}>{t("plugins.frame.reload")}</Button>
+              <Button variant="outline" size="sm" disabled={disabling} onClick={() => void disable()}>{t("plugins.frame.disable")}</Button>
             </div>
           </Notice>
         </div>
@@ -108,12 +110,13 @@ function Frame({ id, src, name, granted, onReload }: { id: string; src: string; 
 
 /** A plugin's UI: its entry page in a sandboxed frame, with loading and error states. */
 export function PluginFrame({ pluginId, name }: { pluginId: string; name: string }) {
+  const t = useT();
   const { plugins, ready } = usePlugins();
   const [attempt, setAttempt] = useState(0);
   const plugin = plugins.find((candidate) => candidate.id === pluginId && candidate.enabled);
 
   if (!plugin) {
-    return ready ? <Notice>{name} is not installed or is turned off.</Notice> : <Notice>Loading {name}…</Notice>;
+    return ready ? <Notice>{t("plugins.frame.notInstalled", { name })}</Notice> : <Notice>{t("plugins.frame.loading", { name })}</Notice>;
   }
   return <Frame key={attempt} id={plugin.id} src={pluginUrl(plugin.id, plugin.manifest.entry)} name={name} granted={plugin.granted} onReload={() => setAttempt((n) => n + 1)} />;
 }

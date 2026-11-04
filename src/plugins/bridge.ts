@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { getDir, getLocale, LOCALES } from "@/i18n";
 import { readClipboardText, saveFile, writeClipboardText } from "@/lib/desktop";
 import { getPluginStorage, pluginFetch, pluginOpenFile, setPluginStorage } from "./api";
 import { isGranted } from "./permissions";
@@ -16,6 +17,11 @@ const MAX_KEY_LENGTH = 256;
 const MAX_CLIPBOARD_BYTES = 1024 * 1024;
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
 const MAX_URL_LENGTH = 2048;
+/** "Send to…": the longest text handed to a plugin, and how long it is held for a plugin whose frame is not ready yet. */
+export const MAX_INPUT_CHARS = 1024 * 1024;
+export const INPUT_TTL_MS = 30_000;
+const pendingInput = new Map<string, { text: string; at: number }>();
+const inputMessage = (text: string) => ({ v: PROTOCOL_VERSION, event: "input", data: { text } });
 /**
  * Calls that wait on something other than the host get their own limit. `null` is no limit: a file dialog
  * stays open as long as the user likes. net.fetch outlasts the 30 s that the Rust side allows.
@@ -26,12 +32,13 @@ const TOAST_KINDS = ["info", "success", "warning", "error"] as const;
 /** The CSS custom properties a plugin may read (see src/index.css). */
 const THEME_VARS = [
   "--background", "--foreground", "--card", "--card-foreground", "--popover", "--popover-foreground",
-  "--primary", "--primary-foreground", "--secondary", "--secondary-foreground", "--muted", "--muted-foreground",
+  "--primary", "--primary-foreground", "--primary-solid", "--primary-solid-foreground", "--secondary", "--secondary-foreground", "--muted", "--muted-foreground",
   "--accent", "--accent-foreground", "--destructive", "--destructive-foreground", "--success", "--success-foreground",
   "--warning", "--warning-foreground", "--info", "--info-foreground", "--border", "--input", "--ring",
   "--sidebar-background", "--sidebar-foreground", "--sidebar-primary", "--sidebar-primary-foreground",
   "--sidebar-accent", "--sidebar-accent-foreground", "--sidebar-border", "--sidebar-ring",
   "--surface-chrome", "--surface-editor", "--surface-raised", "--surface-sidebar",
+  "--surface-hover", "--surface-selected", "--shadow-dialog",
   "--chrome-input-border", "--chrome-muted-foreground",
   "--syntax-fn", "--syntax-kw", "--syntax-lit", "--syntax-num", "--syntax-str",
   "--radius", "--font-ui", "--font-code",
@@ -53,6 +60,18 @@ export function themeSnapshot(): ThemeSnapshot {
     if (value) vars[name] = value;
   }
   return { isDark: root.classList.contains("dark"), scheme: root.getAttribute("data-scheme") ?? "adwaita", vars };
+}
+
+export interface LocaleSnapshot {
+  /** The BCP 47 tag of the app language, e.g. "de" or "zh-CN". */
+  lang: string;
+  /** The reading direction of that language. */
+  dir: "ltr" | "rtl";
+}
+
+/** The app language as the plugin needs it. It carries no personal data, so no permission is needed. */
+export function localeSnapshot(): LocaleSnapshot {
+  return { lang: LOCALES.find((l) => l.id === getLocale())?.tag ?? "en", dir: getDir() };
 }
 
 class BridgeError extends Error {
@@ -136,9 +155,14 @@ const METHODS: Record<string, Method> = {
   ready(_params, connection) {
     connection.ready = true;
     connection.onReady?.();
-    return { pluginId: connection.pluginId, theme: themeSnapshot(), visible: connection.visible() };
+    // Text the user sent before this frame was up. The SDK holds it until the plugin registers onInput.
+    const waiting = pendingInput.get(connection.pluginId);
+    pendingInput.delete(connection.pluginId);
+    if (waiting && Date.now() - waiting.at <= INPUT_TTL_MS) connection.send(inputMessage(waiting.text));
+    return { pluginId: connection.pluginId, theme: themeSnapshot(), locale: localeSnapshot(), visible: connection.visible() };
   },
   "theme.get": () => themeSnapshot(),
+  "locale.get": () => localeSnapshot(),
   "storage.get": (params, connection) => getPluginStorage(connection.pluginId, keyOf(params)),
   "storage.set"(params, connection) {
     const key = keyOf(params);
@@ -295,10 +319,44 @@ export function notifyThemeChanged(): void {
   }
 }
 
+/** Tells every plugin that finished the handshake about the new app language. Call it after the language changed. */
+export function notifyLocaleChanged(): void {
+  if (connections.size === 0) return;
+  const message = { v: PROTOCOL_VERSION, event: "locale", data: localeSnapshot() };
+  for (const connection of connections) {
+    if (connection.ready) connection.send(message);
+  }
+}
+
 /** Tells the plugin with this id (once its handshake is done) that its tab was shown or hidden. */
 export function notifyVisibilityChanged(pluginId: string, visible: boolean): void {
   const message = { v: PROTOCOL_VERSION, event: "visibility", data: { visible } };
   for (const connection of connections) {
     if (connection.ready && connection.pluginId === pluginId) connection.send(message);
   }
+}
+
+/**
+ * "Send to…": gives a plugin text the user chose to send it. The id comes from the host, so only that plugin's
+ * frame receives it, and it needs no permission: the plugin gets nothing the user did not hand over.
+ * A frame that is not ready yet gets it at its handshake, for up to INPUT_TTL_MS. Returns false for text over MAX_INPUT_CHARS.
+ */
+export function sendInputToPlugin(pluginId: string, text: string): boolean {
+  if (text.length > MAX_INPUT_CHARS) return false;
+  let sent = false;
+  for (const connection of connections) {
+    if (connection.ready && connection.pluginId === pluginId) {
+      connection.send(inputMessage(text));
+      sent = true;
+    }
+  }
+  if (!sent) {
+    const entry = { text, at: Date.now() };
+    pendingInput.set(pluginId, entry);
+    // A frame that never says ready must not keep the text: drop it when its time is up.
+    setTimeout(() => {
+      if (pendingInput.get(pluginId) === entry) pendingInput.delete(pluginId);
+    }, INPUT_TTL_MS);
+  }
+  return true;
 }

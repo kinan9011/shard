@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { t } from "@/i18n";
 import { installFromRepo, onInstallProgress, setPluginGrants, updatePlugin, type CatalogEntry, type InstalledPlugin, type PluginUpdate } from "./api";
 import { permissionRows, type PermissionGroupKey, type PermissionRow } from "./permissions";
 import type { PermissionName } from "./types";
@@ -13,21 +14,21 @@ export function grantsFor(rows: readonly PermissionRow[], enabled: ReadonlySet<P
 }
 
 /** "Installing…" with the percent once it is known. */
-export const installingLabel = (percent: number | null | undefined) => (typeof percent === "number" ? `Installing… ${percent}%` : "Installing…");
+export const installingLabel = (percent: number | null | undefined) => (typeof percent === "number" ? t("plugins.install.installingPercent", { percent }) : t("plugins.install.installing"));
 
 const asMessage = (failure: unknown) => (failure instanceof Error ? failure.message : String(failure));
 
 /** The toast for a failed install. The Rust side words the message (src-tauri/src/plugins/install.rs, zip.rs, fetch.rs). */
 export function describeInstallError(name: string, message: string): { title: string; description: string } {
   if (/checksum does not match|bytes, but the repository lists|larger than the repository lists/i.test(message)) {
-    return { title: "Checksum doesn't match", description: `${name} was not installed. The download is not the file the repository lists.` };
+    return { title: t("plugins.install.checksumTitle"), description: t("plugins.install.checksumBody", { name }) };
   }
   const newer = /^Requires Shard (\S+)/.exec(message);
-  if (newer) return { title: "Needs a newer Shard", description: `${name} requires Shard ${newer[1]}.` };
+  if (newer) return { title: t("plugins.install.newerTitle"), description: t("plugins.install.newerBody", { name, version: newer[1] }) };
   if (/^HTTP \d|\(404\)|timed out|error sending request|connect|dns|network/i.test(message)) {
-    return { title: "Download failed", description: message };
+    return { title: t("plugins.install.downloadFailed"), description: message };
   }
-  return { title: `Couldn't install ${name}`, description: message };
+  return { title: t("plugins.install.failed", { name }), description: message };
 }
 
 /**
@@ -121,14 +122,14 @@ export function useInstallFlow({ onOpen, refresh, onInstalled }: InstallFlowOpti
         // An update replaces the grants even with none: the user may have switched every optional one off.
         if (grants && (grants.length > 0 || job.update)) await setPluginGrants(id, grants);
       } catch (failure) {
-        toast.error(job.update ? "Updated, but permissions weren't saved" : "Installed, but permissions weren't saved", { description: `${name}: ${asMessage(failure)}` });
+        toast.error(job.update ? t("plugins.install.updatedGrantsFailed") : t("plugins.install.installedGrantsFailed"), { description: `${name}: ${asMessage(failure)}` });
         return installed;
       } finally {
         // The plugin is installed whatever these reads do: a failed read must not turn into an "install failed" toast.
         await Promise.allSettled([refreshPlugins(), latest.current.refresh()]);
       }
       if (!job.update) latest.current.onInstalled?.(id);
-      toast.success(job.update ? "Updated" : "Installed", { description: job.update ? `${name} ${job.update.from} → ${job.entry.version}` : name, action: { label: "Open", onClick: () => latest.current.onOpen(id) } });
+      toast.success(job.update ? t("plugins.install.updated") : t("plugins.install.installed"), { description: job.update ? `${name} ${job.update.from} → ${job.entry.version}` : name, action: { label: t("plugins.install.open"), onClick: () => latest.current.onOpen(id) } });
     } catch (failure) {
       const { title, description } = describeInstallError(name, asMessage(failure));
       toast.error(title, { description });

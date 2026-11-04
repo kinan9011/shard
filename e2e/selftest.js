@@ -128,7 +128,7 @@
       await waitFor(() => !document.querySelector('[role="dialog"]'), "dialog closes");
     });
 
-    await step("shows the app version in the sidebar footer", async () => {
+    await step("shows the app version in the status bar", async () => {
       await waitFor(() => text().includes(`v${version}`), "footer version");
     });
 
@@ -265,7 +265,7 @@
 
     await step("uninstalls the hello plugin from the Plugins page", async () => {
       const clickWhenReady = async (find, description) => (await waitFor(find, description)).click();
-      await clickWhenReady(() => [...document.querySelectorAll("button.sidebar-destination")].find((button) => button.innerText.includes("Plugins")), "Plugins destination");
+      await clickWhenReady(() => document.querySelector('[data-destination="plugins"]'), "Plugins destination");
       await clickWhenReady(() => document.getElementById("plugins-tab-installed"), "Installed tab");
       await clickWhenReady(() => document.querySelector('button[aria-label="Actions for Hello Plugin"]'), "Hello Plugin actions");
       await clickWhenReady(() => [...document.querySelectorAll('[role="menuitem"]')].find((item) => item.innerText.trim() === "Uninstall"), "Uninstall menu item");

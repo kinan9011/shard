@@ -1,3 +1,5 @@
+import { t } from "@/i18n";
+
 export type ShortcutActionId =
   | "open-command-palette"
   | "go-home"
@@ -30,50 +32,50 @@ export const SHORTCUTS_STORAGE_KEY = "shard-shortcuts-v1";
 export const SHORTCUT_ACTIONS: ShortcutActionDefinition[] = [
   {
     id: "open-command-palette",
-    label: "Open Command Palette",
-    description: "Search tools and open one without using the mouse.",
+    get label() { return t("shell.shortcut.openPalette.label"); },
+    get description() { return t("shell.shortcut.openPalette.description"); },
     group: "general",
   },
   {
     id: "go-home",
-    label: "Go Home",
-    description: "Return to the home screen from any tool.",
+    get label() { return t("shell.shortcut.goHome.label"); },
+    get description() { return t("shell.shortcut.goHome.description"); },
     group: "general",
   },
   {
     id: "toggle-sidebar",
-    label: "Toggle Sidebar",
-    description: "Show or hide the tool sidebar.",
+    get label() { return t("shell.shortcut.toggleSidebar.label"); },
+    get description() { return t("shell.shortcut.toggleSidebar.description"); },
     group: "general",
   },
   {
     id: "open-favorite-1",
-    label: "Open Pinned Tool 1",
-    description: "Open the first pinned tool.",
+    get label() { return t("shell.shortcut.openPinned1.label"); },
+    get description() { return t("shell.shortcut.openPinned1.description"); },
     group: "favorites",
   },
   {
     id: "open-favorite-2",
-    label: "Open Pinned Tool 2",
-    description: "Open the second pinned tool.",
+    get label() { return t("shell.shortcut.openPinned2.label"); },
+    get description() { return t("shell.shortcut.openPinned2.description"); },
     group: "favorites",
   },
   {
     id: "open-favorite-3",
-    label: "Open Pinned Tool 3",
-    description: "Open the third pinned tool.",
+    get label() { return t("shell.shortcut.openPinned3.label"); },
+    get description() { return t("shell.shortcut.openPinned3.description"); },
     group: "favorites",
   },
   {
     id: "open-favorite-4",
-    label: "Open Pinned Tool 4",
-    description: "Open the fourth pinned tool.",
+    get label() { return t("shell.shortcut.openPinned4.label"); },
+    get description() { return t("shell.shortcut.openPinned4.description"); },
     group: "favorites",
   },
   {
     id: "open-favorite-5",
-    label: "Open Pinned Tool 5",
-    description: "Open the fifth pinned tool.",
+    get label() { return t("shell.shortcut.openPinned5.label"); },
+    get description() { return t("shell.shortcut.openPinned5.description"); },
     group: "favorites",
   },
 ];
@@ -169,7 +171,7 @@ export function formatShortcutBinding(
   platform: string | undefined,
 ): string {
   if (!binding) {
-    return "Unassigned";
+    return t("shell.shortcut.unassigned");
   }
 
   const normalizedPlatform = normalizePlatform(platform);

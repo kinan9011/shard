@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { Switch } from "@/components/ui/switch";
+import { useT, type TKey } from "@/i18n";
 import type { DiffSettings } from "@/utils/diff-merge/settings";
 
 interface AnchoredPanelProps {
@@ -109,54 +110,56 @@ function SwitchRow({ label, checked, onChange }: { label: string; checked: boole
 const stepper = "w-6 text-center text-muted-foreground hover:bg-muted hover:text-foreground";
 
 export function SettingsPanel({ settings, onChange, onReset }: { settings: DiffSettings; onChange(patch: Partial<DiffSettings>): void; onReset(): void }) {
+  const t = useT();
   const setContext = (n: number) => onChange({ contextLines: Math.min(20, Math.max(0, n)) });
   return (
     <>
-      <div className="px-[14px] pb-2 pt-3 font-semibold">Compare settings</div>
+      <div className="px-[14px] pb-2 pt-3 font-semibold">{t("diffMerge.settings.title")}</div>
       <div className="flex flex-col px-1.5 pb-1.5">
         <div className="flex items-center justify-between gap-3 rounded-[5px] px-2 py-[7px]">
           <div className="flex flex-col">
-            <span>Context lines</span>
-            <span className="text-[11px] text-muted-foreground">Kept around changes when collapsed</span>
+            <span>{t("diffMerge.settings.contextLines")}</span>
+            <span className="text-[11px] text-muted-foreground">{t("diffMerge.settings.contextHint")}</span>
           </div>
           <div className="flex h-[26px] items-center overflow-hidden rounded-[5px] border border-input">
-            <button type="button" className={stepper} aria-label="Fewer context lines" onClick={() => setContext(settings.contextLines - 1)}>−</button>
+            <button type="button" className={stepper} aria-label={t("diffMerge.settings.fewer")} onClick={() => setContext(settings.contextLines - 1)}>−</button>
             <span data-testid="context-lines" className="w-7 border-x border-border text-center tabular-nums">{settings.contextLines}</span>
-            <button type="button" className={stepper} aria-label="More context lines" onClick={() => setContext(settings.contextLines + 1)}>+</button>
+            <button type="button" className={stepper} aria-label={t("diffMerge.settings.more")} onClick={() => setContext(settings.contextLines + 1)}>+</button>
           </div>
         </div>
-        <SwitchRow label="Wrap long lines" checked={settings.wrap} onChange={(wrap) => onChange({ wrap })} />
-        <SwitchRow label="Show whitespace" checked={settings.showWhitespace} onChange={(showWhitespace) => onChange({ showWhitespace })} />
-        <SwitchRow label="Ignore case" checked={settings.ignoreCase} onChange={(ignoreCase) => onChange({ ignoreCase })} />
-        <SwitchRow label="Detect language from content" checked={settings.detectLanguage} onChange={(detectLanguage) => onChange({ detectLanguage })} />
+        <SwitchRow label={t("diffMerge.settings.wrap")} checked={settings.wrap} onChange={(wrap) => onChange({ wrap })} />
+        <SwitchRow label={t("diffMerge.settings.showWhitespace")} checked={settings.showWhitespace} onChange={(showWhitespace) => onChange({ showWhitespace })} />
+        <SwitchRow label={t("diffMerge.settings.ignoreCase")} checked={settings.ignoreCase} onChange={(ignoreCase) => onChange({ ignoreCase })} />
+        <SwitchRow label={t("diffMerge.settings.detectLanguage")} checked={settings.detectLanguage} onChange={(detectLanguage) => onChange({ detectLanguage })} />
       </div>
       <div className="flex justify-end border-t px-2.5 py-2" style={{ borderColor: "hsl(var(--border) / .7)" }}>
-        <button type="button" className="toolbar-text-button" onClick={onReset}>Reset to defaults</button>
+        <button type="button" className="toolbar-text-button" onClick={onReset}>{t("diffMerge.settings.reset")}</button>
       </div>
     </>
   );
 }
 
-const SHORTCUTS: [string, string[]][] = [
-  ["Next difference", ["F7"]],
-  ["Previous difference", ["Shift+F7"]],
-  ["Push change to the right", ["Ctrl+Shift+→"]],
-  ["Push change to the left", ["Ctrl+Shift+←"]],
-  ["Swap sides", ["Ctrl+Shift+S"]],
-  ["Collapse unchanged lines", ["Ctrl+Shift+C"]],
-  ["Undo / redo", ["Ctrl+Z", "Ctrl+Shift+Z"]],
+const SHORTCUTS: [TKey, string[]][] = [
+  ["diffMerge.shortcuts.next", ["F7"]],
+  ["diffMerge.shortcuts.previous", ["Shift+F7"]],
+  ["diffMerge.shortcuts.pushRight", ["Ctrl+Shift+→"]],
+  ["diffMerge.shortcuts.pushLeft", ["Ctrl+Shift+←"]],
+  ["diffMerge.shortcuts.swap", ["Ctrl+Shift+S"]],
+  ["diffMerge.shortcuts.collapse", ["Ctrl+Shift+C"]],
+  ["diffMerge.shortcuts.undoRedo", ["Ctrl+Z", "Ctrl+Shift+Z"]],
 ];
 
-const TEXT_NOTE = "Click the change map on the right edge to jump to a change.";
+const TEXT_NOTE: TKey = "diffMerge.shortcuts.note";
 
-export function ShortcutsPanel({ items = SHORTCUTS, note = TEXT_NOTE }: { items?: [string, string[]][]; note?: string }) {
+export function ShortcutsPanel({ items = SHORTCUTS, note = TEXT_NOTE }: { items?: [TKey, string[]][]; note?: TKey }) {
+  const t = useT();
   return (
     <>
-      <div className="px-[14px] pb-1.5 pt-3 font-semibold">Keyboard shortcuts</div>
+      <div className="px-[14px] pb-1.5 pt-3 font-semibold">{t("diffMerge.shortcuts.title")}</div>
       <div className="grid items-center gap-x-4 gap-y-2 px-[14px] pb-3 pt-1.5" style={{ gridTemplateColumns: "1fr auto" }}>
         {items.map(([label, keys]) => (
           <div key={label} className="contents">
-            <span>{label}</span>
+            <span>{t(label)}</span>
             <span className="flex gap-1">
               {keys.map((key) => (
                 <kbd key={key} className="rounded-[5px] border border-input bg-muted px-[7px] py-0.5 font-sans">{key}</kbd>
@@ -166,7 +169,7 @@ export function ShortcutsPanel({ items = SHORTCUTS, note = TEXT_NOTE }: { items?
         ))}
       </div>
       <div className="border-t px-[14px] py-[9px] text-muted-foreground" style={{ borderColor: "hsl(var(--border) / .7)" }}>
-        {note}
+        {t(note)}
       </div>
     </>
   );

@@ -1,5 +1,6 @@
 import { LanguageDescription } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
+import { t } from "@/i18n";
 
 export function languageForFile(name: string): LanguageDescription | null {
   return LanguageDescription.matchFilename(languages, name);
@@ -29,7 +30,7 @@ export function detectLanguageName(text: string): string | null {
 }
 
 export function languageLabel(name: string | null): string {
-  return name ?? "Plain text";
+  return name ?? t("diffMerge.plainText");
 }
 
 /** True if the first 8,000 bytes contain a NUL byte. */

@@ -46,10 +46,13 @@ The official plugin repository, [`kinan9011/shard-plugins`](https://github.com/k
 | Call | Result |
 | --- | --- |
 | `connect(options?)` | The SDK object. `options`: `timeoutMs` (default 15000), `target` (default `window.parent`), `self` (default `window`). |
-| `sdk.ready()` | `{ pluginId, theme, visible }`. Call it first, and within 10 s of loading: a plugin that has not done the handshake by then gets the "This plugin stopped working" screen. The app sends theme and visibility updates only after it. |
+| `sdk.ready()` | `{ pluginId, theme, locale, visible }`. Call it first, and within 10 s of loading: a plugin that has not done the handshake by then gets the "This plugin stopped working" screen. The app sends theme and visibility updates only after it. |
 | `sdk.theme.get()` | The current `Theme`. |
 | `sdk.theme.onChange(callback)` | Calls `callback(theme)` when the app theme or color scheme changes. Returns a function that unsubscribes. |
+| `sdk.locale.get()` | The app language as `{ lang, dir }`: a BCP 47 tag such as `"de"` or `"zh-CN"`, and `"ltr"` or `"rtl"` (Arabic and Hebrew). No permission needed. |
+| `sdk.locale.onChange(callback)` | Calls `callback(locale)` when the user switches the app language. Returns a function that unsubscribes. Set `document.documentElement.lang` and `.dir` from it to follow the app. Text fields in your plugin should use `dir="auto"` so a user can still type in the other direction. |
 | `sdk.onVisibilityChange(callback)` | Calls `callback(true)` when the plugin's tab is shown and `callback(false)` when another tab covers it (the tab stays loaded). Pause timers and animations while hidden. Returns a function that unsubscribes. |
+| `sdk.onInput(callback)` | Calls `callback(text)` when the user sends text to your plugin from another tool ("Send to…") or from a paste suggestion. No permission needed: the user chose to hand it over. Text sent before your first `onInput` call (for example while the frame was loading) is held and given to that first callback, so register right after `await sdk.ready()`. Up to 1 MB. Returns a function that unsubscribes. |
 | `sdk.toast(message, kind?)` | Shows a notification in the app. `kind` is `info` (default), `success`, `warning` or `error`. The message is 1 to 500 characters, and the app shows your plugin's name next to it. |
 | `sdk.storage.get(key)` | The stored value, or `null`. |
 | `sdk.storage.set(key, value)` | Stores any JSON value except `null` and `undefined`. |

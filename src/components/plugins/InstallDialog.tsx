@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
 import { Archive, Check, Folder, Link, Puzzle, ShieldCheck, TriangleAlert, Upload, X } from "lucide-react";
+import { t, useT } from "@/i18n";
 import { useDialogFocus } from "@/components/app/useDialogFocus";
 import { getDesktopBridge } from "@/lib/desktop";
 import { isMobileApp } from "@/lib/platform";
@@ -61,6 +62,7 @@ function jobFor(candidate: Candidate, addRepo: boolean): InstallJob {
 
 /** Screen 06 A: a zip, a folder or a repository URL, checked before the permission dialog. */
 export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: InstallDialogProps) {
+  const t = useT();
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [url, setUrl] = useState("");
   const [addRepo, setAddRepo] = useState(true);
@@ -128,8 +130,8 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
     setDragging(false);
     if (allowOutside !== true || busy) return;
     const file = event.dataTransfer.files?.[0];
-    if (event.dataTransfer.items?.[0]?.webkitGetAsEntry?.()?.isDirectory) return setError("Folders can't be dropped here. Use Choose folder.");
-    if (!file || !/\.zip$/i.test(file.name)) return setError("Drop a plugin .zip file.");
+    if (event.dataTransfer.items?.[0]?.webkitGetAsEntry?.()?.isDirectory) return setError(t("plugins.installDialog.noFolderDrop"));
+    if (!file || !/\.zip$/i.test(file.name)) return setError(t("plugins.installDialog.dropZip"));
     // ponytail: this reads the whole zip into memory. Turn on native drag-drop (real paths, as on Linux) if big drops hurt on Windows or macOS.
     await inspect(
       async () => {
@@ -153,10 +155,10 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
         const { allowOutside: allowed, busy: working, takeZipPath: take } = latest.current;
         if (allowed !== true || working) return;
         const path = paths[0];
-        if (!path || !/\.zip$/i.test(path)) return setError("Drop a plugin .zip file.");
+        if (!path || !/\.zip$/i.test(path)) return setError(t("plugins.installDialog.dropZip"));
         void take(path);
       }),
-    [],
+    [t],
   );
 
   const lookUp = async (event: FormEvent) => {
@@ -194,19 +196,19 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
       <div ref={ref} role="dialog" aria-modal="true" aria-labelledby="install-dialog-title" className="modal-surface flex w-[560px] max-w-full flex-col" onMouseDown={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 px-5 pb-1 pt-[18px]">
           <div className="flex flex-col gap-0.5">
-            <h2 id="install-dialog-title" className="text-base font-semibold text-foreground">Install plugin</h2>
-            <p className="text-xs text-muted-foreground">From a zip file, a folder, or a GitHub repository URL.</p>
+            <h2 id="install-dialog-title" className="text-base font-semibold text-foreground">{t("plugins.installDialog.title")}</h2>
+            <p className="text-xs text-muted-foreground">{t("plugins.installDialog.subtitle")}</p>
           </div>
-          <button type="button" aria-label="Close" onClick={close} className="grid size-6 place-items-center rounded text-muted-foreground hover:text-foreground">
+          <button type="button" aria-label={t("common.close")} onClick={close} className="grid size-6 place-items-center rounded text-muted-foreground hover:text-foreground">
             <X size={16} aria-hidden="true" />
           </button>
         </div>
         <div className="flex max-h-[70vh] flex-col gap-3.5 overflow-y-auto px-5 py-3.5">
           {outsideOff && (
             <p role="note" className="rounded-lg bg-secondary p-3 text-xs text-foreground">
-              Installs from zip files, folders and URLs outside your repositories are turned off.{" "}
+              {t("plugins.installDialog.outsideOff")}{" "}
               <button type="button" onClick={onOpenRepositories} className="font-medium text-primary underline-offset-2 hover:underline">
-                Change this in Repositories
+                {t("plugins.installDialog.changeInRepositories")}
               </button>
             </p>
           )}
@@ -232,21 +234,21 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
                 )}
               >
                 <Upload size={20} aria-hidden="true" className="text-muted-foreground" />
-                <span className="font-medium text-foreground">Drop a plugin .zip or folder here</span>
+                <span className="font-medium text-foreground">{t("plugins.installDialog.dropHere")}</span>
                 <div className="flex gap-2">
                   <button type="button" disabled={outsideOff || !!busy} onClick={() => void chooseZip()} className={cn(buttonClass, "h-7")}>
                     <Archive size={14} aria-hidden="true" />
-                    Choose zip file
+                    {t("plugins.installDialog.chooseZip")}
                   </button>
                   <button type="button" disabled={outsideOff || !!busy} onClick={() => void chooseFolder()} className={cn(buttonClass, "h-7")}>
                     <Folder size={14} aria-hidden="true" />
-                    Choose folder
+                    {t("plugins.installDialog.chooseFolder")}
                   </button>
                 </div>
               </div>
               <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
                 <span className="h-px flex-1 bg-border" />
-                or from a repository URL
+                {t("plugins.installDialog.orUrl")}
                 <span className="h-px flex-1 bg-border" />
               </div>
             </>
@@ -267,13 +269,13 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
                   if (candidate?.kind === "url") setCandidate(null);
                 }}
                 placeholder="https://github.com/owner/repo"
-                aria-label="Repository URL"
+                aria-label={t("plugins.installDialog.urlLabel")}
                 spellCheck={false}
                 className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
               />
             </label>
             <button type="submit" disabled={!url.trim() || !!busy} className={cn(buttonClass, "h-[34px]")}>
-              {busy === "lookup" ? "Looking up…" : "Look up"}
+              {busy === "lookup" ? t("plugins.installDialog.lookingUp") : t("plugins.installDialog.lookUp")}
             </button>
           </form>
           {error && (
@@ -285,7 +287,7 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
         </div>
         <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
           <button type="button" onClick={close} className={cn(buttonClass, "h-[30px]")}>
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -296,9 +298,9 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
               handedOff.current = candidate.kind === "zip" && candidate.dropped;
               onContinue(jobFor(candidate, addRepo));
             }}
-            className="inline-flex h-[30px] items-center whitespace-nowrap rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            className="inline-flex h-[30px] items-center whitespace-nowrap rounded-md border border-primary-solid bg-primary-solid px-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
           >
-            Continue
+            {t("plugins.installDialog.continue")}
           </button>
         </div>
       </div>
@@ -309,7 +311,7 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
 function summary(candidate: Candidate): { manifest: Pick<PluginManifest, "name" | "version" | "runtime">; detail: string } {
   if (candidate.kind === "url") {
     const { preview } = candidate;
-    const from = preview.kind === "releases" ? `Latest GitHub release v${preview.version}` : `Listed in ${preview.repoName}`;
+    const from = preview.kind === "releases" ? t("plugins.installDialog.latestRelease", { version: preview.version }) : t("plugins.installDialog.listedIn", { name: preview.repoName });
     return { manifest: preview, detail: `${from} · ${formatSize(preview.size)} · ${RUNTIME_LABEL[preview.runtime]}` };
   }
   const { manifest } = candidate.preview;
@@ -317,6 +319,7 @@ function summary(candidate: Candidate): { manifest: Pick<PluginManifest, "name" 
 }
 
 function PreviewCard({ candidate, addRepo, onAddRepo, showCheckbox }: { candidate: Candidate; addRepo: boolean; onAddRepo: (value: boolean) => void; showCheckbox: boolean }) {
+  const t = useT();
   const { manifest, detail } = summary(candidate);
   const verified = candidate.kind === "url" ? candidate.preview.checksumMatches : null;
   return (
@@ -332,28 +335,28 @@ function PreviewCard({ candidate, addRepo, onAddRepo, showCheckbox }: { candidat
         {verified === true && (
           <span className="flex items-center gap-[5px] whitespace-nowrap text-xs text-success">
             <ShieldCheck size={14} aria-hidden="true" />
-            Checksum matches
+            {t("plugins.installDialog.checksumMatches")}
           </span>
         )}
         {verified === false && (
           <span className="flex items-center gap-[5px] whitespace-nowrap text-xs text-destructive">
             <TriangleAlert size={14} aria-hidden="true" />
-            Checksum doesn't match
+            {t("plugins.install.checksumTitle")}
           </span>
         )}
         {verified === null && (
           <span className="flex items-center gap-[5px] whitespace-nowrap text-xs text-warning">
             <TriangleAlert size={14} aria-hidden="true" />
-            Unverified
+            {t("plugins.installDialog.unverified")}
           </span>
         )}
       </div>
       {showCheckbox && (
-        <button type="button" role="checkbox" aria-checked={addRepo} onClick={() => onAddRepo(!addRepo)} className="flex items-center gap-2 text-left text-xs text-foreground">
-          <span aria-hidden="true" className={cn("grid size-4 shrink-0 place-items-center rounded border", addRepo ? "border-primary bg-primary text-primary-foreground" : "border-input")}>
+        <button type="button" role="checkbox" aria-checked={addRepo} onClick={() => onAddRepo(!addRepo)} className="flex items-center gap-2 text-start text-xs text-foreground">
+          <span aria-hidden="true" className={cn("grid size-4 shrink-0 place-items-center rounded border", addRepo ? "border-primary-solid bg-primary-solid text-primary-solid-foreground" : "border-input")}>
             {addRepo && <Check size={11} strokeWidth={3} />}
           </span>
-          Add this repository so the plugin gets updates
+          {t("plugins.installDialog.addRepository")}
         </button>
       )}
     </div>

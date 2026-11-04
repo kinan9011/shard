@@ -49,7 +49,10 @@ function connect(options = {}) {
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const pending = /* @__PURE__ */ new Map();
   const listeners = /* @__PURE__ */ new Set();
+  const localeListeners = /* @__PURE__ */ new Set();
   const visibilityListeners = /* @__PURE__ */ new Set();
+  const inputListeners = /* @__PURE__ */ new Set();
+  let heldInput = null;
   self.addEventListener("error", (event) => {
     target.postMessage({ v: PROTOCOL_VERSION, event: "error", message: String(event.message || event.error || "Unknown error").slice(0, 500) }, "*");
   });
@@ -62,6 +65,16 @@ function connect(options = {}) {
     if (event.source !== target) return;
     const data = event.data;
     if (!data || typeof data !== "object" || data.v !== PROTOCOL_VERSION) return;
+    if (data.event === "locale") {
+      for (const listener of [...localeListeners]) {
+        try {
+          listener(data.data);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+      return;
+    }
     if (data.event === "theme") {
       for (const listener of [...listeners]) {
         try {
@@ -76,6 +89,22 @@ function connect(options = {}) {
       for (const listener of [...visibilityListeners]) {
         try {
           listener(Boolean(data.data?.visible));
+        } catch (error) {
+          console.error(error);
+        }
+      }
+      return;
+    }
+    if (data.event === "input") {
+      const text = data.data?.text;
+      if (typeof text !== "string") return;
+      if (inputListeners.size === 0) {
+        heldInput = text;
+        return;
+      }
+      for (const listener of [...inputListeners]) {
+        try {
+          listener(text);
         } catch (error) {
           console.error(error);
         }
@@ -114,10 +143,36 @@ function connect(options = {}) {
         };
       }
     },
+    locale: {
+      get: () => call("locale.get"),
+      onChange(callback) {
+        localeListeners.add(callback);
+        return () => {
+          localeListeners.delete(callback);
+        };
+      }
+    },
     onVisibilityChange(callback) {
       visibilityListeners.add(callback);
       return () => {
         visibilityListeners.delete(callback);
+      };
+    },
+    onInput(callback) {
+      inputListeners.add(callback);
+      if (heldInput !== null) {
+        const text = heldInput;
+        heldInput = null;
+        queueMicrotask(() => {
+          try {
+            callback(text);
+          } catch (error) {
+            console.error(error);
+          }
+        });
+      }
+      return () => {
+        inputListeners.delete(callback);
       };
     },
     toast: (message, kind = "info") => call("toast", { message, kind }),
@@ -126,7 +181,7 @@ function connect(options = {}) {
       writeText: (text) => call("clipboard.writeText", { text })
     },
     files: {
-      open: (options2 = {}) => call("files.open", { accept: options2.accept, as: options2.as ?? "text" }, null),
+      open: ((options2 = {}) => call("files.open", { accept: options2.accept, as: options2.as ?? "text" }, null)),
       save: (name, data) => call("files.save", { name, data }, null)
     },
     net: {

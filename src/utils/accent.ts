@@ -1,16 +1,17 @@
+import type { TKey } from "@/i18n";
 import { contrastRatio, hslToRgb } from "./theme-colors";
 
 export const ACCENT_STORAGE_KEY = "shard-accent";
 
 /** Accent colors: a hue and saturation. The lightness is chosen per mode so the accent reads on that mode's background. */
 export const ACCENTS = [
-  { id: "blue", name: "Blue", hue: 213, saturation: 77 },
-  { id: "teal", name: "Teal", hue: 174, saturation: 70 },
-  { id: "green", name: "Green", hue: 142, saturation: 60 },
-  { id: "orange", name: "Orange", hue: 24, saturation: 90 },
-  { id: "pink", name: "Pink", hue: 330, saturation: 75 },
-  { id: "purple", name: "Purple", hue: 270, saturation: 65 },
-] as const;
+  { id: "blue", name: "Blue", nameKey: "settings.accent.blue", hue: 213, saturation: 77 },
+  { id: "teal", name: "Teal", nameKey: "settings.accent.teal", hue: 174, saturation: 70 },
+  { id: "green", name: "Green", nameKey: "settings.accent.green", hue: 142, saturation: 60 },
+  { id: "orange", name: "Orange", nameKey: "settings.accent.orange", hue: 24, saturation: 90 },
+  { id: "pink", name: "Pink", nameKey: "settings.accent.pink", hue: 330, saturation: 75 },
+  { id: "purple", name: "Purple", nameKey: "settings.accent.purple", hue: 270, saturation: 65 },
+] as const satisfies readonly { id: string; name: string; nameKey: TKey; hue: number; saturation: number }[];
 
 export type AccentId = (typeof ACCENTS)[number]["id"];
 
@@ -30,7 +31,11 @@ function tokens(hue: number, saturation: number, dark: boolean): string {
   // Text on the accent: white when it holds 4.5:1, else near black.
   const foreground = contrastRatio(rgb, [255, 255, 255]) >= 4.5 ? "0 0% 100%" : "0 0% 6%";
   const color = `${hue} ${saturation}% ${lightness}%`;
-  return `--primary:${color};--primary-foreground:${foreground};--ring:${color};--sidebar-primary:${color};--sidebar-primary-foreground:${foreground};--sidebar-ring:${color}`;
+  // The fill under white text: dark mode needs a deeper step than the text accent, light mode uses the same one.
+  const solidLightness = dark ? 52 : 42;
+  const solid = `${hue} ${saturation}% ${solidLightness}%`;
+  const solidForeground = contrastRatio(hslToRgb(hue, saturation, solidLightness), [255, 255, 255]) >= 4.5 ? "0 0% 100%" : "0 0% 6%";
+  return `--primary:${color};--primary-foreground:${foreground};--primary-solid:${solid};--primary-solid-foreground:${solidForeground};--ring:${color};--sidebar-primary:${color};--sidebar-primary-foreground:${foreground};--sidebar-ring:${color}`;
 }
 
 /**

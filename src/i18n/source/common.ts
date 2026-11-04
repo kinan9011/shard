@@ -1,0 +1,20 @@
+// Strings shared by many components.
+export default {
+  "common.cancel": "Cancel",
+  "common.close": "Close",
+  "common.copy": "Copy",
+  "common.copied": "Copied",
+  "common.clear": "Clear",
+  "common.paste": "Paste",
+  "common.save": "Save",
+  "common.delete": "Delete",
+  "common.search": "Search",
+  "common.ok": "OK",
+  "language.label": "Language",
+  "language.hint": "The language of the app. Arabic and Hebrew read right to left.",
+  "language.system": "System default",
+  "dir.toggle": "Text direction: {mode}",
+  "dir.auto": "Auto",
+  "dir.ltr": "Left to right",
+  "dir.rtl": "Right to left",
+} as const;

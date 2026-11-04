@@ -13,12 +13,22 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock("@/plugins/api", () => api);
 
+const desktopMock = vi.hoisted(() => ({ reset: null as null | (() => Promise<boolean>), close: vi.fn(async () => {}) }));
+vi.mock("@/lib/desktop", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/lib/desktop")>();
+  return { ...real, resetAppData: () => (desktopMock.reset ? desktopMock.reset() : real.resetAppData()), closeAfterReset: desktopMock.close };
+});
+
 import Shard from "@/app/Shard";
 import { resetPlugins } from "@/plugins/usePlugins";
 
 const main = () => screen.getByRole("main");
 const sidebar = () => screen.getByRole("navigation", { name: "Tools" });
 const categoryButtons = () => within(sidebar()).getAllByRole("button", { expanded: false }).concat(within(sidebar()).queryAllByRole("button", { expanded: true }));
+const openAppearance = () => {
+  openSettings();
+  fireEvent.click(settingsNav().getByRole("button", { name: "Appearance" }));
+};
 const openSettings = () => fireEvent.click(screen.getByRole("button", { name: "Settings" }));
 const settingsNav = () => within(screen.getByRole("navigation", { name: "Settings sections" }));
 
@@ -46,16 +56,15 @@ afterEach(() => {
 });
 
 describe("Settings page", () => {
-  it("opens from the sidebar on Appearance with the six sections", async () => {
+  it("opens from the sidebar on General with the six sections", async () => {
     render(<Shard />);
     openSettings();
 
-    expect(within(main()).getByRole("heading", { name: "Appearance" })).toBeInTheDocument();
-    expect(within(main()).getByText("Changes apply right away.")).toBeInTheDocument();
+    expect(within(main()).getByRole("heading", { name: "General" })).toBeInTheDocument();
     for (const name of ["General", "Appearance", "Built-in tools", "Plugins", "Shortcuts", "About"]) {
       expect(settingsNav().getByRole("button", { name })).toBeInTheDocument();
     }
-    expect(settingsNav().getByRole("button", { name: "Appearance" })).toHaveAttribute("aria-current", "page");
+    expect(settingsNav().getByRole("button", { name: "General" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("button", { name: "Settings" })).toHaveAttribute("aria-current", "page");
     // The Shortcuts dialog is no longer what Settings opens.
     expect(screen.queryByRole("dialog", { name: "Shortcut Settings" })).not.toBeInTheDocument();
@@ -72,7 +81,7 @@ describe("Settings page", () => {
 
   it("shows both layout cards, Sidebar selected by default", () => {
     render(<Shard />);
-    openSettings();
+    openAppearance();
     const sidebarCard = within(main()).getByRole("radio", { name: /^Sidebar/ });
     const launcher = within(main()).getByRole("radio", { name: /^Launcher/ });
     expect(sidebarCard).toBeChecked();
@@ -84,7 +93,7 @@ describe("Settings page", () => {
 
   it("applies and stores the theme right away", async () => {
     render(<Shard />);
-    openSettings();
+    openAppearance();
     const theme = within(within(main()).getByRole("group", { name: "Theme" }));
     expect(theme.getByRole("button", { name: "System" })).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(theme.getByRole("button", { name: "Dark" }));
@@ -99,7 +108,7 @@ describe("Accent color", () => {
 
   it("applies an accent over the scheme, stores it, and goes back to the scheme's own", async () => {
     render(<Shard />);
-    openSettings();
+    openAppearance();
     const accent = within(within(main()).getByRole("group", { name: "Accent color" }));
     expect(accent.getByRole("button", { name: "Scheme" })).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(accent.getByRole("button", { name: "Orange" }));
@@ -153,6 +162,23 @@ describe("Settings sections", () => {
     vi.unstubAllGlobals();
   });
 
+  it("on a desktop, a reset says Shard will close and closes it only when asked", async () => {
+    desktopMock.reset = async () => true;
+    desktopMock.close.mockClear();
+    render(<Shard />);
+    openSection("General");
+    fireEvent.click(within(main()).getByRole("button", { name: "Reset…" }));
+    fireEvent.click(within(main()).getByRole("button", { name: "Remove all data" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "Shard was reset" });
+    expect(within(dialog).getByText(/Shard will close now/)).toBeInTheDocument();
+    expect(desktopMock.close).not.toHaveBeenCalled();
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(screen.getByRole("alertdialog", { name: "Shard was reset" })).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close Shard" }));
+    expect(desktopMock.close).toHaveBeenCalledOnce();
+    desktopMock.reset = null;
+  });
+
   it("lists the shortcuts with their keys", () => {
     render(<Shard />);
     openSection("Shortcuts");
@@ -197,7 +223,7 @@ describe("Sidebar categories setting", () => {
     expect(total).toBeGreaterThan(1);
     expect(within(sidebar()).queryAllByRole("button", { expanded: true })).toHaveLength(0);
 
-    openSettings();
+    openAppearance();
     const group = within(within(main()).getByRole("group", { name: "Sidebar categories" }));
     expect(group.getByRole("button", { name: "Remember" })).toHaveAttribute("aria-pressed", "true");
 
@@ -243,7 +269,7 @@ describe("Open tools in setting", () => {
 
   it("replaces the current tab when set to Current tab", async () => {
     render(<Shard />);
-    openSettings();
+    openAppearance();
     const group = within(within(main()).getByRole("group", { name: "Open tools in" }));
     expect(group.getByRole("button", { name: "New tab" })).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(group.getByRole("button", { name: "Current tab" }));

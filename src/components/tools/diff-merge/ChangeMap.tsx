@@ -1,4 +1,5 @@
 import type { MouseEvent } from "react";
+import { useT } from "@/i18n";
 import { mapTicks } from "@/utils/diff-merge/geometry";
 import { KIND_VAR } from "./editor";
 import type { DiffEditors } from "./useDiffEditors";
@@ -15,6 +16,7 @@ interface Props {
 
 /** The 14px strip beside the panes: one tick per change and a thumb for B's viewport. */
 export function ChangeMap({ editors, current, onGoTo, ticks: ownTicks }: Props) {
+  const t = useT();
   const b = editors.b;
   useGeometryTick(b);
   const ticks = ownTicks ?? mapTicks(editors.blocks, b?.state.doc.lines ?? 1);
@@ -33,7 +35,7 @@ export function ChangeMap({ editors, current, onGoTo, ticks: ownTicks }: Props) 
   };
 
   return (
-    <div title="Change map" className="absolute inset-0" onClick={scrollTo}>
+    <div title={t("diffMerge.changeMap")} className="absolute inset-0" onClick={scrollTo}>
       <div
         className="absolute rounded-[3px]"
         style={{ left: 1, right: 1, top: `${thumb.top}%`, height: `${thumb.height}%`, background: "hsl(var(--foreground) / .07)" }}
@@ -42,7 +44,7 @@ export function ChangeMap({ editors, current, onGoTo, ticks: ownTicks }: Props) 
         <button
           key={tick.index}
           type="button"
-          aria-label={`Go to change ${tick.index + 1}`}
+          aria-label={t("diffMerge.goToChange", { n: tick.index + 1 })}
           className="absolute rounded-[1px] p-0"
           style={{
             left: 3,

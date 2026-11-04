@@ -33,6 +33,18 @@ checked. Wave 5 of the plugin shell plan is a gate: later waves build on this re
     compiled `WebAssembly.Module` (the `hash-wasm` example does) or absolute URLs.
 - Network access from the frame is blocked by `connect-src` (no external `fetch`). Plugin network
   access is a host call checked against the `network` permission (W7).
+- **The app language needs no permission.** The handshake and the `locale` event carry `{ lang, dir }` (`localeSnapshot`
+  in `src/plugins/bridge.ts`, read with `sdk.locale`). It is the interface language the user picked, like the theme,
+  and holds no personal data.
+- **"Send to…" input needs no permission.** The host can push text into a frame (`sendInputToPlugin` in
+  `src/plugins/bridge.ts`, received by `sdk.onInput`). This is the one host-to-plugin message that carries
+  user data, so it is narrow on purpose:
+  - Only the user starts it, by choosing a plugin in the Send to… menu or a paste suggestion. A plugin cannot
+    ask for input, and cannot read anything it was not sent.
+  - The target is the plugin id the host chose, delivered to that plugin's own frame window. It is never taken
+    from a message.
+  - Text is capped at 1,048,576 characters. For a frame that is not ready yet it is held in memory for 30 s at most and handed
+    over at the handshake, once. It is never written to disk.
 
 ## Why the frame cannot reach Tauri IPC
 

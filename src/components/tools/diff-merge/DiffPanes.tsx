@@ -15,7 +15,8 @@ import type { Text } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { languages } from "@codemirror/language-data";
 import { toast } from "sonner";
-import { readClipboardText, saveFile } from "@/lib/desktop";
+import { useT, type TKey } from "@/i18n";
+import { getDesktopBridge, readClipboardText, readTextFile, saveFile } from "@/lib/desktop";
 import { blockReplacement, type Direction } from "@/utils/diff-merge/apply";
 import { joinEol, splitEol, type Eol } from "@/utils/diff-merge/blocks";
 import { GUTTER_WIDTH, collapsedRuns, mapPixel } from "@/utils/diff-merge/geometry";
@@ -58,10 +59,11 @@ export interface PaneMeta { name: string; eol: Eol; language: string | null }
 type Meta = PaneMeta;
 type Side = "a" | "b";
 const SIDES: readonly Side[] = ["a", "b"];
-const LABEL = { a: "Original", b: "Modified" } as const;
+const LABEL: Record<Side, TKey> = { a: "diffMerge.original", b: "diffMerge.modified" };
+/** File names offered by Save when a side has no name. They are file names, not interface text. */
+const DEFAULT_FILE = { a: "original.txt", b: "modified.txt" } as const;
 /** How much of a document is looked at to guess its language (a whole 1 MB JSON still parses; a bigger paste is cut). */
 const SNIFF_CHARS = 1_000_000;
-const NOT_UTF8 = "This file is not UTF-8 text.";
 const SPLIT_MIN = 0.15;
 const SPLIT_MAX = 0.85;
 /** Width of the change map column on the right edge. */
@@ -97,6 +99,7 @@ function replaceDoc(view: EditorView, text: string) {
 }
 
 export const DiffPanes = forwardRef<DiffPanesHandle, Props>(function DiffPanes(props, ref) {
+  const t = useT();
   const { settings, current, onCurrentChange, onApplied, onStateChange, onMetaChange, headerHeight = 38, showHeaders = true, initial } = props;
   const rootRef = useRef<HTMLDivElement>(null);
   const hostA = useRef<HTMLDivElement>(null);
@@ -273,24 +276,53 @@ export const DiffPanes = forwardRef<DiffPanesHandle, Props>(function DiffPanes(p
     setExpanded((prev) => (prev.size ? new Set() : prev));
   }, []);
 
+  const loadText = useCallback(
+    (side: Side, text: string, name: string) => {
+      const { text: normal, eol } = splitEol(text);
+      const language = fileLanguage(name);
+      setSide(side, { text: normal, meta: { name, eol, language }, lock: language !== null });
+    },
+    [setSide],
+  );
+
   const loadFile = useCallback(
     async (side: Side, file: File) => {
       let text: string | null = null;
       try {
         text = decodeText(await readBytes(file));
       } catch {
-        toast.error("Could not read the file. Choose it again.");
+        toast.error(t("diffMerge.error.readFile"));
         return;
       }
       if (text === null) {
-        toast.error(NOT_UTF8);
+        toast.error(t("diffMerge.error.notUtf8"));
         return;
       }
-      const { text: normal, eol } = splitEol(text);
-      const language = fileLanguage(file.name);
-      setSide(side, { text: normal, meta: { name: file.name, eol, language }, lock: language !== null });
+      loadText(side, text, file.name);
     },
-    [setSide],
+    [loadText, t],
+  );
+
+  // Linux takes file drops natively and the page gets no File, so a drop arrives as paths and the point it landed on.
+  // The app reads the file (text only, up to 5 MiB) and words its own refusal.
+  // ponytail: Linux paths only, because the bridge offers onFileDrop on Linux alone. Only the first file is used, as with a browser drop.
+  useEffect(
+    () =>
+      getDesktopBridge()?.onFileDrop?.((paths, x, y) => {
+        const target = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-drop-side]");
+        const side = target?.dataset.dropSide;
+        const path = paths[0];
+        if (!path || (side !== "a" && side !== "b")) return;
+        // Another Diff & Merge on the page, or none: not ours.
+        if ((side === "a" ? hostA : hostB).current?.parentElement !== target) return;
+        const slash = path.lastIndexOf("/");
+        const name = path.slice(slash + 1);
+        readTextFile(slash > 0 ? path.slice(0, slash) : "/", name).then(
+          (text) => loadText(side, text, name),
+          (error) => toast.error(String(error)),
+        );
+      }),
+    [loadText],
   );
 
   const paste = useCallback(
@@ -299,23 +331,23 @@ export const DiffPanes = forwardRef<DiffPanesHandle, Props>(function DiffPanes(p
         const { text, eol } = splitEol(await readClipboardText());
         setSide(side, { text, meta: { eol } });
       } catch {
-        toast.error("Could not read the clipboard. Press Ctrl+V in the editor instead.");
+        toast.error(t("diffMerge.error.clipboard"));
       }
     },
-    [setSide],
+    [setSide, t],
   );
 
   const save = useCallback(async (side: Side) => {
     const { editors: e, meta: m } = latest.current;
     const view = e[side];
     if (!view) return;
-    const name = m[side].name || `${LABEL[side].toLowerCase()}.txt`;
+    const name = m[side].name || DEFAULT_FILE[side];
     try {
       await saveFile(new Blob([joinEol(view.state.doc.toString(), m[side].eol)]), name);
     } catch {
-      toast.error("Could not save the file.");
+      toast.error(t("diffMerge.saveFailed"));
     }
-  }, []);
+  }, [t]);
 
   const apply = useCallback(
     (index: number, dir: Direction, mode: "replace" | "append") => {
@@ -365,7 +397,7 @@ export const DiffPanes = forwardRef<DiffPanesHandle, Props>(function DiffPanes(p
   );
 
   const openFile = useCallback((side: Side) => {
-    rootRef.current?.querySelector<HTMLInputElement>(`input[type="file"][aria-label="Open file into ${LABEL[side]}"]`)?.click();
+    rootRef.current?.querySelector<HTMLInputElement>(`input[type="file"][data-open-side="${side}"]`)?.click();
   }, []);
 
   useImperativeHandle(ref, () => ({ editors, apply, goTo, setDocs, getDocs, openFile }), [editors, apply, goTo, setDocs, getDocs, openFile]);
@@ -407,7 +439,7 @@ export const DiffPanes = forwardRef<DiffPanesHandle, Props>(function DiffPanes(p
   const header = (side: Side) => (
     <PaneHeader
       side={side}
-      label={LABEL[side]}
+      label={t(LABEL[side])}
       name={meta[side].name}
       language={meta[side].language}
       lineCount={counts[side] === 0 ? null : counts[side]}
@@ -435,9 +467,9 @@ export const DiffPanes = forwardRef<DiffPanesHandle, Props>(function DiffPanes(p
           <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
           <path d="M14 2v4a2 2 0 0 0 2 2h4" />
         </svg>
-        <p className="m-0 text-[13px] font-medium text-foreground">Paste text or drop a file</p>
+        <p className="m-0 text-[13px] font-medium text-foreground">{t("diffMerge.overlay.title")}</p>
         <span className="text-xs">
-          {side === "a" ? "Ctrl+V to paste, Ctrl+O to open a file" : "Differences appear as soon as both sides have text"}
+          {side === "a" ? t("diffMerge.overlay.left") : t("diffMerge.overlay.right")}
         </span>
       </div>
     );
@@ -477,6 +509,8 @@ export const DiffPanes = forwardRef<DiffPanesHandle, Props>(function DiffPanes(p
   const pane = (side: Side, host: typeof hostA) => (
     <div
       data-testid={`pane-${side}`}
+      data-drop-zone
+      data-drop-side={side}
       className="relative min-w-0 overflow-hidden"
       style={dragging === side ? { outline: "2px dashed hsl(var(--ring))", outlineOffset: -2 } : undefined}
       {...dropProps(side)}
@@ -502,12 +536,12 @@ export const DiffPanes = forwardRef<DiffPanesHandle, Props>(function DiffPanes(p
           <div
             role="separator"
             aria-orientation="vertical"
-            aria-label="Resize left and right side"
+            aria-label={t("diffMerge.resize")}
             aria-valuemin={SPLIT_MIN * 100}
             aria-valuemax={SPLIT_MAX * 100}
             aria-valuenow={Math.round(split * 100)}
             tabIndex={0}
-            title="Drag to resize, double-click to reset"
+            title={t("diffMerge.resizeHint")}
             className="cursor-col-resize touch-none outline-none focus-visible:ring-1 focus-visible:ring-ring"
             style={{ background: "hsl(var(--muted) / .35)", borderBottom: "1px solid hsl(var(--border) / .5)", borderLeft: border60, borderRight: border60 }}
             onKeyDown={onSplitKey}

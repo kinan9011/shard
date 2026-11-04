@@ -1,4 +1,5 @@
 import { useRef, useState, type ChangeEvent } from "react";
+import { useT } from "@/i18n";
 import { CopyButton } from "../CopyButton";
 import { LanguagePicker } from "./LanguagePicker";
 
@@ -21,6 +22,7 @@ export interface PaneHeaderProps {
 }
 
 export function PaneHeader(props: PaneHeaderProps) {
+  const t = useT();
   const { side, label, name, language, lineCount, focused, copyValue } = props;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -45,14 +47,14 @@ export function PaneHeader(props: PaneHeaderProps) {
 
   return (
     <div
-      className="relative flex min-w-0 items-center justify-between gap-3 py-0 pl-[10px] pr-3 text-xs font-medium"
+      className="relative flex min-w-0 items-center justify-between gap-3 py-0 ps-[10px] pe-3 text-xs font-medium"
       style={{ background: "hsl(var(--muted) / .35)", borderBottom: "1px solid hsl(var(--border) / .5)" }}
     >
       <div className="flex min-w-0 items-center gap-2">
         {editing ? (
           <input
             autoFocus
-            aria-label={`Name of ${title}`}
+            aria-label={t("diffMerge.pane.nameOf", { title })}
             value={draft}
             className="h-6 w-40 rounded-[5px] border border-input bg-background px-1.5 text-xs"
             onChange={(e) => setDraft(e.target.value)}
@@ -68,7 +70,7 @@ export function PaneHeader(props: PaneHeaderProps) {
         ) : (
           <button
             type="button"
-            title="Rename"
+            title={t("diffMerge.pane.rename")}
             className="truncate whitespace-nowrap rounded-[5px] border border-transparent px-1.5 py-0.5 hover:border-border"
             onClick={() => {
               setDraft(name);
@@ -79,18 +81,18 @@ export function PaneHeader(props: PaneHeaderProps) {
             {name || label}
           </button>
         )}
-        <LanguagePicker value={language} label={`Language of ${title}`} onChange={props.onLanguage} />
-        {filled && <span className="whitespace-nowrap font-normal text-muted-foreground">{lineCount} lines</span>}
+        <LanguagePicker value={language} label={t("diffMerge.pane.languageOf", { title })} onChange={props.onLanguage} />
+        {filled && <span className="whitespace-nowrap font-normal text-muted-foreground">{t("diffMerge.pane.lines", { count: lineCount })}</span>}
       </div>
       <div className="flex items-center gap-0.5 font-normal">
-        <button type="button" className="toolbar-text-button" onClick={() => fileInput.current?.click()}>Open</button>
-        <input ref={fileInput} type="file" hidden aria-label={`Open file into ${title}`} onChange={onPick} />
-        <button type="button" className="toolbar-text-button" onClick={props.onPaste}>Paste</button>
+        <button type="button" className="toolbar-text-button" onClick={() => fileInput.current?.click()}>{t("diffMerge.pane.open")}</button>
+        <input ref={fileInput} type="file" hidden data-open-side={side} aria-label={t("diffMerge.pane.openInto", { title })} onChange={onPick} />
+        <button type="button" className="toolbar-text-button" onClick={props.onPaste}>{t("common.paste")}</button>
         {filled && (
           <>
-            <button type="button" className="toolbar-text-button" onClick={props.onClear}>Clear</button>
-            <CopyButton value={copyValue} label="Copy" ariaLabel={`Copy ${title}`} />
-            <button type="button" className="toolbar-text-button" aria-label={`Save ${title}`} onClick={props.onSave}>Save</button>
+            <button type="button" className="toolbar-text-button" onClick={props.onClear}>{t("common.clear")}</button>
+            <CopyButton value={copyValue} label={t("common.copy")} ariaLabel={t("diffMerge.pane.copy", { title })} />
+            <button type="button" className="toolbar-text-button" aria-label={t("diffMerge.pane.save", { title })} onClick={props.onSave}>{t("common.save")}</button>
           </>
         )}
       </div>

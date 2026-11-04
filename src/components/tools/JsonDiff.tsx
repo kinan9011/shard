@@ -1,5 +1,6 @@
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useMemo, useState } from "react";
+import { usePersistedInput } from "@/hooks/usePersistedInput";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { ArrowUpDown, GitCompare } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,9 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToolFaqSection, type ToolFaqItem } from "@/components/tools/ToolFaq";
 import { CopyButton } from "@/components/tools/CopyButton";
+import { SendToMenu } from "@/components/tools/SendToMenu";
 import { CodeTextarea, EditorPane, PaneEmpty, ToolWorkspace } from "@/components/tools/ToolWorkspace";
+import { t as translate, useLocale, useT, type TKey } from "@/i18n";
 import {
   diffJson,
   formatChanges,
@@ -20,34 +23,14 @@ import {
   type JsonChange,
 } from "@/utils/json-diff";
 
-const FAQ_ITEMS: ToolFaqItem[] = [
-  {
-    q: "How is this different from Text Compare?",
-    a: "Text Compare compares lines. JSON Diff reads both documents and compares the values. The tool ignores key order, indentation, and line breaks. Each change shows the path to the value, such as `$.users[2].email`.",
-  },
-  {
-    q: "How do I compare arrays that changed order?",
-    a: "Select By key and type the id field, such as `id`. Items with the same id are compared, at any position. Each item must have a unique id. If not, the tool compares that array by index. For arrays of strings or numbers, turn on Ignore order.",
-  },
-  {
-    q: "Which input can I paste?",
-    a: "Paste JSON, JSON5, NDJSON, or a Python, Ruby, or JavaScript data literal. Text that is not JSON is read as YAML. Large integers stay exact, so 12345678901234567890 and 12345678901234567891 are different.",
-  },
-  {
-    q: "How do I use the JSON Patch?",
-    a: "Click Copy JSON Patch to get RFC 6902 operations. Apply them in order to the original to get the modified document. In By key mode, the patch adds new items at the end of the array and does not move items.",
-  },
-  {
-    q: "Is a number the same as the same number in a string?",
-    a: "No. The tool compares types. `1` and `\"1\"` show as a type change. `1.0` and `1` are the same number.",
-  },
-];
+const FAQ_KEYS = ["textCompare", "arrays", "input", "patch", "types"] as const;
+const faqItems = (): ToolFaqItem[] => FAQ_KEYS.map((key) => ({ q: translate(`jsonDiff.faq.${key}.q`), a: translate(`jsonDiff.faq.${key}.a`) }));
 
-const KINDS: { kind: ChangeKind; label: string; marker: string; className: string }[] = [
-  { kind: "added", label: "Added", marker: "+", className: "text-success" },
-  { kind: "removed", label: "Removed", marker: "-", className: "text-destructive" },
-  { kind: "changed", label: "Changed", marker: "~", className: "text-warning" },
-  { kind: "type", label: "Type changed", marker: "!", className: "text-warning" },
+const KINDS: { kind: ChangeKind; label: TKey; marker: string; className: string }[] = [
+  { kind: "added", label: "jsonDiff.kind.added", marker: "+", className: "text-success" },
+  { kind: "removed", label: "jsonDiff.kind.removed", marker: "-", className: "text-destructive" },
+  { kind: "changed", label: "jsonDiff.kind.changed", marker: "~", className: "text-warning" },
+  { kind: "type", label: "jsonDiff.kind.type", marker: "!", className: "text-warning" },
 ];
 const KIND_STYLE = Object.fromEntries(KINDS.map((entry) => [entry.kind, entry])) as Record<ChangeKind, (typeof KINDS)[number]>;
 
@@ -56,13 +39,12 @@ const MAX_ROWS = 1000;
 
 type Filter = ChangeKind | "all";
 
-const plural = (count: number, word: string) => `${count.toLocaleString()} ${word}${count === 1 ? "" : "s"}`;
-
 function ChangeRow({ change }: { change: JsonChange }) {
+  const t = useT();
   const style = KIND_STYLE[change.kind];
   return (
     <li className="grid grid-cols-[1.25rem_1fr] gap-x-2 border-b border-border/50 px-4 py-2 font-mono text-xs leading-[18px]" data-kind={change.kind}>
-      <span className={`select-none font-semibold ${style.className}`} aria-label={style.label}>{style.marker}</span>
+      <span className={`select-none font-semibold ${style.className}`} aria-label={t(style.label)}>{style.marker}</span>
       <span className="min-w-0 break-all text-foreground">{change.path}</span>
       <span aria-hidden="true" />
       <span className="min-w-0 break-all">
@@ -85,8 +67,10 @@ function ChangeRow({ change }: { change: JsonChange }) {
 }
 
 export function JsonDiff() {
-  const [left, setLeft] = useState("");
-  const [right, setRight] = useState("");
+  const t = useT();
+  const { locale } = useLocale();
+  const [left, setLeft] = usePersistedInput("json-diff-left");
+  const [right, setRight] = usePersistedInput("json-diff-right");
   const [arrayMode, setArrayMode] = useState<ArrayMode>("index");
   const [matchKey, setMatchKey] = useState("id");
   const [ignoreOrder, setIgnoreOrder] = useState(false);
@@ -97,8 +81,10 @@ export function JsonDiff() {
   const rightText = useDebouncedValue(right);
   const keyText = useDebouncedValue(matchKey);
 
-  const leftSide = useMemo(() => (leftText.trim() ? parseSide(leftText) : undefined), [leftText]);
-  const rightSide = useMemo(() => (rightText.trim() ? parseSide(rightText) : undefined), [rightText]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `locale` re-runs this so its messages follow the language
+  const leftSide = useMemo(() => (leftText.trim() ? parseSide(leftText) : undefined), [leftText, locale]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `locale` re-runs this so its messages follow the language
+  const rightSide = useMemo(() => (rightText.trim() ? parseSide(rightText) : undefined), [rightText, locale]);
   const result = useMemo(
     () =>
       leftSide?.ok && rightSide?.ok
@@ -117,14 +103,14 @@ export function JsonDiff() {
   };
 
   const errors: string[] = [];
-  if (leftSide && "error" in leftSide) errors.push(`Original: ${leftSide.error}`);
-  if (rightSide && "error" in rightSide) errors.push(`Modified: ${rightSide.error}`);
+  if (leftSide && "error" in leftSide) errors.push(t("jsonDiff.error.original", { message: leftSide.error }));
+  if (rightSide && "error" in rightSide) errors.push(t("jsonDiff.error.modified", { message: rightSide.error }));
   const notices: string[] = [];
-  if (leftSide?.ok && leftSide.notice) notices.push(`Original: ${leftSide.notice}`);
-  if (rightSide?.ok && rightSide.notice) notices.push(`Modified: ${rightSide.notice}`);
+  if (leftSide?.ok && leftSide.notice) notices.push(t("jsonDiff.notice.original", { message: leftSide.notice }));
+  if (rightSide?.ok && rightSide.notice) notices.push(t("jsonDiff.notice.modified", { message: rightSide.notice }));
   if (result && result.keyFallbacks > 0) {
     const key = keyText.trim() || "id";
-    notices.push(`${plural(result.keyFallbacks, "array")} of objects compared by index. Each item must have a unique "${key}" value.`);
+    notices.push(t("jsonDiff.notice.keyFallback", { count: result.keyFallbacks, formatted: result.keyFallbacks.toLocaleString(), key }));
   }
 
   const notice = (
@@ -149,7 +135,7 @@ export function JsonDiff() {
       title={title}
       htmlFor={id}
       scroll={false}
-      actions={value ? <button type="button" className="toolbar-text-button" onClick={() => onChange("")}>Clear</button> : undefined}
+      actions={value ? <button type="button" className="toolbar-text-button" onClick={() => onChange("")}>{t("common.clear")}</button> : undefined}
     >
       <CodeTextarea id={id} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
     </EditorPane>
@@ -161,15 +147,17 @@ export function JsonDiff() {
       toolbar={
         <>
           <Tabs value={arrayMode} onValueChange={(v) => setArrayMode(v as ArrayMode)}>
-            <TabsList aria-label="Array items">
-              <TabsTrigger value="index">By index</TabsTrigger>
-              <TabsTrigger value="key">By key</TabsTrigger>
+            <TabsList aria-label={t("jsonDiff.arrayItems")}>
+              <TabsTrigger value="index">{t("jsonDiff.byIndex")}</TabsTrigger>
+              <TabsTrigger value="key">{t("jsonDiff.byKey")}</TabsTrigger>
             </TabsList>
           </Tabs>
           {arrayMode === "key" && (
             <Input
+              dir="ltr"
+              data-dir-lock
               className="h-7 w-24 text-xs"
-              aria-label="Match key"
+              aria-label={t("jsonDiff.matchKey")}
               value={matchKey}
               onChange={(e) => setMatchKey(e.target.value)}
               placeholder="id"
@@ -178,27 +166,27 @@ export function JsonDiff() {
             />
           )}
           <label className="option-switch indent-control" htmlFor="json-diff-ignore-order">
-            Ignore order
+            {t("jsonDiff.ignoreOrder")}
             <Switch id="json-diff-ignore-order" checked={ignoreOrder} onCheckedChange={setIgnoreOrder} />
           </label>
           <label className="option-switch indent-control" htmlFor="json-diff-ignore-whitespace">
-            Ignore whitespace
+            {t("jsonDiff.ignoreWhitespace")}
             <Switch id="json-diff-ignore-whitespace" checked={ignoreWhitespace} onCheckedChange={setIgnoreWhitespace} />
           </label>
           <button type="button" className="toolbar-text-button" onClick={swap} disabled={!left && !right}>
             <ArrowUpDown size={14} aria-hidden="true" />
-            Swap
+            {t("jsonDiff.swap")}
           </button>
         </>
       }
       secondaryToolbar={
         total > 0 ? (
           <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
-            <TabsList aria-label="Show changes">
-              <TabsTrigger value="all">All {total.toLocaleString()}</TabsTrigger>
+            <TabsList aria-label={t("jsonDiff.showChanges")}>
+              <TabsTrigger value="all">{t("jsonDiff.tab.all", { count: total.toLocaleString() })}</TabsTrigger>
               {KINDS.map(({ kind, label }) => (
                 <TabsTrigger key={kind} value={kind} disabled={!result?.counts[kind]}>
-                  {label} {result?.counts[kind].toLocaleString()}
+                  {t("jsonDiff.tab.kind", { label: t(label), count: result?.counts[kind].toLocaleString() ?? "" })}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -209,38 +197,39 @@ export function JsonDiff() {
       first={
         <PanelGroup direction="vertical">
           <Panel minSize={20} defaultSize={50}>
-            {inputPane("json-diff-original", "Original", left, setLeft, "Paste the original JSON or YAML")}
+            {inputPane("json-diff-original", t("jsonDiff.original"), left, setLeft, t("jsonDiff.original.placeholder"))}
           </Panel>
-          <PanelResizeHandle className="editor-resize" aria-label="Resize original and modified" />
+          <PanelResizeHandle className="editor-resize" aria-label={t("jsonDiff.resize")} />
           <Panel minSize={20} defaultSize={50}>
-            {inputPane("json-diff-modified", "Modified", right, setRight, "Paste the modified JSON or YAML")}
+            {inputPane("json-diff-modified", t("jsonDiff.modified"), right, setRight, t("jsonDiff.modified.placeholder"))}
           </Panel>
         </PanelGroup>
       }
       second={
         <EditorPane
-          title="Changes"
+          title={t("jsonDiff.changes")}
           actions={
             total > 0 ? (
               <>
-                <CopyButton value={changesText} label="Copy changes" />
-                <CopyButton value={patchText} label="Copy JSON Patch" />
+                <CopyButton value={changesText} label={t("jsonDiff.copyChanges")} />
+                <CopyButton value={patchText} label={t("jsonDiff.copyPatch")} />
+                <SendToMenu text={patchText} from="json-diff" label={t("jsonDiff.sendPatch")} />
               </>
             ) : undefined
           }
         >
           {!result ? (
-            <PaneEmpty icon={<GitCompare size={20} aria-hidden="true" />} title="Enter two documents to compare" hint="Changes appear here as you type." />
+            <PaneEmpty icon={<GitCompare size={20} aria-hidden="true" />} title={t("jsonDiff.empty.title")} hint={t("jsonDiff.empty.hint")} />
           ) : total === 0 ? (
-            <PaneEmpty title="No differences" hint="The two documents have the same values." />
+            <PaneEmpty title={t("jsonDiff.none.title")} hint={t("jsonDiff.none.hint")} />
           ) : (
             <>
-              <ul aria-label="Changes">
+              <ul aria-label={t("jsonDiff.changes")}>
                 {shown.slice(0, MAX_ROWS).map((change, index) => <ChangeRow key={`${change.path}-${index}`} change={change} />)}
               </ul>
               {shown.length > MAX_ROWS && (
                 <p className="px-4 py-2 text-xs text-muted-foreground">
-                  Showing the first {MAX_ROWS.toLocaleString()} of {shown.length.toLocaleString()} changes. Use Copy changes to get all of them.
+                  {t("jsonDiff.truncated", { max: MAX_ROWS.toLocaleString(), total: shown.length.toLocaleString() })}
                 </p>
               )}
             </>
@@ -249,26 +238,26 @@ export function JsonDiff() {
       }
       status={
         <>
-          {leftSide?.ok && rightSide?.ok && <span>{leftSide.format === rightSide.format ? leftSide.format.toUpperCase() : `${leftSide.format.toUpperCase()} and ${rightSide.format.toUpperCase()}`}</span>}
+          {leftSide?.ok && rightSide?.ok && <span>{leftSide.format === rightSide.format ? leftSide.format.toUpperCase() : t("jsonDiff.status.formats", { left: leftSide.format.toUpperCase(), right: rightSide.format.toUpperCase() })}</span>}
           {errors.length > 0 ? (
-            <span className="text-destructive">Invalid input</span>
+            <span className="text-destructive">{t("jsonDiff.status.invalid")}</span>
           ) : result ? (
             total === 0 ? (
-              <span className="text-success">No differences</span>
+              <span className="text-success">{t("jsonDiff.none.title")}</span>
             ) : (
               <span>
-                <span className="text-success">{result.counts.added} added</span>·
-                <span className="text-destructive">{result.counts.removed} removed</span>·
-                <span className="text-warning">{result.counts.changed} changed</span>·
-                <span className="text-warning">{result.counts.type} type changed</span>
+                <span className="text-success">{t("jsonDiff.status.added", { count: result.counts.added })}</span>·
+                <span className="text-destructive">{t("jsonDiff.status.removed", { count: result.counts.removed })}</span>·
+                <span className="text-warning">{t("jsonDiff.status.changed", { count: result.counts.changed })}</span>·
+                <span className="text-warning">{t("jsonDiff.status.type", { count: result.counts.type })}</span>
               </span>
             )
           ) : (
-            <span>Ready</span>
+            <span>{t("jsonDiff.status.ready")}</span>
           )}
         </>
       }
-      help={<ToolFaqSection items={FAQ_ITEMS} />}
+      help={<ToolFaqSection items={faqItems()} />}
     />
   );
 }

@@ -1,3 +1,4 @@
+import { useT } from "@/i18n";
 import { Switch } from "@/components/ui/switch";
 import type { PermissionGroupKey, PermissionRow } from "@/plugins/permissions";
 
@@ -13,6 +14,7 @@ interface PermissionListProps {
 
 /** The permissions of a plugin, one row each: icon, name, reason, and whether it is required. */
 export function PermissionList({ rows, toggles, roomy, isNew }: PermissionListProps) {
+  const t = useT();
   return (
     <ul className="flex flex-col">
       {rows.map((row) => (
@@ -24,23 +26,23 @@ export function PermissionList({ rows, toggles, roomy, isNew }: PermissionListPr
             <span className="flex items-center gap-2 font-medium text-foreground">
               {row.label}
               {isNew?.(row) && (
-                <span className="inline-flex h-5 items-center rounded-[5px] bg-warning/15 px-[7px] text-2xs font-medium text-warning">New</span>
+                <span className="inline-flex h-5 items-center rounded-[5px] bg-warning/15 px-[7px] text-2xs font-medium text-warning">{t("plugins.permissionList.new")}</span>
               )}
             </span>
             <span className="text-xs text-muted-foreground">{row.reason}</span>
           </div>
           {toggles && !row.required ? (
             <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
-              Optional
+              {t("plugins.permissionList.optional")}
               <Switch
                 aria-label={row.label}
                 checked={toggles.enabled.has(row.key)}
                 onCheckedChange={() => toggles.onToggle(row.key)}
-                className="h-[18px] w-8 border-0 p-0.5 [&>span]:size-3.5 [&>span]:data-[state=checked]:translate-x-3.5"
+                className="h-[18px] w-8 border-0 p-0.5 [&>span]:size-3.5 [&>span]:data-[state=checked]:translate-x-3.5 rtl:[&>span]:data-[state=checked]:-translate-x-3.5"
               />
             </span>
           ) : (
-            <span className="shrink-0 text-xs text-muted-foreground">{row.required ? "Required" : "Optional"}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">{row.required ? t("plugins.permissionList.required") : t("plugins.permissionList.optional")}</span>
           )}
         </li>
       ))}

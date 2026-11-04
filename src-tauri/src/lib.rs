@@ -224,17 +224,37 @@ fn set_global_shortcut(_accelerator: Option<String>) -> Result<(), String> {
     Err("Global shortcuts need the desktop app.".into())
 }
 
+/// The tray menu with its labels in the app language.
+#[cfg(desktop)]
+fn tray_menu<M: tauri::Manager<tauri::Wry>>(manager: &M, open: &str, search: &str, quit: &str) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
+    use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+
+    let open = MenuItem::with_id(manager, "open", open, true, None::<&str>)?;
+    let search = MenuItem::with_id(manager, "search", search, true, None::<&str>)?;
+    let quit = MenuItem::with_id(manager, "quit", quit, true, None::<&str>)?;
+    Menu::with_items(manager, &[&open, &search, &PredefinedMenuItem::separator(manager)?, &quit])
+}
+
+/// Renames the tray menu entries when the app language changes. No tray (a Linux desktop without one, a phone) is fine.
+#[tauri::command]
+fn set_tray_labels(app: tauri::AppHandle, open: String, search: String, quit: String) -> Result<(), String> {
+    #[cfg(desktop)]
+    if let Some(tray) = app.tray_by_id("main") {
+        let menu = tray_menu(&app, &open, &search, &quit).map_err(|e| e.to_string())?;
+        tray.set_menu(Some(menu)).map_err(|e| e.to_string())?;
+    }
+    #[cfg(not(desktop))]
+    let _ = (app, open, search, quit);
+    Ok(())
+}
+
 /// Adds the menu bar (macOS) or tray (Windows, Linux) icon. Linux desktops without a tray
 /// return an error, which only means there is no icon.
 #[cfg(desktop)]
 fn build_tray(app: &tauri::App) -> tauri::Result<()> {
-    use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
     use tauri::tray::TrayIconBuilder;
 
-    let open = MenuItem::with_id(app, "open", "Open Shard", true, None::<&str>)?;
-    let search = MenuItem::with_id(app, "search", "Search Tools…", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit Shard", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open, &search, &PredefinedMenuItem::separator(app)?, &quit])?;
+    let menu = tray_menu(app, "Open Shard", "Search Tools…", "Quit Shard")?;
 
     let builder = TrayIconBuilder::with_id("main")
         .tooltip("Shard")
@@ -329,7 +349,7 @@ pub fn run() {
     let builder = plugins::protocol::register(tauri::Builder::default());
 
     #[cfg(not(feature = "e2e"))]
-    let builder = builder.invoke_handler(tauri::generate_handler![save_file, set_window_theme, write_tool_manifest, set_global_shortcut, set_update_ready, quit_now, reset_app_data, themes::theme_list, themes::theme_dir, themes::theme_open_dir, themes::theme_import, themes::theme_remove, themes::theme_catalog, themes::theme_install, themes::theme_preview, themes::theme_save, folder_compare::pick_folder, folder_compare::scan_folder, folder_compare::compare_contents, folder_compare::read_text_file, folder_compare::write_text_file, folder_compare::apply_folder_merge, folder_compare::undo_folder_merge, plugins::store::plugins_list, plugins::store::plugin_install_folder, plugins::store::plugin_uninstall, plugins::store::plugin_set_enabled, plugins::store::plugin_pick_folder, plugins::zip::plugin_inspect_zip, plugins::zip::plugin_install_zip, plugins::zip::plugin_stage_zip, plugins::zip::plugin_clear_drop, plugins::zip::plugin_pick_zip, plugins::store::plugin_inspect_folder, plugins::store::plugin_set_grants, plugins::storage::plugin_storage_get, plugins::storage::plugin_storage_set, plugins::fetch::plugin_fetch, plugins::files::plugin_open_file, plugins::repos::repo_list, plugins::repos::repo_add, plugins::repos::repo_remove, plugins::repos::repo_set_enabled, plugins::repos::repo_sync, plugins::repos::repo_catalog, plugins::repos::repo_bundles, plugins::repos::repo_set_settings, plugins::install::plugin_install_from_repo, plugins::install::plugin_lookup_url, plugins::install::plugin_install_from_url, plugins::install::plugin_updates, plugins::install::plugin_update]);
+    let builder = builder.invoke_handler(tauri::generate_handler![save_file, set_window_theme, write_tool_manifest, set_global_shortcut, set_tray_labels, set_update_ready, quit_now, reset_app_data, themes::theme_list, themes::theme_dir, themes::theme_open_dir, themes::theme_import, themes::theme_remove, themes::theme_catalog, themes::theme_install, themes::theme_preview, themes::theme_save, folder_compare::pick_folder, folder_compare::scan_folder, folder_compare::compare_contents, folder_compare::read_text_file, folder_compare::write_text_file, folder_compare::apply_folder_merge, folder_compare::undo_folder_merge, plugins::store::plugins_list, plugins::store::plugin_install_folder, plugins::store::plugin_uninstall, plugins::store::plugin_set_enabled, plugins::store::plugin_pick_folder, plugins::zip::plugin_inspect_zip, plugins::zip::plugin_install_zip, plugins::zip::plugin_stage_zip, plugins::zip::plugin_clear_drop, plugins::zip::plugin_pick_zip, plugins::store::plugin_inspect_folder, plugins::store::plugin_set_grants, plugins::storage::plugin_storage_get, plugins::storage::plugin_storage_set, plugins::fetch::plugin_fetch, plugins::files::plugin_open_file, plugins::repos::repo_list, plugins::repos::repo_add, plugins::repos::repo_remove, plugins::repos::repo_set_enabled, plugins::repos::repo_sync, plugins::repos::repo_catalog, plugins::repos::repo_bundles, plugins::repos::repo_set_settings, plugins::install::plugin_install_from_repo, plugins::install::plugin_lookup_url, plugins::install::plugin_install_from_url, plugins::install::plugin_updates, plugins::install::plugin_update]);
 
     #[cfg(feature = "e2e")]
     let builder = builder
@@ -338,6 +358,7 @@ pub fn run() {
             set_window_theme,
             write_tool_manifest,
             set_global_shortcut,
+            set_tray_labels,
             set_update_ready,
             quit_now,
             reset_app_data,
@@ -460,8 +481,14 @@ pub fn run() {
             // Keep the app running in the dock when the window closes on macOS.
             #[cfg(target_os = "macos")]
             if let tauri::WindowEvent::CloseRequested { api, .. } = _event {
-                api.prevent_close();
-                let _ = _window.hide();
+                if QUITTING.load(std::sync::atomic::Ordering::SeqCst) {
+                    // A reset or a quit is under way: closing the window must end the app, not hide it.
+                    use tauri::Manager;
+                    _window.app_handle().exit(0);
+                } else {
+                    api.prevent_close();
+                    let _ = _window.hide();
+                }
             }
         })
         .build(tauri::generate_context!())

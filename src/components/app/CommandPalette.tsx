@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboa
 import { Download, Palette, Search, type LucideIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { searchTools } from "@/utils/tool-search";
-import type { CatalogTool } from "@/app/catalog";
+import { toolTint, type CatalogTool } from "@/app/catalog";
+import { categoryName, toolName } from "@/app/toolNames";
+import { useT } from "@/i18n";
 import type { InstallableItem } from "@/hooks/usePaletteInstallables";
 
 /** An action the palette offers next to the tools (for example "Open Plugins"). */
@@ -54,7 +56,7 @@ function buildDefaultResults(
 
   const remainingTools = tools
     .filter((tool) => !seenToolIds.has(tool.id))
-    .sort((left, right) => left.name.localeCompare(right.name));
+    .sort((left, right) => toolName(left).localeCompare(toolName(right)));
 
   return [...prioritizedTools, ...remainingTools].slice(0, MAX_RESULTS);
 }
@@ -70,6 +72,7 @@ export function CommandPalette({
   installables = [],
   initialQuery = "",
 }: CommandPaletteProps) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -173,37 +176,37 @@ export function CommandPalette({
         }}
         role="dialog"
         aria-modal="true"
-        aria-label="Command Palette"
+        aria-label={t("shell.palette.title")}
         className="modal-surface command-surface w-full max-w-xl overflow-hidden"
       >
         <div className="modal-header px-4 py-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               ref={inputRef}
               role="combobox"
-              aria-label="Search tools"
+              aria-label={t("shell.palette.searchLabel")}
               aria-expanded={open}
               aria-controls="palette-results"
               aria-activedescendant={results.length ? `palette-result-${Math.min(activeIndex, results.length - 1)}` : undefined}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Search tools..."
-              className="h-11 border-0 bg-transparent pl-10 pr-3 shadow-none focus-visible:ring-0"
+              placeholder={t("shell.palette.placeholder")}
+              className="h-11 border-0 bg-transparent ps-10 pe-3 shadow-none focus-visible:ring-0"
             />
           </div>
         </div>
 
         <div className="modal-body max-h-[50vh] overflow-y-auto p-2">
           {results.length ? (
-            <div className="space-y-1" id="palette-results" role="listbox" aria-label="Tools">
+            <div className="space-y-1" id="palette-results" role="listbox" aria-label={t("shell.palette.listLabel")}>
               {results.map((item, index) => {
                 const isActive = index === activeIndex;
                 const Icon = item.kind === "tool" ? item.tool.icon : item.kind === "install" ? (item.item.kind === "theme" ? Palette : Download) : item.command.icon;
                 const key = item.kind === "tool" ? item.tool.id : item.kind === "install" ? item.item.id : `command:${item.command.id}`;
-                const title = item.kind === "tool" ? item.tool.name : item.kind === "install" ? `Install ${item.item.name}` : item.command.label;
-                const subtitle = item.kind === "tool" ? item.tool.category : item.kind === "install" ? item.item.subtitle : "Command";
+                const title = item.kind === "tool" ? toolName(item.tool) : item.kind === "install" ? t("shell.palette.install", { name: item.item.name }) : item.command.label;
+                const subtitle = item.kind === "tool" ? categoryName(item.tool.category) : item.kind === "install" ? item.item.subtitle : t("shell.palette.command");
 
                 return (
                   <button
@@ -212,14 +215,14 @@ export function CommandPalette({
                     role="option"
                     aria-selected={isActive}
                     type="button"
-                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors ${
+                    className={`flex w-full items-center gap-3 rounded px-2 py-1.5 text-start transition-colors ${
                       isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted"
                     }`}
                     onMouseEnter={() => setActiveIndex(index)}
                     onClick={() => choose(item)}
                   >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-md">
-                      <Icon className="h-4 w-4 text-primary" />
+                    <div className="flex h-7 w-7 items-center justify-center rounded" data-tint={item.kind === "tool" ? toolTint(item.tool.id) : 2}>
+                      <Icon className="tint-icon h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{title}</p>
@@ -231,20 +234,20 @@ export function CommandPalette({
             </div>
           ) : (
             <div className="px-3 py-10 text-center text-sm text-muted-foreground">
-              No tools matched “{query}”.
+              {t("shell.palette.noMatch", { query })}
             </div>
           )}
         </div>
 
         <div className="modal-footer flex items-center justify-between px-4 py-2 text-xs text-muted-foreground">
-          <span>Use arrows to navigate</span>
-          <span>Enter to open • Esc to close</span>
+          <span>{t("shell.palette.hintNavigate")}</span>
+          <span>{t("shell.palette.hintOpen")}</span>
         </div>
       </div>
 
       <button
         type="button"
-        aria-label="Close command palette"
+        aria-label={t("shell.palette.close")}
         className="absolute inset-0 -z-10"
         onClick={onClose}
       />

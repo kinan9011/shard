@@ -1,6 +1,7 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView, highlightWhitespace, type ViewUpdate } from "@codemirror/view";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { t } from "@/i18n";
 import { computeBlocks, type DiffBlock } from "@/utils/diff-merge/blocks";
 import { collapsedRuns } from "@/utils/diff-merge/geometry";
 import type { DiffSettings } from "@/utils/diff-merge/settings";
@@ -36,7 +37,7 @@ interface Options {
 
 type Views = { a: EditorView; b: EditorView };
 
-const PLACEHOLDERS = { a: "Paste the original text", b: "Paste the modified text" } as const;
+const PLACEHOLDERS = { a: "diffMerge.placeholder.original", b: "diffMerge.placeholder.modified" } as const;
 
 export function useDiffEditors(
   hostA: RefObject<HTMLDivElement>,
@@ -140,7 +141,7 @@ export function useDiffEditors(
         parent,
         state: EditorState.create({
           doc,
-          extensions: [paneExtensions(side, PLACEHOLDERS[side]), EditorView.updateListener.of(onUpdate)],
+          extensions: [paneExtensions(side, t(PLACEHOLDERS[side])), EditorView.updateListener.of(onUpdate)],
         }),
       });
     };

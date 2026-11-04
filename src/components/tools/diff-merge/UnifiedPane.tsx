@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EditorState, StateEffect, StateField, type Extension, type Range } from "@codemirror/state";
 import { Decoration, EditorView, GutterMarker, gutter, type DecorationSet } from "@codemirror/view";
+import { t } from "@/i18n";
 import type { Direction } from "@/utils/diff-merge/apply";
 import type { DiffBlock } from "@/utils/diff-merge/blocks";
 import { collapsedRuns } from "@/utils/diff-merge/geometry";
@@ -117,8 +118,8 @@ function unifiedExtensions(handlers: { current: Handlers }): Extension {
       box.className = "dm-acts";
       if (row.first && block !== null) {
         box.append(
-          chip(CHEVRONS_RIGHT, `Keep left (change ${block + 1})`, () => handlers.current.onApply(block, "toRight")),
-          chip(CHEVRONS_LEFT, `Keep right (change ${block + 1})`, () => handlers.current.onApply(block, "toLeft")),
+          chip(CHEVRONS_RIGHT, t("diffMerge.unified.keepLeft", { n: block + 1 }), () => handlers.current.onApply(block, "toRight")),
+          chip(CHEVRONS_LEFT, t("diffMerge.unified.keepRight", { n: block + 1 }), () => handlers.current.onApply(block, "toLeft")),
         );
       }
       return box;

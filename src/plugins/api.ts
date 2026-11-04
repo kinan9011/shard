@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { isDesktop, revealPath } from "@/lib/desktop";
+import { t } from "@/i18n";
 import type { PluginBundle, PluginIndexEntry, PluginManifest } from "./types";
 
 // Typed wrappers for the commands in src-tauri/src/plugins/store.rs. Errors arrive as plain strings.
@@ -28,7 +29,7 @@ export interface InstalledPlugin {
 }
 
 function requireDesktop(): void {
-  if (!isDesktop()) throw new Error("Plugins need the desktop app.");
+  if (!isDesktop()) throw new Error(t("plugins.api.needsDesktop"));
 }
 
 /** The installed plugins. Empty in the browser build, which has no plugin store. */
@@ -226,7 +227,7 @@ export async function pickPluginZip(): Promise<string | null> {
 /** Gives the app a zip dropped on the dialog (the webview has no path for it). Resolves to the staged path; `clearDroppedZip` removes it. */
 export async function stageDroppedZip(file: File): Promise<string> {
   requireDesktop();
-  if (file.size > MAX_ZIP_BYTES) throw new Error(`The zip is larger than ${MAX_ZIP_BYTES / (1024 * 1024)} MB.`);
+  if (file.size > MAX_ZIP_BYTES) throw new Error(t("plugins.api.zipTooLarge", { size: MAX_ZIP_BYTES / (1024 * 1024) }));
   return invoke<string>("plugin_stage_zip", new Uint8Array(await file.arrayBuffer()));
 }
 

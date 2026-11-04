@@ -41,8 +41,11 @@ async function openFolders(left = LEFT, right = RIGHT) {
   fireEvent.click(browseLeft);
   await waitFor(() => expect(desktop.pickFolder).toHaveBeenCalledTimes(1));
   await screen.findByText("/L");
+  expect(desktop.pickFolder).toHaveBeenLastCalledWith(undefined);
   fireEvent.click(browseRight);
   await screen.findByText("/R");
+  // The second dialog opens in the folder already picked on the other side.
+  expect(desktop.pickFolder).toHaveBeenLastCalledWith("/L");
   // Let the scan finish so no state update lands after the test.
   await waitFor(() => expect(screen.queryByText(/^Comparing…/)).not.toBeInTheDocument());
 }
