@@ -26,12 +26,13 @@ const TOAST_KINDS = ["info", "success", "warning", "error"] as const;
 /** The CSS custom properties a plugin may read (see src/index.css). */
 const THEME_VARS = [
   "--background", "--foreground", "--card", "--card-foreground", "--popover", "--popover-foreground",
-  "--primary", "--primary-foreground", "--secondary", "--secondary-foreground", "--muted", "--muted-foreground",
+  "--primary", "--primary-foreground", "--primary-solid", "--primary-solid-foreground", "--secondary", "--secondary-foreground", "--muted", "--muted-foreground",
   "--accent", "--accent-foreground", "--destructive", "--destructive-foreground", "--success", "--success-foreground",
   "--warning", "--warning-foreground", "--info", "--info-foreground", "--border", "--input", "--ring",
   "--sidebar-background", "--sidebar-foreground", "--sidebar-primary", "--sidebar-primary-foreground",
   "--sidebar-accent", "--sidebar-accent-foreground", "--sidebar-border", "--sidebar-ring",
   "--surface-chrome", "--surface-editor", "--surface-raised", "--surface-sidebar",
+  "--surface-hover", "--surface-selected", "--shadow-dialog",
   "--chrome-input-border", "--chrome-muted-foreground",
   "--syntax-fn", "--syntax-kw", "--syntax-lit", "--syntax-num", "--syntax-str",
   "--radius", "--font-ui", "--font-code",
