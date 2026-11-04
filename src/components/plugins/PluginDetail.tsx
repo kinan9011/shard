@@ -95,7 +95,7 @@ function PrimaryAction({ action, progress, onInstall }: { action: CatalogRow["ac
       disabled={installing || action.kind !== "install"}
       aria-busy={installing || undefined}
       onClick={onInstall}
-      className="inline-flex h-8 items-center gap-[7px] whitespace-nowrap rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+      className="inline-flex h-8 items-center gap-[7px] whitespace-nowrap rounded-md border border-primary-solid bg-primary-solid px-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
     >
       {action.kind === "install" && !installing && <Download size={14} aria-hidden="true" />}
       {installing ? installingLabel(progress) : action.kind === "update" ? `Update to ${action.to}` : "Install"}

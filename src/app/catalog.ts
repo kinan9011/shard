@@ -24,6 +24,13 @@ export interface BuiltinTool {
   kind: "core" | "legacy";
 }
 
+/** One of seven status hues (`--tint-0` to `--tint-6` in index.css) for a tool's icon, the same one on every screen. */
+export function toolTint(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return hash % 7;
+}
+
 /** Builtins first, then plugin tools. A plugin cannot take a builtin's id. Hidden ids are dropped. */
 export function buildCatalog(
   builtins: readonly BuiltinTool[],

@@ -223,7 +223,7 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
       <button type="button" onClick={review} className={cn(BUTTON, "border-input bg-secondary text-secondary-foreground")}>
         Review
       </button>
-      <button type="button" onClick={() => pairs.forEach(startUpdate)} className={cn(BUTTON, "border-primary bg-primary text-primary-foreground")}>
+      <button type="button" onClick={() => pairs.forEach(startUpdate)} className={cn(BUTTON, "border-primary-solid bg-primary-solid text-primary-solid-foreground")}>
         Update all
       </button>
     </section>
@@ -291,7 +291,7 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
         <section aria-label="Updates available" className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <SectionTitle>{`Updates available · ${pairs.length}`}</SectionTitle>
-            <button type="button" onClick={() => pairs.forEach(startUpdate)} className={cn(BUTTON, "border-primary bg-primary text-primary-foreground")}>
+            <button type="button" onClick={() => pairs.forEach(startUpdate)} className={cn(BUTTON, "border-primary-solid bg-primary-solid text-primary-solid-foreground")}>
               <RefreshCw size={14} aria-hidden="true" />
               Update all
             </button>

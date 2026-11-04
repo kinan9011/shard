@@ -56,7 +56,7 @@ function Step({ number, label, state }: { number: number; label: string; state: 
         className={cn(
           "grid size-[22px] shrink-0 place-items-center rounded-full text-xs font-semibold",
           state === "done" && "bg-success/15 text-success",
-          state === "active" && "bg-primary text-primary-foreground",
+          state === "active" && "bg-primary-solid text-primary-solid-foreground",
           state === "todo" && "border border-border text-muted-foreground",
         )}
       >
@@ -76,7 +76,7 @@ function PluginChoice({ row, checked, onToggle }: { row: CatalogRow; checked: bo
       )}
     >
       <input type="checkbox" className="peer sr-only" checked={checked} onChange={onToggle} aria-label={row.entry.name} />
-      <span className={cn("grid size-4 shrink-0 place-items-center rounded border", checked ? "border-primary bg-primary text-primary-foreground" : "border-input")} aria-hidden="true">
+      <span className={cn("grid size-4 shrink-0 place-items-center rounded border", checked ? "border-primary-solid bg-primary-solid text-primary-solid-foreground" : "border-input")} aria-hidden="true">
         {checked && <Check size={11} strokeWidth={3} />}
       </span>
       <span className="grid size-[30px] shrink-0 place-items-center rounded-[7px] bg-primary/15 text-primary" aria-hidden="true">
@@ -114,7 +114,7 @@ function BundleCard({ bundle, checked, onToggle }: { bundle: BundleCardData; che
             </span>
           ))}
         </span>
-        <span className={cn("grid size-4 shrink-0 place-items-center rounded", checked ? "bg-primary text-primary-foreground" : "border border-input")}>
+        <span className={cn("grid size-4 shrink-0 place-items-center rounded", checked ? "bg-primary-solid text-primary-solid-foreground" : "border border-input")}>
           {checked && <Check size={11} strokeWidth={3} />}
         </span>
       </span>

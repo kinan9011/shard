@@ -22,7 +22,7 @@ function LayoutCard({ title, badge, description, preview, checked, onSelect }: {
         <span
           aria-hidden="true"
           className={`mt-px box-border h-4 w-4 shrink-0 rounded-full ${
-            checked ? "border-[5px] border-primary bg-primary-foreground" : "border border-input"
+            checked ? "border-[5px] border-primary-solid bg-white" : "border border-input"
           }`}
         />
         <div className="flex flex-col gap-0.5">

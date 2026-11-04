@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, Puzzle, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { CatalogTool } from "@/app/catalog";
+import { toolTint, type CatalogTool } from "@/app/catalog";
 import { useReorder } from "@/app/useReorder";
 import { EmptyHome, UpdateBanner } from "@/components/app/Home";
 import { PinnedEditor } from "@/components/app/PinnedEditor";
@@ -111,11 +111,11 @@ export function LauncherHome(props: LauncherHomeProps) {
                   data-tool={tool.id}
                   onClick={() => onSelect(tool)}
                   {...tileProps(tool, index)}
-                  className={`launcher-tile flex h-[104px] flex-col items-center justify-center gap-2.5 rounded-[10px] border border-border bg-muted transition-[transform,box-shadow,border-color] hover:border-primary/50 ${
+                  className={`launcher-tile flex h-[104px] flex-col items-center justify-center gap-2.5 rounded-md border border-border bg-background transition-[transform,box-shadow,border-color] hover:border-primary/50 ${
                     dragging === tool.id ? "z-[1] -translate-y-[3px] border-primary/60 shadow-[0_8px_24px_rgba(0,0,0,.35)]" : ""
                   }`}
                 >
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] bg-primary/15 text-primary" aria-hidden="true">
+                  <span data-tint={toolTint(tool.id)} className="tint-tile h-10 w-10" aria-hidden="true">
                     <tool.icon size={20} />
                   </span>
                   <span className="max-w-full truncate px-2 text-sm font-medium text-foreground">{tool.name}</span>
@@ -151,9 +151,9 @@ export function LauncherHome(props: LauncherHomeProps) {
                     type="button"
                     data-tool={tool.id}
                     onClick={() => onSelect(tool)}
-                    className="inline-flex h-[38px] items-center gap-[9px] whitespace-nowrap rounded-lg border border-border bg-muted pl-[5px] pr-3.5 text-sm text-foreground transition-colors hover:border-primary/50"
+                    className="inline-flex h-[38px] items-center gap-[9px] whitespace-nowrap rounded border border-border bg-background pl-[5px] pr-3.5 text-sm text-foreground transition-colors hover:border-primary/50"
                   >
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-[7px] bg-primary/15 text-primary" aria-hidden="true">
+                    <span data-tint={toolTint(tool.id)} className="tint-tile h-7 w-7 rounded" aria-hidden="true">
                       <tool.icon size={15} />
                     </span>
                     {tool.name}

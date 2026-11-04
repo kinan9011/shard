@@ -27,6 +27,7 @@ import { detectPastedContent, type PasteSuggestion } from "@/utils/clipboard-det
 import { PasteSuggestions } from "@/components/app/PasteSuggestions";
 import { PasteInstall } from "@/components/app/PasteInstall";
 import { Sidebar } from "@/components/app/Sidebar";
+import { SidebarFooter, StatusBar, ToolStripe } from "@/components/app/IdeChrome";
 import { MAX_PINNED, PINNED_STORAGE_KEY, loadPinned, moveId, pinLimitMessage } from "@/app/pinned";
 import { Home } from "@/components/app/Home";
 import { LauncherHome } from "@/components/app/LauncherHome";
@@ -896,9 +897,28 @@ const Shard = () => {
   }
 
   const phoneDestination: PhoneDestination = selectedTool ? "tool" : view.kind === "plugins" ? "plugins" : view.kind === "settings" ? "settings" : "home";
-  return (
-    <div data-platform={platform} data-phone={phone || undefined} data-sidebar-open={layout === "sidebar" && sidebarOpen} data-layout={layout} className="workspace h-screen overflow-hidden bg-background flex">
-      {layout === "sidebar" && <Sidebar
+  const capitalize = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
+  const crumbs = selectedTool ? ["Shard", selectedTool.category, selectedTool.name]
+    : view.kind === "plugins" ? ["Shard", "Plugins", capitalize(view.tab)]
+    : view.kind === "settings" ? ["Shard", "Settings", capitalize(view.section)]
+    : ["Shard", "Home"];
+  const destinations = {
+    pluginsOpen: view.kind === "plugins",
+    onOpenPlugins: () => openPlugins("browse"),
+    updateCount: updates.length + themeUpdateCount,
+    settingsOpen: view.kind === "settings",
+    onOpenSettings: () => openSettings(),
+  };
+  const statusInfo = {
+    version: desktop ? (appVersion ? `v${appVersion}` : "Loading…") : "Browser preview",
+    updateNotice,
+    onUpdateNotice: () => openSettings("general"),
+    hasReleaseNotes: Boolean(releaseNotes),
+    hasUnreadWhatsNew,
+    onWhatsNew: openWhatsNew,
+  };
+  const sidebarFooter = <SidebarFooter {...destinations} {...statusInfo} />;
+  const sidebarEl = layout === "sidebar" && <Sidebar
         open={sidebarOpen}
         onOpenChange={setSidebarOpen}
         searchQuery={searchQuery}
@@ -912,25 +932,19 @@ const Shard = () => {
         onTogglePinned={togglePinned}
         onOpenPalette={openCommandPalette}
         paletteShortcutLabel={commandPaletteShortcutLabel}
-        isDesktop={Boolean(desktop)}
-        appVersion={appVersion}
-        updateNotice={updateNotice}
-        hasReleaseNotes={Boolean(releaseNotes)}
-        hasUnreadWhatsNew={hasUnreadWhatsNew}
-        onWhatsNew={openWhatsNew}
         onOpenPlugins={() => openPlugins("browse")}
-        pluginsOpen={view.kind === "plugins"}
-        updateCount={updates.length + themeUpdateCount}
-        onOpenSettings={openSettings}
-        settingsOpen={view.kind === "settings"}
+        footer={phone ? sidebarFooter : undefined}
         categoryMode={sidebarCategories}
         empty={empty}
-      />}
+      />;
 
-      {/* Main Content */}
-      <main className="flex-1 min-h-0 flex flex-col min-w-0">
-        {phone ? (
-          <PhoneHeader
+  return (
+    <div data-platform={platform} data-phone={phone || undefined} data-sidebar-open={layout === "sidebar" && sidebarOpen} data-layout={layout} className="workspace h-screen overflow-hidden bg-background flex">
+      {phone ? (
+        <>
+          {sidebarEl}
+          <main className="flex-1 min-h-0 flex flex-col min-w-0">
+              <PhoneHeader
             destination={phoneDestination}
             title={selectedTool?.name ?? (view.kind === "plugins" ? "Plugins" : view.kind === "settings" ? "Settings" : "Shard")}
             onBack={() => setView(HOME_VIEW)}
@@ -943,154 +957,264 @@ const Shard = () => {
             onSelectTool={selectTool}
             onCloseTool={closeTool}
           />
-        ) : layout === "launcher" ? (
-        <header data-tauri-drag-region className="workspace-titlebar launcher-titlebar">
-          <div data-tauri-drag-region className="flex items-center gap-2.5 pr-2.5">
-            <BrandMark className="h-[22px] w-[22px]" />
-            <span className="font-semibold text-foreground">Shard</span>
-          </div>
-          <div className="launcher-tabs" role="presentation">
-            <button type="button" className="workspace-tab launcher-home-tab" aria-current={view.kind === "home" ? "page" : undefined} onClick={() => setView(HOME_VIEW)}>
-              <House size={15} aria-hidden="true" />
-              <span>Home</span>
-            </button>
-            <TopTabs tools={openTools} selectedId={selectedTool?.id ?? null} onSelect={selectTool} onClose={closeTool} onCloseMany={closeTools} onHide={hideTool} />
-          </div>
-          <button type="button" className="chrome-button" aria-label="Open a tool" title="Open a tool" onClick={openCommandPalette}><Plus size={16} /></button>
-          <div className="flex min-w-0 flex-1 justify-center">
-            <button type="button" className="launcher-search h-8 w-[360px] max-w-full" onClick={openCommandPalette}>
-              <Search size={15} aria-hidden="true" />
-              <span className="flex-1 truncate text-left">Find a tool or command</span>
-              <kbd>{commandPaletteShortcutLabel}</kbd>
-            </button>
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
-            {selectedTool && <button type="button" className="chrome-button" aria-label={pinned.includes(selectedTool.id) ? "Unpin from Home" : "Pin to Home"} onClick={() => togglePinned(selectedTool.id)}><Pin size={15} className={pinned.includes(selectedTool.id) ? "fill-current text-primary" : ""} /></button>}
-            <button type="button" className="chrome-button relative" title="Plugins" aria-current={view.kind === "plugins" ? "page" : undefined} onClick={() => openPlugins("browse")}>
-              <Puzzle size={16} aria-hidden="true" />
-              <span className="sr-only">Plugins</span>
-              {updates.length + themeUpdateCount > 0 && <span className="launcher-badge" title={`${updates.length + themeUpdateCount} plugin and theme ${updates.length + themeUpdateCount === 1 ? "update" : "updates"}`}>{updates.length + themeUpdateCount}</span>}
-            </button>
-            <button type="button" className="chrome-button" aria-label="Settings" title="Settings" aria-current={view.kind === "settings" ? "page" : undefined} onClick={() => openSettings()}><Settings size={16} aria-hidden="true" /></button>
-            <button type="button" className="chrome-button" aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} onClick={() => setThemePreference(darkMode ? "light" : "dark")}>
-              {darkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
-            </button>
-          </div>
-        </header>
-        ) : (
-        <header data-tauri-drag-region className="workspace-titlebar">
-          <button type="button" className="chrome-button" aria-label="Toggle sidebar" onClick={() => setSidebarOpen(!sidebarOpen)}><PanelLeft size={16} /></button>
-          <TopTabs tools={openTools} selectedId={selectedTool?.id ?? null} onSelect={selectTool} onClose={closeTool} onCloseMany={closeTools} onHide={hideTool} />
-          <button type="button" className="chrome-button" aria-label="Open a tool" title="Open a tool" onClick={openCommandPalette}><Plus size={17} /></button>
-          <div className="ml-auto flex shrink-0 items-center gap-1">
-            {selectedTool && <button type="button" className="chrome-button" aria-label={pinned.includes(selectedTool.id) ? "Unpin from Home" : "Pin to Home"} onClick={() => togglePinned(selectedTool.id)}><Pin size={15} className={pinned.includes(selectedTool.id) ? "fill-current text-primary" : ""} /></button>}
-            <button type="button" className="chrome-button" aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} onClick={() => setThemePreference(darkMode ? "light" : "dark")}>
-              {darkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
-            </button>
-          </div>
-        </header>
-        )}
 
-        {/* Content */}
-        <div className={`workspace-content ${!selectedTool && view.kind !== "plugins" && view.kind !== "settings" ? "is-home" : ""}`}>
-          {view.kind === "settings" ? (
-            <SettingsPage
-              section={view.section}
-              onSection={(section) => setView({ kind: "settings", section })}
-              preference={themePreference}
-              onPreference={setThemePreference}
-              scheme={activeScheme}
-              onScheme={setColorScheme}
-              accent={accent}
-              onAccent={setAccent}
-              customThemes={bridge ? customThemes : undefined}
-              dark={darkMode}
-              layout={layout}
-              onLayout={setLayout}
-              sidebarCategories={sidebarCategories}
-              onSidebarCategories={setSidebarCategories}
-              openToolsIn={openToolsIn}
-              onOpenToolsIn={setOpenToolsIn}
-              platform={platform}
-              isDesktop={Boolean(desktop)}
-              hasNative={Boolean(bridge)}
-              appVersion={appVersion}
-              updateState={updateState}
-              onUpdateAction={handleUpdateAction}
-              autoUpdate={autoUpdate}
-              onAutoUpdateChange={setAutoUpdate}
-              globalShortcut={desktop?.setGlobalShortcut ? globalShortcut : undefined}
-              globalShortcutError={globalShortcutError}
-              onChangeGlobalShortcut={changeGlobalShortcut}
-              shortcutBindings={shortcutBindings}
-              onUpdateShortcut={updateShortcutBinding}
-              onResetShortcuts={resetShortcutBindings}
-              onRecordingShortcut={setRecordingShortcut}
-              recordingPaused={showCommandPalette || showWhatsNew}
-              onOpenPlugins={(tab) => openPlugins(tab)}
-              onCheckPluginUpdates={() => void checkPluginUpdates()}
-              hasReleaseNotes={Boolean(releaseNotes)}
-              onWhatsNew={openWhatsNew}
+          {/* Content */}
+          <div className={`workspace-content ${!selectedTool && view.kind !== "plugins" && view.kind !== "settings" ? "is-home" : ""}`}>
+            {view.kind === "settings" ? (
+              <SettingsPage
+                section={view.section}
+                onSection={(section) => setView({ kind: "settings", section })}
+                preference={themePreference}
+                onPreference={setThemePreference}
+                scheme={activeScheme}
+                onScheme={setColorScheme}
+                accent={accent}
+                onAccent={setAccent}
+                customThemes={bridge ? customThemes : undefined}
+                dark={darkMode}
+                layout={layout}
+                onLayout={setLayout}
+                sidebarCategories={sidebarCategories}
+                onSidebarCategories={setSidebarCategories}
+                openToolsIn={openToolsIn}
+                onOpenToolsIn={setOpenToolsIn}
+                platform={platform}
+                isDesktop={Boolean(desktop)}
+                hasNative={Boolean(bridge)}
+                appVersion={appVersion}
+                updateState={updateState}
+                onUpdateAction={handleUpdateAction}
+                autoUpdate={autoUpdate}
+                onAutoUpdateChange={setAutoUpdate}
+                globalShortcut={desktop?.setGlobalShortcut ? globalShortcut : undefined}
+                globalShortcutError={globalShortcutError}
+                onChangeGlobalShortcut={changeGlobalShortcut}
+                shortcutBindings={shortcutBindings}
+                onUpdateShortcut={updateShortcutBinding}
+                onResetShortcuts={resetShortcutBindings}
+                onRecordingShortcut={setRecordingShortcut}
+                recordingPaused={showCommandPalette || showWhatsNew}
+                onOpenPlugins={(tab) => openPlugins(tab)}
+                onCheckPluginUpdates={() => void checkPluginUpdates()}
+                hasReleaseNotes={Boolean(releaseNotes)}
+                onWhatsNew={openWhatsNew}
+              />
+            ) : view.kind === "plugins" ? (
+              <PluginsPage variant={layout === "launcher" || phone ? "cards" : "list"} customThemes={bridge ? customThemes : undefined} themeApply={{ scheme: activeScheme, onScheme: setColorScheme, dark: darkMode }} startInstall={view.install} tab={view.tab} onTabChange={(tab) => setView({ kind: "plugins", tab })} onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }} />
+            ) : !selectedTool && layout === "launcher" ? (
+              <LauncherHome
+                tools={catalogTools}
+                categories={categories}
+                pinned={pinned}
+                pinnedTools={pinnedTools}
+                onPin={pinTool}
+                onUnpin={unpinTool}
+                onMovePinned={movePinned}
+                onPinInstalled={(id) => pinInstalledRef.current(id)}
+                onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }}
+                platform={platform}
+                paletteShortcutLabel={commandPaletteShortcutLabel}
+                onSelect={selectTool}
+                onOpenPalette={openCommandPalette}
+                updates={updates}
+                onReviewUpdates={() => openPlugins("installed")}
+                empty={empty}
+                onBrowsePlugins={() => openPlugins("browse")}
+                onInstallFromFile={() => openPlugins("browse", true)}
+              />
+            ) : !selectedTool ? (
+              <Home
+                recentTools={recentTools}
+                tools={catalogTools}
+                pinned={pinned}
+                pinnedTools={pinnedTools}
+                onPin={pinTool}
+                onUnpin={unpinTool}
+                onMovePinned={movePinned}
+                onPinInstalled={(id) => pinInstalledRef.current(id)}
+                onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }}
+                quickAccessTools={quickAccessTools}
+                platform={platform}
+                paletteShortcutLabel={commandPaletteShortcutLabel}
+                onSelect={selectTool}
+                onOpenPalette={openCommandPalette}
+                updates={updates}
+                onReviewUpdates={() => openPlugins("installed")}
+                empty={empty}
+                onBrowsePlugins={() => openPlugins("browse")}
+                onInstallFromFile={() => openPlugins("browse", true)}
+              />
+            ) : null}
+            <ToolHost tools={openTools} selectedId={selectedTool?.id ?? null} />
+          </div>
+          </main>
+          {phone && layout === "launcher" && (
+            <MobileNav
+              destination={phoneDestination}
+              onHome={() => setView(HOME_VIEW)}
+              onSearch={openCommandPalette}
+              onPlugins={() => openPlugins("browse")}
+              onSettings={() => openSettings()}
+              badge={updates.length + themeUpdateCount}
             />
-          ) : view.kind === "plugins" ? (
-            <PluginsPage variant={layout === "launcher" || phone ? "cards" : "list"} customThemes={bridge ? customThemes : undefined} themeApply={{ scheme: activeScheme, onScheme: setColorScheme, dark: darkMode }} startInstall={view.install} tab={view.tab} onTabChange={(tab) => setView({ kind: "plugins", tab })} onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }} />
-          ) : !selectedTool && layout === "launcher" ? (
-            <LauncherHome
-              tools={catalogTools}
-              categories={categories}
-              pinned={pinned}
-              pinnedTools={pinnedTools}
-              onPin={pinTool}
-              onUnpin={unpinTool}
-              onMovePinned={movePinned}
-              onPinInstalled={(id) => pinInstalledRef.current(id)}
-              onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }}
-              platform={platform}
-              paletteShortcutLabel={commandPaletteShortcutLabel}
-              onSelect={selectTool}
-              onOpenPalette={openCommandPalette}
-              updates={updates}
-              onReviewUpdates={() => openPlugins("installed")}
-              empty={empty}
-              onBrowsePlugins={() => openPlugins("browse")}
-              onInstallFromFile={() => openPlugins("browse", true)}
-            />
-          ) : !selectedTool ? (
-            <Home
-              recentTools={recentTools}
-              tools={catalogTools}
-              pinned={pinned}
-              pinnedTools={pinnedTools}
-              onPin={pinTool}
-              onUnpin={unpinTool}
-              onMovePinned={movePinned}
-              onPinInstalled={(id) => pinInstalledRef.current(id)}
-              onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }}
-              quickAccessTools={quickAccessTools}
-              platform={platform}
-              paletteShortcutLabel={commandPaletteShortcutLabel}
-              onSelect={selectTool}
-              onOpenPalette={openCommandPalette}
-              updates={updates}
-              onReviewUpdates={() => openPlugins("installed")}
-              empty={empty}
-              onBrowsePlugins={() => openPlugins("browse")}
-              onInstallFromFile={() => openPlugins("browse", true)}
-            />
-          ) : null}
-          <ToolHost tools={openTools} selectedId={selectedTool?.id ?? null} />
-        </div>
-      </main>
+          )}
+        </>
+      ) : (
+        <>
+          {layout === "launcher" ? (
+                    <header data-tauri-drag-region className="workspace-titlebar launcher-titlebar">
+                      <div data-tauri-drag-region className="titlebar-brand">
+                        <BrandMark className="h-[18px] w-[18px]" />
+                        <span>Shard</span>
+                      </div>
+                      <div className="launcher-tabs" role="presentation">
+                        <button type="button" className="workspace-tab launcher-home-tab" aria-current={view.kind === "home" ? "page" : undefined} onClick={() => setView(HOME_VIEW)}>
+                          <House size={15} aria-hidden="true" />
+                          <span>Home</span>
+                        </button>
+                        <TopTabs tools={openTools} selectedId={selectedTool?.id ?? null} onSelect={selectTool} onClose={closeTool} onCloseMany={closeTools} onHide={hideTool} />
+                      </div>
+                      <button type="button" className="chrome-button" aria-label="Open a tool" title="Open a tool" onClick={openCommandPalette}><Plus size={16} /></button>
+                      <div className="flex min-w-0 flex-1 justify-center">
+                        <button type="button" className="launcher-search h-8 w-[360px] max-w-full" onClick={openCommandPalette}>
+                          <Search size={15} aria-hidden="true" />
+                          <span className="flex-1 truncate text-left">Find a tool or command</span>
+                          <kbd>{commandPaletteShortcutLabel}</kbd>
+                        </button>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        {selectedTool && <button type="button" className="chrome-button" aria-label={pinned.includes(selectedTool.id) ? "Unpin from Home" : "Pin to Home"} onClick={() => togglePinned(selectedTool.id)}><Pin size={15} className={pinned.includes(selectedTool.id) ? "fill-current text-primary" : ""} /></button>}
+                        <button type="button" className="chrome-button relative" title="Plugins" aria-current={view.kind === "plugins" ? "page" : undefined} onClick={() => openPlugins("browse")}>
+                          <Puzzle size={16} aria-hidden="true" />
+                          <span className="sr-only">Plugins</span>
+                          {updates.length + themeUpdateCount > 0 && <span className="launcher-badge" title={`${updates.length + themeUpdateCount} plugin and theme ${updates.length + themeUpdateCount === 1 ? "update" : "updates"}`}>{updates.length + themeUpdateCount}</span>}
+                        </button>
+                        <button type="button" className="chrome-button" aria-label="Settings" title="Settings" aria-current={view.kind === "settings" ? "page" : undefined} onClick={() => openSettings()}><Settings size={16} aria-hidden="true" /></button>
+                        <button type="button" className="chrome-button" aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} onClick={() => setThemePreference(darkMode ? "light" : "dark")}>
+                          {darkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+                        </button>
+                      </div>
+                    </header>
+          ) : (
+            <header data-tauri-drag-region className="workspace-titlebar">
+              <button type="button" className="chrome-button" aria-label="Toggle sidebar" onClick={() => setSidebarOpen(!sidebarOpen)}><PanelLeft size={16} /></button>
+              <div data-tauri-drag-region className="titlebar-brand">
+                <BrandMark className="h-[18px] w-[18px]" />
+                <span>Shard</span>
+              </div>
+              <div data-tauri-drag-region className="titlebar-spacer" />
+              <div className="flex shrink-0 items-center gap-1">
+                {selectedTool && <button type="button" className="chrome-button" aria-label={pinned.includes(selectedTool.id) ? "Unpin from Home" : "Pin to Home"} onClick={() => togglePinned(selectedTool.id)}><Pin size={15} className={pinned.includes(selectedTool.id) ? "fill-current text-primary" : ""} /></button>}
+                <button type="button" className="chrome-button" aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} onClick={() => setThemePreference(darkMode ? "light" : "dark")}>
+                  {darkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+                </button>
+              </div>
+            </header>
+          )}
+          <div className="workspace-body">
+            {layout === "sidebar" && <ToolStripe sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} {...destinations} />}
+            {sidebarEl}
+            <main className="flex-1 min-h-0 flex flex-col min-w-0">
+              {layout === "sidebar" && (
+                <div className="workspace-tab-row">
+                  <TopTabs tools={openTools} selectedId={selectedTool?.id ?? null} onSelect={selectTool} onClose={closeTool} onCloseMany={closeTools} onHide={hideTool} />
+                  <button type="button" className="chrome-button" aria-label="Open a tool" title="Open a tool" onClick={openCommandPalette}><Plus size={16} /></button>
+                </div>
+              )}
 
-      {phone && layout === "launcher" && (
-        <MobileNav
-          destination={phoneDestination}
-          onHome={() => setView(HOME_VIEW)}
-          onSearch={openCommandPalette}
-          onPlugins={() => openPlugins("browse")}
-          onSettings={() => openSettings()}
-          badge={updates.length + themeUpdateCount}
-        />
+            {/* Content */}
+            <div className={`workspace-content ${!selectedTool && view.kind !== "plugins" && view.kind !== "settings" ? "is-home" : ""}`}>
+              {view.kind === "settings" ? (
+                <SettingsPage
+                  section={view.section}
+                  onSection={(section) => setView({ kind: "settings", section })}
+                  preference={themePreference}
+                  onPreference={setThemePreference}
+                  scheme={activeScheme}
+                  onScheme={setColorScheme}
+                  accent={accent}
+                  onAccent={setAccent}
+                  customThemes={bridge ? customThemes : undefined}
+                  dark={darkMode}
+                  layout={layout}
+                  onLayout={setLayout}
+                  sidebarCategories={sidebarCategories}
+                  onSidebarCategories={setSidebarCategories}
+                  openToolsIn={openToolsIn}
+                  onOpenToolsIn={setOpenToolsIn}
+                  platform={platform}
+                  isDesktop={Boolean(desktop)}
+                  hasNative={Boolean(bridge)}
+                  appVersion={appVersion}
+                  updateState={updateState}
+                  onUpdateAction={handleUpdateAction}
+                  autoUpdate={autoUpdate}
+                  onAutoUpdateChange={setAutoUpdate}
+                  globalShortcut={desktop?.setGlobalShortcut ? globalShortcut : undefined}
+                  globalShortcutError={globalShortcutError}
+                  onChangeGlobalShortcut={changeGlobalShortcut}
+                  shortcutBindings={shortcutBindings}
+                  onUpdateShortcut={updateShortcutBinding}
+                  onResetShortcuts={resetShortcutBindings}
+                  onRecordingShortcut={setRecordingShortcut}
+                  recordingPaused={showCommandPalette || showWhatsNew}
+                  onOpenPlugins={(tab) => openPlugins(tab)}
+                  onCheckPluginUpdates={() => void checkPluginUpdates()}
+                  hasReleaseNotes={Boolean(releaseNotes)}
+                  onWhatsNew={openWhatsNew}
+                />
+              ) : view.kind === "plugins" ? (
+                <PluginsPage variant={layout === "launcher" || phone ? "cards" : "list"} customThemes={bridge ? customThemes : undefined} themeApply={{ scheme: activeScheme, onScheme: setColorScheme, dark: darkMode }} startInstall={view.install} tab={view.tab} onTabChange={(tab) => setView({ kind: "plugins", tab })} onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }} />
+              ) : !selectedTool && layout === "launcher" ? (
+                <LauncherHome
+                  tools={catalogTools}
+                  categories={categories}
+                  pinned={pinned}
+                  pinnedTools={pinnedTools}
+                  onPin={pinTool}
+                  onUnpin={unpinTool}
+                  onMovePinned={movePinned}
+                  onPinInstalled={(id) => pinInstalledRef.current(id)}
+                  onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }}
+                  platform={platform}
+                  paletteShortcutLabel={commandPaletteShortcutLabel}
+                  onSelect={selectTool}
+                  onOpenPalette={openCommandPalette}
+                  updates={updates}
+                  onReviewUpdates={() => openPlugins("installed")}
+                  empty={empty}
+                  onBrowsePlugins={() => openPlugins("browse")}
+                  onInstallFromFile={() => openPlugins("browse", true)}
+                />
+              ) : !selectedTool ? (
+                <Home
+                  recentTools={recentTools}
+                  tools={catalogTools}
+                  pinned={pinned}
+                  pinnedTools={pinnedTools}
+                  onPin={pinTool}
+                  onUnpin={unpinTool}
+                  onMovePinned={movePinned}
+                  onPinInstalled={(id) => pinInstalledRef.current(id)}
+                  onOpenPlugin={(id) => { const tool = toolById.get(id); if (tool) selectTool(tool); }}
+                  quickAccessTools={quickAccessTools}
+                  platform={platform}
+                  paletteShortcutLabel={commandPaletteShortcutLabel}
+                  onSelect={selectTool}
+                  onOpenPalette={openCommandPalette}
+                  updates={updates}
+                  onReviewUpdates={() => openPlugins("installed")}
+                  empty={empty}
+                  onBrowsePlugins={() => openPlugins("browse")}
+                  onInstallFromFile={() => openPlugins("browse", true)}
+                />
+              ) : null}
+              <ToolHost tools={openTools} selectedId={selectedTool?.id ?? null} />
+            </div>
+            </main>
+          </div>
+          <StatusBar crumbs={crumbs} {...statusInfo} />
+        </>
       )}
 
       {pasted && (

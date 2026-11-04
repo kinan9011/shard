@@ -27,7 +27,7 @@ export function TabButton<Id extends string>({ id, idPrefix, controls, selected,
       )}
     >
       {children}
-      {selected && <span aria-hidden="true" className="absolute inset-x-3 bottom-0 h-0.5 rounded-sm bg-primary" />}
+      {selected && <span aria-hidden="true" className="absolute inset-x-3 bottom-0 h-0.5 rounded-sm bg-primary-solid" />}
     </button>
   );
 }

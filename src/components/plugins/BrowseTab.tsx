@@ -316,7 +316,7 @@ export function BrowseTab({ rows, repos, loading, error, onInstall, onUninstall,
             <button key={chip} type="button" role="checkbox" aria-checked={runtimes.has(chip)} onClick={() => toggleRuntime(chip)} className="flex items-center gap-2 text-sm text-foreground">
               <span
                 aria-hidden="true"
-                className={cn("grid size-4 shrink-0 place-items-center rounded border", runtimes.has(chip) ? "border-primary bg-primary text-primary-foreground" : "border-input")}
+                className={cn("grid size-4 shrink-0 place-items-center rounded border", runtimes.has(chip) ? "border-primary-solid bg-primary-solid text-primary-solid-foreground" : "border-input")}
               >
                 {runtimes.has(chip) && <Check size={12} strokeWidth={3} />}
               </span>

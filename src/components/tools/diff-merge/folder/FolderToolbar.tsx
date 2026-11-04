@@ -112,7 +112,7 @@ export function FolderToolbar(props: Props) {
           type="button"
           disabled={startCount === 0 || busy}
           onClick={props.onStart}
-          className="flex h-8 items-center gap-2 whitespace-nowrap rounded-md bg-primary px-3 text-[13px] font-medium text-primary-foreground shadow-sm disabled:opacity-60"
+          className="flex h-8 items-center gap-2 whitespace-nowrap rounded bg-primary-solid px-3 text-[13px] font-medium text-primary-solid-foreground shadow-sm disabled:opacity-60"
         >
           {startCount ? `Start merge (${startCount})` : "Start merge"}
         </button>

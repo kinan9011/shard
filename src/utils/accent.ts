@@ -30,7 +30,11 @@ function tokens(hue: number, saturation: number, dark: boolean): string {
   // Text on the accent: white when it holds 4.5:1, else near black.
   const foreground = contrastRatio(rgb, [255, 255, 255]) >= 4.5 ? "0 0% 100%" : "0 0% 6%";
   const color = `${hue} ${saturation}% ${lightness}%`;
-  return `--primary:${color};--primary-foreground:${foreground};--ring:${color};--sidebar-primary:${color};--sidebar-primary-foreground:${foreground};--sidebar-ring:${color}`;
+  // The fill under white text: dark mode needs a deeper step than the text accent, light mode uses the same one.
+  const solidLightness = dark ? 52 : 42;
+  const solid = `${hue} ${saturation}% ${solidLightness}%`;
+  const solidForeground = contrastRatio(hslToRgb(hue, saturation, solidLightness), [255, 255, 255]) >= 4.5 ? "0 0% 100%" : "0 0% 6%";
+  return `--primary:${color};--primary-foreground:${foreground};--primary-solid:${solid};--primary-solid-foreground:${solidForeground};--ring:${color};--sidebar-primary:${color};--sidebar-primary-foreground:${foreground};--sidebar-ring:${color}`;
 }
 
 /**

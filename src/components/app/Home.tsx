@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronRight, Download, Plus, Puzzle, RefreshCw, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { CatalogTool } from "@/app/catalog";
+import { toolTint, type CatalogTool } from "@/app/catalog";
 import { PinnedEditor } from "@/components/app/PinnedEditor";
 import type { PluginUpdate } from "@/plugins/api";
 import { listNames } from "@/plugins/format";
@@ -13,9 +13,9 @@ function HomeToolCard({ tool, onSelect }: { tool: CatalogTool; onSelect: (tool: 
       className="home-tool-row" aria-label={tool.name} data-tool={tool.id}
     >
       <div
-        className="home-tool-icon"
+        className="home-tool-icon" data-tint={toolTint(tool.id)}
       >
-        <tool.icon className="w-4 h-4 text-primary" />
+        <tool.icon className="w-4 h-4" />
       </div>
       <span className="font-medium text-foreground text-sm">
         {tool.name}
@@ -31,11 +31,11 @@ function HomeSection({ title, tools, onSelect, action }: { title: string; tools:
     <div>
       {action ? (
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{title}</h2>
+          <h2 className="text-sm font-medium text-foreground">{title}</h2>
           {action}
         </div>
       ) : (
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
+        <h2 className="text-sm font-medium text-foreground mb-2">
           {title}
         </h2>
       )}

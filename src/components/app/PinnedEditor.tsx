@@ -78,7 +78,7 @@ export function PickerBody({ items, pinned, progress, onPick, listClassName }: O
               className={cn("flex h-10 cursor-pointer items-center gap-2.5 rounded-md px-2 text-sm", index === current && "bg-accent")}
             >
               {item.kind === "tool" ? (
-                <span className={cn("grid h-4 w-4 shrink-0 place-items-center rounded border", isPinned ? "border-primary bg-primary text-primary-foreground" : "border-input")} aria-hidden="true">
+                <span className={cn("grid h-4 w-4 shrink-0 place-items-center rounded border", isPinned ? "border-primary-solid bg-primary-solid text-primary-solid-foreground" : "border-input")} aria-hidden="true">
                   {isPinned && <span className="text-[10px] leading-none">✓</span>}
                 </span>
               ) : (

@@ -233,7 +233,7 @@ try {
     await dialog.waitForDisplayed({ reverse: true, timeout: 5000 });
   });
 
-  await step("shows the app version in the sidebar footer", async () => {
+  await step("shows the app version in the status bar", async () => {
     await waitForText(await browser.$("body"), `v${expectedVersion}`);
     await screenshot("home");
   });
@@ -382,7 +382,7 @@ try {
         await element.waitForClickable({ timeout: 10000 });
         await element.click();
       };
-      await click("button.sidebar-destination*=Plugins");
+      await click('[data-destination="plugins"]');
       await click("#plugins-tab-installed");
       await click('button[aria-label="Actions for Hello Plugin"]');
       await click('[role="menuitem"]=Uninstall');

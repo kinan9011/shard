@@ -81,7 +81,7 @@ export function BatchPermissionDialog({ entries, repoName, onCancel, onConfirm }
           <button
             type="button"
             onClick={() => onConfirm(Object.fromEntries(entries.map((entry) => [entry.id, grantsFor(permissionRows(entry), enabled[entry.id] ?? new Set())])))}
-            className="inline-flex h-[30px] items-center whitespace-nowrap rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary-foreground"
+            className="inline-flex h-[30px] items-center whitespace-nowrap rounded-md border border-primary-solid bg-primary-solid px-3 text-sm font-medium text-primary-foreground"
           >
             Allow and install
           </button>

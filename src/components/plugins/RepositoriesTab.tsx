@@ -210,7 +210,7 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
             type="button"
             disabled={!url.trim() || adding}
             onClick={() => void add()}
-            className="inline-flex h-[34px] items-center gap-[7px] whitespace-nowrap rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed"
+            className="inline-flex h-[34px] items-center gap-[7px] whitespace-nowrap rounded-md border border-primary-solid bg-primary-solid px-3 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed"
           >
             <Plus size={14} aria-hidden="true" />
             Add repository

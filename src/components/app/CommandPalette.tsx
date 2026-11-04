@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboa
 import { Download, Palette, Search, type LucideIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { searchTools } from "@/utils/tool-search";
-import type { CatalogTool } from "@/app/catalog";
+import { toolTint, type CatalogTool } from "@/app/catalog";
 import type { InstallableItem } from "@/hooks/usePaletteInstallables";
 
 /** An action the palette offers next to the tools (for example "Open Plugins"). */
@@ -212,14 +212,14 @@ export function CommandPalette({
                     role="option"
                     aria-selected={isActive}
                     type="button"
-                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors ${
+                    className={`flex w-full items-center gap-3 rounded px-2 py-1.5 text-left transition-colors ${
                       isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted"
                     }`}
                     onMouseEnter={() => setActiveIndex(index)}
                     onClick={() => choose(item)}
                   >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-md">
-                      <Icon className="h-4 w-4 text-primary" />
+                    <div className="flex h-7 w-7 items-center justify-center rounded" data-tint={item.kind === "tool" ? toolTint(item.tool.id) : 2}>
+                      <Icon className="tint-icon h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{title}</p>

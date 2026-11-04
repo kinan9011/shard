@@ -100,7 +100,7 @@ export function PermissionDialog({ mode = "install", granted, newPermissions = [
           <button
             type="button"
             onClick={() => onConfirm(grantsFor(rows, enabled))}
-            className="inline-flex h-[30px] items-center whitespace-nowrap rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary-foreground"
+            className="inline-flex h-[30px] items-center whitespace-nowrap rounded-md border border-primary-solid bg-primary-solid px-3 text-sm font-medium text-primary-foreground"
           >
             {mode === "install" ? "Allow and install" : mode === "update" ? "Allow and update" : "Save"}
           </button>

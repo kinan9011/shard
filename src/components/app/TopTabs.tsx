@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { X } from "lucide-react";
-import type { CatalogTool } from "@/app/catalog";
+import { toolTint, type CatalogTool } from "@/app/catalog";
 import { TabContextMenu, type TabContextMenuItem } from "@/components/app/TabContextMenu";
 
 interface TopTabsProps {
@@ -77,7 +77,7 @@ export function TopTabs({ tools, selectedId, onSelect, onClose, onCloseMany, onH
                 onSelect(tools[next]);
                 document.getElementById(`tab-${tools[next].id}`)?.focus();
               }}>
-              <tool.icon size={16} aria-hidden="true" /><span>{tool.name}</span>
+              <span data-tint={toolTint(tool.id)} className="flex shrink-0"><tool.icon size={14} className="tint-icon" aria-hidden="true" /></span><span>{tool.name}</span>
             </button>
             <button type="button" className="tab-close" tabIndex={-1} aria-label={`Close ${tool.name}`} title="Close tab" onClick={() => onClose(tool)}><X size={12} aria-hidden="true" /></button>
           </div>

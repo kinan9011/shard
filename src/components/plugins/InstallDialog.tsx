@@ -296,7 +296,7 @@ export function InstallDialog({ onCancel, onContinue, onOpenRepositories }: Inst
               handedOff.current = candidate.kind === "zip" && candidate.dropped;
               onContinue(jobFor(candidate, addRepo));
             }}
-            className="inline-flex h-[30px] items-center whitespace-nowrap rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            className="inline-flex h-[30px] items-center whitespace-nowrap rounded-md border border-primary-solid bg-primary-solid px-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
           >
             Continue
           </button>
@@ -350,7 +350,7 @@ function PreviewCard({ candidate, addRepo, onAddRepo, showCheckbox }: { candidat
       </div>
       {showCheckbox && (
         <button type="button" role="checkbox" aria-checked={addRepo} onClick={() => onAddRepo(!addRepo)} className="flex items-center gap-2 text-left text-xs text-foreground">
-          <span aria-hidden="true" className={cn("grid size-4 shrink-0 place-items-center rounded border", addRepo ? "border-primary bg-primary text-primary-foreground" : "border-input")}>
+          <span aria-hidden="true" className={cn("grid size-4 shrink-0 place-items-center rounded border", addRepo ? "border-primary-solid bg-primary-solid text-primary-solid-foreground" : "border-input")}>
             {addRepo && <Check size={11} strokeWidth={3} />}
           </span>
           Add this repository so the plugin gets updates

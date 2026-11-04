@@ -152,7 +152,7 @@ function Body({ rows, onCancel, onConfirm }: Omit<Props, "open">) {
           <button type="button" data-cancel onClick={onCancel} className="flex h-8 items-center whitespace-nowrap rounded-md border border-input bg-card px-3 text-[13px] font-medium">
             Cancel
           </button>
-          <button type="button" onClick={() => onConfirm(backup)} className="flex h-8 items-center whitespace-nowrap rounded-md bg-primary px-3 text-[13px] font-medium text-primary-foreground">
+          <button type="button" onClick={() => onConfirm(backup)} className="flex h-8 items-center whitespace-nowrap rounded bg-primary-solid px-3 text-[13px] font-medium text-primary-solid-foreground">
             Start merge
           </button>
         </div>
