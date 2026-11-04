@@ -1,6 +1,6 @@
 [package]
 name = "shard"
-version = "1.0.1"
+version = "1.1.0"
 description = "Shard - Your Essential Developer Companion"
 authors = ["kinan9011"]
 license = "MIT"
