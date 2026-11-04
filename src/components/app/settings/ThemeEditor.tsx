@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useT } from "@/i18n";
 import { useDialogFocus } from "@/components/app/useDialogFocus";
 import { saveFile, saveTheme } from "@/lib/desktop";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ interface Props {
 
 /** Makes or edits a theme with color pickers, shows it live, warns about faint text, saves it to the themes folder or exports it as JSON. */
 export function ThemeEditor({ initial, dark, onClose, onSaved }: Props) {
+  const t = useT();
   const editing = Boolean(initial);
   const [name, setName] = useState(initial?.name ?? "");
   const [id, setId] = useState(initial?.id ?? "");
@@ -103,13 +105,13 @@ export function ThemeEditor({ initial, dark, onClose, onSaved }: Props) {
   const field = "h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground";
   return (
     <div className="modal-backdrop fixed inset-0 z-[75] flex items-center justify-center p-4">
-      <div ref={ref} role="dialog" aria-modal="true" aria-label={editing ? `Edit ${initial?.name}` : "Create a theme"} className="modal-surface flex max-h-full w-[640px] max-w-full flex-col">
+      <div ref={ref} role="dialog" aria-modal="true" aria-label={editing ? t("settings.themeEditor.edit", { name: initial?.name ?? "" }) : t("settings.themeEditor.create")} className="modal-surface flex max-h-full w-[640px] max-w-full flex-col">
         <div className="flex flex-col gap-3 border-b border-border px-5 pb-4 pt-5">
-          <h2 className="text-base font-semibold text-foreground">{editing ? `Edit ${initial?.name}` : "Create a theme"}</h2>
+          <h2 className="text-base font-semibold text-foreground">{editing ? t("settings.themeEditor.edit", { name: initial?.name ?? "" }) : t("settings.themeEditor.create")}</h2>
           <div className="grid grid-cols-2 gap-2">
             <input
-              aria-label="Theme name"
-              placeholder="Name"
+              aria-label={t("settings.themeEditor.name")}
+              placeholder={t("settings.themeEditor.namePlaceholder")}
               maxLength={40}
               className={field}
               value={name}
@@ -118,26 +120,26 @@ export function ThemeEditor({ initial, dark, onClose, onSaved }: Props) {
                 if (!idTouched) setId(slugify(event.target.value));
               }}
             />
-            <input aria-label="Theme id" placeholder="id" maxLength={40} disabled={editing} className={cn(field, "font-mono")} value={id} onChange={(event) => { setIdTouched(true); setId(event.target.value); }} />
-            <input aria-label="Author" placeholder="Author" className={cn(field, "col-span-2")} value={author} onChange={(event) => setAuthor(event.target.value)} />
+            <input aria-label={t("settings.themeEditor.id")} placeholder={t("settings.themeEditor.idPlaceholder")} maxLength={40} disabled={editing} className={cn(field, "font-mono")} value={id} onChange={(event) => { setIdTouched(true); setId(event.target.value); }} />
+            <input aria-label={t("settings.themeEditor.author")} placeholder={t("settings.themeEditor.author")} className={cn(field, "col-span-2")} value={author} onChange={(event) => setAuthor(event.target.value)} />
           </div>
-          <div className="flex items-center gap-2" role="group" aria-label="Mode to edit">
+          <div className="flex items-center gap-2" role="group" aria-label={t("settings.themeEditor.mode")}>
             {(["light", "dark"] as const).map((item) =>
               blocks[item] ? (
                 <ActionButton key={item} aria-pressed={mode === item} className={mode === item ? "bg-accent" : ""} onClick={() => setMode(item)}>
-                  {item === "dark" ? "Dark" : "Light"}
+                  {item === "dark" ? t("settings.theme.dark") : t("settings.theme.light")}
                 </ActionButton>
               ) : null,
             )}
-            {!blocks[other] && <ActionButton onClick={() => addMode(other)}>{`Add ${other} colors`}</ActionButton>}
-            <span className="text-xs text-muted-foreground">The page shows the {dark ? "dark" : "light"} colors while you edit.</span>
+            {!blocks[other] && <ActionButton onClick={() => addMode(other)}>{other === "dark" ? t("settings.themeEditor.addDark") : t("settings.themeEditor.addLight")}</ActionButton>}
+            <span className="text-xs text-muted-foreground">{dark ? t("settings.themeEditor.showsDark") : t("settings.themeEditor.showsLight")}</span>
           </div>
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4">
           {TOKEN_GROUPS.map((group) => (
-            <section key={group.title} aria-label={group.title} className="flex flex-col gap-1.5">
-              <h3 className="text-2xs font-semibold uppercase tracking-[.06em] text-muted-foreground">{group.title}</h3>
+            <section key={group.title} aria-label={t(group.title)} className="flex flex-col gap-1.5">
+              <h3 className="text-2xs font-semibold uppercase tracking-[.06em] text-muted-foreground">{t(group.title)}</h3>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                 {group.tokens.map((token) => (
                   <label key={token} className="flex items-center justify-between gap-2 text-xs text-foreground">
@@ -152,15 +154,15 @@ export function ThemeEditor({ initial, dark, onClose, onSaved }: Props) {
 
         <div className="flex flex-col gap-2 border-t border-border px-5 py-3">
           {warnings.length > 0 && (
-            <ul aria-label="Contrast warnings" className="flex max-h-20 flex-col gap-0.5 overflow-y-auto text-xs text-warning">
+            <ul aria-label={t("settings.themeEditor.warnings")} className="flex max-h-20 flex-col gap-0.5 overflow-y-auto text-xs text-warning">
               {warnings.map((warning) => <li key={warning.foreground + warning.background}>{describeWarning(warning)}</li>)}
             </ul>
           )}
           {problem && <p role="alert" className="text-xs text-destructive">{problem}</p>}
           <div className="flex justify-end gap-2">
-            <ActionButton onClick={() => void exportJson()}>Export JSON</ActionButton>
-            <ActionButton onClick={onClose}>Cancel</ActionButton>
-            <ActionButton disabled={busy || !name.trim() || !(id || slugify(name))} onClick={() => void save()}>Save</ActionButton>
+            <ActionButton onClick={() => void exportJson()}>{t("settings.themeEditor.exportJson")}</ActionButton>
+            <ActionButton onClick={onClose}>{t("common.cancel")}</ActionButton>
+            <ActionButton disabled={busy || !name.trim() || !(id || slugify(name))} onClick={() => void save()}>{t("common.save")}</ActionButton>
           </div>
         </div>
       </div>

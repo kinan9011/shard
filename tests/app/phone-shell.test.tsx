@@ -70,6 +70,7 @@ describe("Phone shell (390 px wide)", () => {
     const sections = within(screen.getByRole("navigation", { name: "Settings sections" }));
     expect(sections.getByRole("button", { name: "Appearance" })).toBeInTheDocument();
     expect(sections.queryByRole("button", { name: "Shortcuts" })).toBeNull();
+    fireEvent.click(sections.getByRole("button", { name: "Appearance" }));
     // The layout choice is offered: a phone can pick the sidebar.
     expect(screen.getByRole("radiogroup", { name: "Layout" })).toBeInTheDocument();
   });

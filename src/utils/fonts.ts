@@ -1,3 +1,5 @@
+import type { TKey } from "@/i18n";
+
 export const FONT_STORAGE_KEY = "shard-fonts";
 
 /** Whole-UI zoom steps. */
@@ -20,10 +22,10 @@ export interface FontPrefs {
 export const DEFAULT_FONT_PREFS: FontPrefs = { ui: null, zoom: 1, field: null, fieldSize: DEFAULT_FIELD_SIZE };
 
 /** The families that ship with the app, and the system's own. `system-ui` is a CSS keyword, not a family name. */
-export const BUILT_IN_FONTS: readonly { family: string; label: string }[] = [
+export const BUILT_IN_FONTS: readonly { family: string; label: string; labelKey?: TKey }[] = [
   { family: "Inter", label: "Inter" },
   { family: "JetBrains Mono", label: "JetBrains Mono" },
-  { family: "system-ui", label: "System UI" },
+  { family: "system-ui", label: "System UI", labelKey: "settings.fonts.systemUi" },
 ];
 
 const FAMILY = /^[\p{L}\p{N} ._-]{1,64}$/u;

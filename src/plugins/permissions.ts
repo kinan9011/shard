@@ -1,3 +1,4 @@
+import { t, type TKey } from "@/i18n";
 import { Clipboard, Cpu, File as FileIcon, Globe, type LucideIcon } from "lucide-react";
 import type { PermissionName, PluginManifest } from "./types";
 
@@ -9,18 +10,18 @@ export type PermissionGroupKey = "network" | "files" | "clipboard" | "wasm";
 
 interface PermissionGroup {
   key: PermissionGroupKey;
-  label: string;
+  labelKey: TKey;
   icon: LucideIcon;
   /** Shown when the manifest gives no reason (a manifest must, so this is a fallback). */
-  defaultReason: string;
+  defaultReasonKey: TKey;
   names: readonly PermissionName[];
 }
 
 export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
-  { key: "network", label: "Network", icon: Globe, defaultReason: "Connect to the hosts it lists", names: ["network"] },
-  { key: "files", label: "Files", icon: FileIcon, defaultReason: "Read and save files you choose", names: ["files:open", "files:save"] },
-  { key: "clipboard", label: "Clipboard", icon: Clipboard, defaultReason: "Read and copy text", names: ["clipboard:read", "clipboard:write"] },
-  { key: "wasm", label: "WASM backend", icon: Cpu, defaultReason: "Runs sandboxed, with no direct access to your system", names: [] },
+  { key: "network", labelKey: "plugins.permission.network", icon: Globe, defaultReasonKey: "plugins.permission.networkReason", names: ["network"] },
+  { key: "files", labelKey: "plugins.permission.files", icon: FileIcon, defaultReasonKey: "plugins.permission.filesReason", names: ["files:open", "files:save"] },
+  { key: "clipboard", labelKey: "plugins.permission.clipboard", icon: Clipboard, defaultReasonKey: "plugins.permission.clipboardReason", names: ["clipboard:read", "clipboard:write"] },
+  { key: "wasm", labelKey: "plugins.permission.wasm", icon: Cpu, defaultReasonKey: "plugins.permission.wasmReason", names: [] },
 ];
 
 export interface PermissionRow {
@@ -42,7 +43,7 @@ export function permissionRows(manifest: Pick<PluginManifest, "permissions" | "r
   for (const group of PERMISSION_GROUPS) {
     if (group.key === "wasm") {
       // Implied by the runtime. Informational: there is nothing to grant.
-      if (manifest.runtime !== "web") rows.push({ key: "wasm", label: group.label, icon: group.icon, reason: group.defaultReason, required: true, names: [], hosts: [] });
+      if (manifest.runtime !== "web") rows.push({ key: "wasm", label: t(group.labelKey), icon: group.icon, reason: t(group.defaultReasonKey), required: true, names: [], hosts: [] });
       continue;
     }
     const members = declared.filter((permission) => group.names.includes(permission.name));
@@ -50,9 +51,9 @@ export function permissionRows(manifest: Pick<PluginManifest, "permissions" | "r
     const reasons = [...new Set(members.map((permission) => permission.reason.trim()).filter(Boolean))];
     rows.push({
       key: group.key,
-      label: group.label,
+      label: t(group.labelKey),
       icon: group.icon,
-      reason: reasons.length > 0 ? reasons.join(" ") : group.defaultReason,
+      reason: reasons.length > 0 ? reasons.join(" ") : t(group.defaultReasonKey),
       required: members.some((permission) => !permission.optional),
       names: members.map((permission) => permission.name),
       hosts: members.flatMap((permission) => permission.hosts ?? []),

@@ -7,7 +7,8 @@ vi.mock("@/lib/desktop", () => desktop);
 const toastMock = vi.hoisted(() => ({ info: vi.fn(), success: vi.fn(), warning: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast: toastMock }));
 
-import { attachBridge, notifyThemeChanged, notifyVisibilityChanged, themeSnapshot } from "@/plugins/bridge";
+import { setLanguage } from "@/i18n";
+import { attachBridge, INPUT_TTL_MS, MAX_INPUT_CHARS, notifyLocaleChanged, notifyThemeChanged, notifyVisibilityChanged, sendInputToPlugin, themeSnapshot } from "@/plugins/bridge";
 
 interface Reply {
   v: number;
@@ -470,6 +471,34 @@ describe("bridge: theme events", () => {
   });
 });
 
+describe("bridge: locale", () => {
+  it("ready and locale.get carry the app language and direction, with no permission", async () => {
+    await setLanguage("ar");
+    const { frame, posted, contentWindow } = fakeFrame();
+    attach(frame);
+    send(contentWindow, request("ready", undefined, "a"));
+    send(contentWindow, request("locale.get", undefined, "b"));
+    await flush();
+    const [ready, locale] = posted;
+    expect(ready.result).toMatchObject({ locale: { lang: "ar", dir: "rtl" } });
+    expect(locale.result).toEqual({ lang: "ar", dir: "rtl" });
+  });
+
+  it("pushes the language only to frames that finished the handshake", async () => {
+    const a = fakeFrame();
+    const b = fakeFrame();
+    attach(a.frame, "plug-a");
+    attach(b.frame, "plug-b");
+    send(a.contentWindow, request("ready"));
+    await flush();
+    a.posted.length = 0;
+    await setLanguage("zh");
+    notifyLocaleChanged();
+    expect(a.posted).toEqual([{ v: 1, event: "locale", data: { lang: "zh-CN", dir: "ltr" } }]);
+    expect(b.posted).toEqual([]);
+  });
+});
+
 describe("themeSnapshot", () => {
   it("reads the computed custom properties and the dark and scheme state", () => {
     document.documentElement.style.setProperty("--background", "220 23% 98%");
@@ -518,5 +547,77 @@ describe("bridge: frame lifecycle (W29)", () => {
     notifyVisibilityChanged("plug-a", true);
     expect(a.posted[1]).toEqual({ v: 1, event: "visibility", data: { visible: true } });
     expect(b.posted).toEqual([]);
+  });
+});
+
+describe("bridge: send to a plugin", () => {
+  const inputEvent = (text: string) => ({ v: 1, event: "input", data: { text } });
+
+  it("delivers to the ready frame of that plugin only", async () => {
+    const a = fakeFrame();
+    const b = fakeFrame();
+    attach(a.frame, "in-1a");
+    attach(b.frame, "in-1b");
+    send(a.contentWindow, request("ready", undefined, "a"));
+    send(b.contentWindow, request("ready", undefined, "b"));
+    await flush();
+    expect(sendInputToPlugin("in-1a", "hello")).toBe(true);
+    expect(a.posted.at(-1)).toEqual(inputEvent("hello"));
+    expect(b.posted.some((m) => (m as { event?: string }).event === "input")).toBe(false);
+  });
+
+  it("holds text for a frame that is not ready and hands it over once, at the handshake", async () => {
+    const { frame, posted, contentWindow } = fakeFrame();
+    attach(frame, "in-2");
+    expect(sendInputToPlugin("in-2", "later")).toBe(true);
+    expect(posted).toEqual([]);
+    send(contentWindow, request("ready", undefined, "r1"));
+    await flush();
+    expect(posted.filter((m) => (m as { event?: string }).event === "input")).toEqual([inputEvent("later")]);
+    // A second handshake (the frame was reloaded) does not replay it.
+    send(contentWindow, request("ready", undefined, "r2"));
+    await flush();
+    expect(posted.filter((m) => (m as { event?: string }).event === "input")).toHaveLength(1);
+  });
+
+  it("holds text sent before the plugin has a frame at all", async () => {
+    sendInputToPlugin("in-3", "early");
+    const { frame, posted, contentWindow } = fakeFrame();
+    attach(frame, "in-3");
+    send(contentWindow, request("ready"));
+    await flush();
+    expect(posted.filter((m) => (m as { event?: string }).event === "input")).toEqual([inputEvent("early")]);
+  });
+
+  it("does not hand over held text that is older than the limit", async () => {
+    const now = vi.spyOn(Date, "now");
+    now.mockReturnValue(1_000_000);
+    sendInputToPlugin("in-4", "stale");
+    now.mockReturnValue(1_000_000 + INPUT_TTL_MS + 1);
+    const { frame, posted, contentWindow } = fakeFrame();
+    attach(frame, "in-4");
+    send(contentWindow, request("ready"));
+    await flush();
+    now.mockRestore();
+    expect(posted.some((m) => (m as { event?: string }).event === "input")).toBe(false);
+  });
+
+  it("refuses text over the size limit and holds nothing", async () => {
+    expect(sendInputToPlugin("in-5", "x".repeat(MAX_INPUT_CHARS + 1))).toBe(false);
+    const { frame, posted, contentWindow } = fakeFrame();
+    attach(frame, "in-5");
+    send(contentWindow, request("ready"));
+    await flush();
+    expect(posted.some((m) => (m as { event?: string }).event === "input")).toBe(false);
+  });
+
+  it("needs no permission", async () => {
+    const { frame, posted, contentWindow } = fakeFrame();
+    attach(frame, "in-6");
+    send(contentWindow, request("ready"));
+    await flush();
+    expect(grants).toEqual([]);
+    sendInputToPlugin("in-6", "ok");
+    expect(posted.at(-1)).toEqual(inputEvent("ok"));
   });
 });

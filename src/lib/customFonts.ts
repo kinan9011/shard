@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { BUILT_IN_FONTS, sanitizeFamily } from "@/utils/fonts";
 
 /** Fonts the user added as files. They live in IndexedDB, so they work offline and in the browser preview alike. */
@@ -70,8 +71,8 @@ export async function loadCustomFonts(): Promise<string[]> {
 
 /** Stores a font file and makes it available. Resolves to its family name, rejects with a message for the user. */
 export async function addFontFile(file: File): Promise<string> {
-  if (!EXTENSION.test(file.name)) throw new Error("Choose a .ttf, .otf, .woff or .woff2 file.");
-  if (file.size > MAX_FONT_BYTES) throw new Error("This font file is larger than 10 MB.");
+  if (!EXTENSION.test(file.name)) throw new Error(t("settings.fonts.errorExtension"));
+  if (file.size > MAX_FONT_BYTES) throw new Error(t("settings.fonts.errorSize"));
   const base = sanitizeFamily(file.name.replace(EXTENSION, "").replace(/[^\p{L}\p{N} ._-]+/gu, " ").replace(/\s+/g, " ").slice(0, 60)) ?? "Custom font";
   const taken = new Set([...(await listFonts()), ...BUILT_IN_FONTS.map((font) => font.family)]);
   let family = base;
@@ -80,7 +81,7 @@ export async function addFontFile(file: File): Promise<string> {
   try {
     await register(family, data);
   } catch {
-    throw new Error("This file is not a font the app can read.");
+    throw new Error(t("settings.fonts.errorUnreadable"));
   }
   await run("readwrite", (store) => store.put({ family, data } satisfies StoredFont));
   return family;

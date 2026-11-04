@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { usePersistedInput } from "@/hooks/usePersistedInput";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { AlignLeft, CheckCircle2, Columns2, Clipboard, Rows2, ShieldCheck } from "lucide-react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
@@ -9,9 +10,10 @@ import { useWindowedRows } from "@/hooks/useWindowedRows";
 import { toast } from "sonner";
 import { readClipboardText } from "@/lib/desktop";
 import { CopyButton } from "@/components/tools/CopyButton";
+import { SendToMenu } from "@/components/tools/SendToMenu";
 import { ToolFaqSection, type ToolFaqItem } from "@/components/tools/ToolFaq";
+import { t as translate, useLocale, useT, type TKey } from "@/i18n";
 
-const QUERY_HINT = "Examples: $.tools[0], users[*].name, $['my key']";
 const LAYOUT_KEY = "shard-json-layout";
 // Larger input waits for a pause in typing before it is read again.
 const LIVE_LIMIT = 200_000;
@@ -19,17 +21,10 @@ const LIVE_LIMIT = 200_000;
 const OUTPUT_ROW_HEIGHT = 24;
 const WINDOW_AFTER = 2000;
 const INDENTS: Record<string, number | string> = { "2": 2, "4": 4, tab: "\t" };
-const MODES: [JsonViewMode, string][] = [["format", "Format"], ["minify", "Minify"], ["sort", "Sort keys"], ["yaml", "YAML"], ["xml", "XML"]];
+const MODES: [JsonViewMode, TKey | null][] = [["format", "jsonViewer.mode.format"], ["minify", "jsonViewer.mode.minify"], ["sort", "jsonViewer.mode.sort"], ["yaml", null], ["xml", null]];
 
-const FAQ_ITEMS: ToolFaqItem[] = [
-  { q: "What input does the JSON Viewer read?", a: "It reads JSON, JSON5, and NDJSON. It also reads data literals from Python, Ruby, and JavaScript, such as a Python dict, a Ruby hash, or a JavaScript object." },
-  { q: "What does the viewer repair?", a: "It reads single quotes, unquoted keys, comments, and trailing commas. It converts True, False, None, nil, tuples, symbols, and => separators. A notice lists each repair." },
-  { q: "When does the viewer refuse to repair input?", a: "It refuses input that has more than one possible meaning. Examples are unquoted values, NaN, leading zeros, and two values on one line without a comma. The error shows the line and column." },
-  { q: "What happens to undefined in a JavaScript object?", a: "The viewer drops a property whose value is undefined. It changes an undefined array item to null. JSON.stringify does the same." },
-  { q: "How does the viewer read NDJSON?", a: "Put one JSON value on each line. The viewer reads the lines as one array." },
-  { q: "Why does the viewer warn about large numbers?", a: "JavaScript rounds integers larger than 2^53. The viewer keeps these numbers exact in every output, but other tools that read the JSON can round them." },
-  { q: "Does my data leave this device?", a: "No. The viewer reads and converts everything locally." },
-];
+const FAQ_KEYS = ["input", "repair", "refuse", "undefined", "ndjson", "largeNumbers", "privacy"] as const;
+const faqItems = (): ToolFaqItem[] => FAQ_KEYS.map((key) => ({ q: translate(`jsonViewer.faq.${key}.q`), a: translate(`jsonViewer.faq.${key}.a`) }));
 
 function readLayout(): "side" | "below" {
   try { return localStorage.getItem(LAYOUT_KEY) === "below" ? "below" : "side"; }
@@ -46,7 +41,9 @@ function JsonCode({ value }: { value: string }) {
 }
 
 export function JsonViewer() {
-  const [input, setInput] = useState("");
+  const t = useT();
+  const { locale } = useLocale();
+  const [input, setInput] = usePersistedInput("json-viewer");
   const [indent, setIndent] = useState("2");
   const [chosen, setLayout] = useState(readLayout);
   // A phone is too narrow for two panes side by side: the result goes below, and the choice is not offered.
@@ -60,9 +57,11 @@ export function JsonViewer() {
   const debouncedInput = useDebouncedValue(input, 300);
   const source = input.length > LIVE_LIMIT ? debouncedInput : input;
 
-  const read = useMemo(() => (source.trim() ? readJson(source) : null), [source]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `locale` re-runs this so its messages follow the language
+  const read = useMemo(() => (source.trim() ? readJson(source) : null), [source, locale]);
   const value = read?.ok ? read.value : undefined;
-  const view = useMemo(() => (read?.ok ? renderJsonView(read.value, mode, INDENTS[indent], query) : null), [read, mode, indent, query]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `locale` re-runs this so its messages follow the language
+  const view = useMemo(() => (read?.ok ? renderJsonView(read.value, mode, INDENTS[indent], query) : null), [read, mode, indent, query, locale]);
   const stats = useMemo(() => (read?.ok ? describeJsonValue(read.value) : null), [read]);
   const suggestions = useMemo(() => (value === undefined || source.length > LIVE_LIMIT ? [] : getJsonPaths(value).slice(0, 100)), [value, source]);
   const output = view?.ok ? view.text : "";
@@ -88,7 +87,7 @@ export function JsonViewer() {
   };
   const paste = async () => {
     try { setInput(await readClipboardText()); }
-    catch { toast.error("Clipboard unavailable. Paste directly into the input instead."); }
+    catch { toast.error(t("jsonViewer.toast.clipboard")); }
   };
   const showError = () => {
     const textarea = inputRef.current;
@@ -100,63 +99,63 @@ export function JsonViewer() {
   return <div className="json-workspace">
     <div className="editor-toolbar">
       <div className="toolbar-actions">
-        <div className="layout-switch" role="group" aria-label="Output">
-          {MODES.map(([id, label]) => <button key={id} type="button" aria-pressed={mode === id} onClick={() => setMode(id)}>{id === "format" && <AlignLeft size={14} />}{label}</button>)}
+        <div className="layout-switch" role="group" aria-label={t("jsonViewer.output.group")}>
+          {MODES.map(([id, label]) => <button key={id} type="button" aria-pressed={mode === id} onClick={() => setMode(id)}>{id === "format" && <AlignLeft size={14} />}{label ? t(label) : id.toUpperCase()}</button>)}
         </div>
-        <label className="indent-control">Indent <select aria-label="Indentation" value={indent} onChange={(event) => setIndent(event.target.value)}><option value="2">2 spaces</option><option value="4">4 spaces</option><option value="tab">Tab</option></select></label>
+        <label className="indent-control">{t("jsonViewer.indent.label")} <select aria-label={t("jsonViewer.indent.aria")} value={indent} onChange={(event) => setIndent(event.target.value)}><option value="2">{t("jsonViewer.indent.spaces2")}</option><option value="4">{t("jsonViewer.indent.spaces4")}</option><option value="tab">{t("jsonViewer.indent.tab")}</option></select></label>
       </div>
-      <div className="layout-switch hidden sm:flex" role="group" aria-label="Result layout">
-        <button type="button" aria-pressed={layout === "side"} onClick={() => changeLayout("side")}><Columns2 size={14} />Side</button>
-        <button type="button" aria-pressed={layout === "below"} onClick={() => changeLayout("below")}><Rows2 size={14} />Below</button>
+      <div className="layout-switch hidden sm:flex" role="group" aria-label={t("jsonViewer.layout.group")}>
+        <button type="button" aria-pressed={layout === "side"} onClick={() => changeLayout("side")}><Columns2 size={14} />{t("jsonViewer.layout.side")}</button>
+        <button type="button" aria-pressed={layout === "below"} onClick={() => changeLayout("below")}><Rows2 size={14} />{t("jsonViewer.layout.below")}</button>
       </div>
     </div>
     <div className="editor-toolbar" role="search">
       <div className="toolbar-actions">
-        <label className="indent-control" style={{ borderLeft: 0, paddingLeft: 0 }} htmlFor="json-query-input">Query</label>
-        <input id="json-query-input" type="text" list="json-query-paths" spellCheck={false} autoComplete="off" value={query} placeholder="$.tools[0]" aria-describedby="json-query-hint"
+        <label className="indent-control" style={{ borderLeft: 0, paddingLeft: 0 }} htmlFor="json-query-input">{t("jsonViewer.query.label")}</label>
+        <input id="json-query-input" dir="ltr" data-dir-lock data-code-placeholder type="text" list="json-query-paths" spellCheck={false} autoComplete="off" value={query} placeholder="$.tools[0]" aria-describedby="json-query-hint"
           style={{ minWidth: 220, padding: "4px 8px", border: "1px solid hsl(var(--input))", borderRadius: 6, background: "transparent", fontFamily: "monospace", fontSize: 12 }}
           onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); setMode("query"); } }} />
         <datalist id="json-query-paths">{suggestions.map((path) => <option key={path} value={path} />)}</datalist>
-        <button type="button" className="toolbar-text-button" aria-pressed={mode === "query"} onClick={() => setMode("query")}>Run query</button>
-        <span id="json-query-hint" className="indent-control" style={{ borderLeft: 0 }}>{QUERY_HINT}</span>
+        <button type="button" className="toolbar-text-button" aria-pressed={mode === "query"} onClick={() => setMode("query")}>{t("jsonViewer.query.run")}</button>
+        <span id="json-query-hint" className="indent-control" style={{ borderLeft: 0 }}>{t("jsonViewer.query.hint")}</span>
       </div>
     </div>
     {read?.ok && read.notice && <div className="json-info" role="status">{read.notice}</div>}
-    {read?.ok && read.largeNumbers > 0 && <div className="json-info" role="status">{read.largeNumbers === 1 ? "1 number is" : `${read.largeNumbers} numbers are`} larger than 2^53. The output keeps them exact, but JavaScript and many JSON tools round them.</div>}
+    {read?.ok && read.largeNumbers > 0 && <div className="json-info" role="status">{t("jsonViewer.largeNumbers", { count: read.largeNumbers })}</div>}
     {view && "message" in view && <div className="json-info" role="status">{view.message}</div>}
     {error && excerpt && <div className="json-error" role="alert">
-      <strong>Invalid JSON.</strong> Line {error.line}, column {error.column}: {error.message}{" "}
-      <button type="button" className="toolbar-text-button" style={{ color: "inherit", textDecoration: "underline" }} onClick={showError}>Show in input</button>
+      <strong>{t("jsonViewer.error.invalid")}</strong> {t("conversion.position", { line: error.line, column: error.column, message: error.message })}{" "}
+      <button type="button" className="toolbar-text-button" style={{ color: "inherit", textDecoration: "underline" }} onClick={showError}>{t("jsonViewer.error.show")}</button>
       <pre aria-hidden="true" style={{ margin: "6px 0 0", fontFamily: "monospace", whiteSpace: "pre" }}>{excerpt.text}{"\n"}{" ".repeat(excerpt.caret)}^</pre>
     </div>}
     <div className="editor-panels" data-layout={layout}>
       <PanelGroup direction={layout === "side" ? "horizontal" : "vertical"} key={layout}>
         <Panel minSize={20} defaultSize={50}>
           <div className="editor-pane">
-            <div className="editor-pane-header"><label htmlFor="json-workspace-input">JSON Input</label><button type="button" className="toolbar-text-button" onClick={paste}><Clipboard size={14} />Paste</button></div>
+            <div className="editor-pane-header"><label htmlFor="json-workspace-input">{t("jsonViewer.input.title")}</label><button type="button" className="toolbar-text-button" onClick={paste}><Clipboard size={14} />{t("common.paste")}</button></div>
             <div className="code-input-wrap">
               <div className="line-numbers" aria-hidden="true"><div ref={gutterRef} style={{ whiteSpace: "pre" }}>{inputGutter}</div></div>
-              <textarea ref={inputRef} id="json-workspace-input" spellCheck={false} autoCapitalize="off" autoCorrect="off" wrap="off" value={input} onScroll={(event) => { if (gutterRef.current) gutterRef.current.style.transform = `translateY(-${event.currentTarget.scrollTop}px)`; }} onChange={(event) => setInput(event.target.value)} placeholder={'Paste JSON, NDJSON, or a Python, Ruby, or JavaScript literal…\n\nYour data stays on this device.'} />
+              <textarea ref={inputRef} id="json-workspace-input" dir="ltr" data-dir-lock spellCheck={false} autoCapitalize="off" autoCorrect="off" wrap="off" value={input} onScroll={(event) => { if (gutterRef.current) gutterRef.current.style.transform = `translateY(-${event.currentTarget.scrollTop}px)`; }} onChange={(event) => setInput(event.target.value)} placeholder={t("jsonViewer.input.placeholder")} />
             </div>
           </div>
         </Panel>
-        <PanelResizeHandle className="editor-resize" aria-label="Resize input and output" />
+        <PanelResizeHandle className="editor-resize" aria-label={t("jsonViewer.resize")} />
         <Panel minSize={20} defaultSize={50}>
           <div className="editor-pane">
-            <div className="editor-pane-header"><span id="json-output-label">Output</span><CopyButton value={output} /></div>
+            <div className="editor-pane-header"><span id="json-output-label">{t("jsonViewer.output.title")}</span><span className="flex items-center gap-1"><SendToMenu text={output} from="json-viewer" /><CopyButton value={output} /></span></div>
             <div ref={outputRef} className="code-output" tabIndex={0} role="region" aria-labelledby="json-output-label">
-              {output ? <pre style={windowed ? { paddingTop: 16 + first * OUTPUT_ROW_HEIGHT, paddingBottom: 16 + (outputLines.length - last) * OUTPUT_ROW_HEIGHT } : undefined}>{outputRows}</pre> : <div className="editor-empty"><AlignLeft size={24} strokeWidth={1.3} /><p>Results appear here.</p><span>Paste JSON or a data literal. The output updates as you type.</span></div>}
+              {output ? <pre style={windowed ? { paddingTop: 16 + first * OUTPUT_ROW_HEIGHT, paddingBottom: 16 + (outputLines.length - last) * OUTPUT_ROW_HEIGHT } : undefined}>{outputRows}</pre> : <div className="editor-empty"><AlignLeft size={24} strokeWidth={1.3} /><p>{t("jsonViewer.output.empty")}</p><span>{t("jsonViewer.output.emptyHint")}</span></div>}
             </div>
           </div>
         </Panel>
       </PanelGroup>
     </div>
-    <div className="workspace-help"><ToolFaqSection items={FAQ_ITEMS} /></div>
+    <div className="workspace-help"><ToolFaqSection items={faqItems()} /></div>
     <footer className="editor-status" aria-live="polite">
-      <span>{read?.ok ? <><CheckCircle2 size={14} className="status-valid" />{read.notice ? "Converted to JSON" : "Valid JSON"}</> : error ? "Check input" : "Ready"}</span>
-      {stats && <span>{stats.type} · {stats.keys} keys · depth {stats.depth}</span>}
-      {output && <span>{outputLines.length} lines · {outputBytes} bytes</span>}
-      <span className="ml-auto">UTF-8</span><span><ShieldCheck size={13} />Local processing</span>
+      <span>{read?.ok ? <><CheckCircle2 size={14} className="status-valid" />{read.notice ? t("jsonViewer.status.converted") : t("jsonViewer.status.valid")}</> : error ? t("jsonViewer.status.check") : t("jsonViewer.status.ready")}</span>
+      {stats && <span>{t("jsonViewer.status.stats", { type: t(`jsonViewer.type.${stats.type}`), keys: stats.keys, depth: stats.depth })}</span>}
+      {output && <span>{t("jsonViewer.status.size", { lines: outputLines.length, bytes: outputBytes })}</span>}
+      <span className="ms-auto">UTF-8</span><span><ShieldCheck size={13} />{t("jsonViewer.status.local")}</span>
     </footer>
   </div>;
 }

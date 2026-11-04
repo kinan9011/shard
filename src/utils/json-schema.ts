@@ -6,6 +6,7 @@
 import { isMap, isScalar, isSeq, parseDocument as parseYamlDocument, type Node as YamlNode } from "yaml";
 import { emitCode, inferModel } from "./json-to-code";
 import { errorAt, setOwn } from "./conversion-error";
+import { t } from "@/i18n";
 
 export interface SourceRange {
   start: number;
@@ -48,21 +49,21 @@ const parseJsonWithLocations = (text: string) => {
   const skipSpace = () => {
     while (i < text.length && (text[i] === " " || text[i] === "\t" || text[i] === "\n" || text[i] === "\r")) i++;
   };
-  const describe = () => (i >= text.length ? "Unexpected end of input" : `Unexpected character ${JSON.stringify(text[i])}`);
+  const describe = () => (i >= text.length ? t("jsonSchema.syntax.endOfInput") : t("jsonSchema.syntax.character", { character: JSON.stringify(text[i]) }));
 
   const parseString = (): string => {
     const start = i;
     i++;
     while (i < text.length && text[i] !== '"') {
-      if (text.charCodeAt(i) < 0x20) fail("Control characters must be escaped in strings");
+      if (text.charCodeAt(i) < 0x20) fail(t("jsonSchema.syntax.controlChars"));
       i += text[i] === "\\" ? 2 : 1;
     }
-    if (i >= text.length) fail("Unterminated string", start);
+    if (i >= text.length) fail(t("jsonSchema.syntax.unterminated"), start);
     i++;
     try {
       return JSON.parse(text.slice(start, i)) as string;
     } catch {
-      return fail("Invalid escape sequence in string", start);
+      return fail(t("jsonSchema.syntax.invalidEscape"), start);
     }
   };
 
@@ -79,12 +80,12 @@ const parseJsonWithLocations = (text: string) => {
       else {
         for (;;) {
           skipSpace();
-          if (text[i] !== '"') fail(text[i] === "}" ? "Trailing comma before }" : `${describe()}. Expected a property name in double quotes`);
+          if (text[i] !== '"') fail(text[i] === "}" ? t("jsonSchema.syntax.trailingCommaBrace") : t("jsonSchema.syntax.expectedName", { found: describe() }));
           const keyStart = i;
           const name = parseString();
           const keyRange = { start: keyStart, end: i };
           skipSpace();
-          if (text[i] !== ":") fail(`${describe()}. Expected ":" after the property name`);
+          if (text[i] !== ":") fail(t("jsonSchema.syntax.expectedColon", { found: describe() }));
           i++;
           setOwn(object, name, parseValue(childPointer(pointer, name), keyRange));
           skipSpace();
@@ -96,7 +97,7 @@ const parseJsonWithLocations = (text: string) => {
             i++;
             break;
           }
-          fail(`${describe()}. Expected "," or "}"`);
+          fail(t("jsonSchema.syntax.expectedCommaBrace", { found: describe() }));
         }
       }
       value = object;
@@ -108,7 +109,7 @@ const parseJsonWithLocations = (text: string) => {
       else {
         for (;;) {
           skipSpace();
-          if (text[i] === "]") fail("Trailing comma before ]");
+          if (text[i] === "]") fail(t("jsonSchema.syntax.trailingCommaBracket"));
           array.push(parseValue(childPointer(pointer, array.length)));
           skipSpace();
           if (text[i] === ",") {
@@ -119,7 +120,7 @@ const parseJsonWithLocations = (text: string) => {
             i++;
             break;
           }
-          fail(`${describe()}. Expected "," or "]"`);
+          fail(t("jsonSchema.syntax.expectedCommaBracket", { found: describe() }));
         }
       }
       value = array;
@@ -138,7 +139,7 @@ const parseJsonWithLocations = (text: string) => {
 
   const value = parseValue("");
   skipSpace();
-  if (i < text.length) fail(`${describe()} after the end of the JSON value`);
+  if (i < text.length) fail(t("jsonSchema.syntax.afterEnd", { found: describe() }));
   return { value, locations };
 };
 
@@ -168,7 +169,7 @@ export function parseDocument(text: string): ParsedDocument {
     } catch (error) {
       if (!(error instanceof JsonSyntaxError)) throw error;
       const { line, column } = lineColumn(text, error.offset);
-      return { ok: false, error: errorAt(`Invalid JSON. ${error.message}.`, line, column).message, line, column };
+      return { ok: false, error: errorAt(t("conversion.invalidJsonPeriod", { message: error.message }), line, column).message, line, column };
     }
   }
   const doc = parseYamlDocument(text, { prettyErrors: true });
@@ -176,7 +177,7 @@ export function parseDocument(text: string): ParsedDocument {
     const first = doc.errors[0];
     const pos = first.linePos?.[0];
     const message = first.message.split("\n")[0].replace(/ at line \d+, column \d+:?$/, "").trim();
-    return { ok: false, error: errorAt(`Invalid YAML. ${message}`, pos?.line, pos?.col).message, line: pos?.line, column: pos?.col };
+    return { ok: false, error: errorAt(t("conversion.invalidYaml", { message }), pos?.line, pos?.col).message, line: pos?.line, column: pos?.col };
   }
   const locations = new Map<string, Location>();
   yamlLocations(doc.contents as YamlNode | null, "", locations);
@@ -297,29 +298,29 @@ const toIssue = (error: AjvError): SchemaIssue => {
   const issue = (message: string, pointer = base, key = false): SchemaIssue => ({ path: pointer || "/", keyword: error.keyword, message, pointer, key });
   switch (error.keyword) {
     case "required":
-      return issue(`Missing required property "${params.missingProperty}"`);
+      return issue(t("jsonSchema.issue.required", { name: String(params.missingProperty) }));
     case "additionalProperties":
     case "unevaluatedProperties": {
       const name = String(params.additionalProperty ?? params.unevaluatedProperty);
-      return issue(`Property "${name}" is not allowed`, childPointer(base, name), true);
+      return issue(t("jsonSchema.issue.notAllowed", { name }), childPointer(base, name), true);
     }
     case "propertyNames":
-      return issue(`Property name "${params.propertyName}" is not valid`, childPointer(base, String(params.propertyName)), true);
+      return issue(t("jsonSchema.issue.nameInvalid", { name: String(params.propertyName) }), childPointer(base, String(params.propertyName)), true);
     case "type": {
       const expected = String(params.type).split(",").join(" or ");
-      return issue(`Expected ${expected}, got ${typeName(error.data)}`);
+      return issue(t("jsonSchema.issue.type", { expected, actual: typeName(error.data) }));
     }
     case "enum": {
       const allowed = (params.allowedValues as unknown[]) ?? [];
       const list = allowed.slice(0, 10).map(preview).join(", ");
-      return issue(`Must be one of: ${list}${allowed.length > 10 ? ", ..." : ""}`);
+      return issue(t("jsonSchema.issue.enum", { list: `${list}${allowed.length > 10 ? ", ..." : ""}` }));
     }
     case "const":
-      return issue(`Must equal ${preview(params.allowedValue)}`);
+      return issue(t("jsonSchema.issue.const", { value: preview(params.allowedValue) }));
     case "format":
-      return issue(`Must be a valid "${params.format}"`);
+      return issue(t("jsonSchema.issue.format", { format: String(params.format) }));
     default: {
-      const message = error.message ?? "Is not valid";
+      const message = error.message ?? t("jsonSchema.issue.notValid");
       return issue(message.charAt(0).toUpperCase() + message.slice(1));
     }
   }
@@ -343,7 +344,7 @@ const isRemote = (ref: string) => !ref.startsWith("#");
 
 /** Compiles a schema. Detects the draft from `$schema` and uses draft-07 when it is missing. */
 export function compileSchema(modules: ValidatorModules, schema: unknown): CompiledSchema {
-  if (!isObject(schema) && typeof schema !== "boolean") return { ok: false, error: "The schema must be a JSON object or a boolean." };
+  if (!isObject(schema) && typeof schema !== "boolean") return { ok: false, error: t("jsonSchema.compile.notObject") };
   const declared = isObject(schema) && typeof schema.$schema === "string" ? schema.$schema : undefined;
   let draft: Draft = "draft-07";
   let notice: string | undefined;
@@ -351,13 +352,13 @@ export function compileSchema(modules: ValidatorModules, schema: unknown): Compi
   if (declared) {
     const match = DRAFT_PATTERNS.find(([pattern]) => pattern.test(declared));
     if (match) draft = match[1];
-    else notice = `The $schema "${declared}" is not a known draft. The tool validates with draft-07.`;
+    else notice = t("jsonSchema.compile.unknownDraft", { declared });
   }
   if (isObject(source) && (draft === "draft-04" || draft === "draft-06" || notice)) {
     // Ajv has no draft-04 or draft-06 meta-schema built in. Draft-07 reads both once the syntax is updated.
     source = { ...(draft === "draft-04" ? (upgradeDraft04(source) as Record<string, unknown>) : source) };
     delete (source as Record<string, unknown>).$schema;
-    if (draft === "draft-04") notice = "Draft-04 schemas are checked with the draft-07 rules. Boolean exclusiveMinimum and exclusiveMaximum are converted.";
+    if (draft === "draft-04") notice = t("jsonSchema.compile.draft04");
   }
 
   const AjvClass = draft === "2020-12" ? modules.Ajv2020 : draft === "2019-09" ? modules.Ajv2019 : modules.Ajv07;
@@ -367,7 +368,7 @@ export function compileSchema(modules: ValidatorModules, schema: unknown): Compi
 
   if (!ajv.validateSchema(source as object)) {
     const issues = toIssues(ajv.errors);
-    return { ok: false, error: `The schema is not valid against ${DRAFT_LABELS[draft]}.`, issues };
+    return { ok: false, error: t("jsonSchema.compile.invalidAgainst", { draft: DRAFT_LABELS[draft] }), issues };
   }
 
   let validateFn: ReturnType<AjvInstance["compile"]>;
@@ -379,11 +380,11 @@ export function compileSchema(modules: ValidatorModules, schema: unknown): Compi
       return {
         ok: false,
         error: isRemote(ref)
-          ? `The $ref "${ref}" is not fetched, because the tool works offline. Copy that schema into $defs and point $ref at it.`
-          : `The $ref "${ref}" does not point to anything in this schema.`,
+          ? t("jsonSchema.compile.remoteRef", { ref })
+          : t("jsonSchema.compile.missingRef", { ref }),
       };
     }
-    return { ok: false, error: `The schema cannot be compiled. ${(error as Error).message}` };
+    return { ok: false, error: t("jsonSchema.compile.failed", { message: (error as Error).message }) };
   }
 
   return {

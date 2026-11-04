@@ -130,6 +130,7 @@ describe("Shard theme", () => {
     await waitFor(() => expect(document.documentElement).toHaveAttribute("data-scheme", "adwaita"));
 
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Settings sections" })).getByRole("button", { name: "Appearance" }));
     const menu = within(screen.getByRole("main"));
     const schemes = within(menu.getByRole("group", { name: "Color scheme" }));
     // Light mode: the dark-only schemes are not listed.

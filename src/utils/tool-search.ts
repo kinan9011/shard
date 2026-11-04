@@ -1,3 +1,5 @@
+import { categorySearchNames, toolSearchNames } from "@/app/toolNames";
+
 export interface SearchableTool {
   id: string;
   name: string;
@@ -72,8 +74,9 @@ export function searchTools<T extends SearchableTool>(tools: T[], query: string)
 
   return [...tools]
     .map((tool) => {
-      const nameScore = scoreTextMatch(tool.name, normalizedQuery);
-      const categoryScore = scoreTextMatch(tool.category, normalizedQuery) * 0.6;
+      // A built-in tool matches by the name shown in the current language and by its English name.
+      const nameScore = Math.max(...toolSearchNames(tool).map((name) => scoreTextMatch(name, normalizedQuery)));
+      const categoryScore = Math.max(...categorySearchNames(tool.category).map((name) => scoreTextMatch(name, normalizedQuery))) * 0.6;
       const combinedScore = Math.max(nameScore, categoryScore, scoreKeywords(tool.keywords, normalizedQuery));
 
       return { tool, combinedScore, nameScore };

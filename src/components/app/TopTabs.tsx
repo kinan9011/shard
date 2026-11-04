@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { X } from "lucide-react";
 import { toolTint, type CatalogTool } from "@/app/catalog";
+import { toolName } from "@/app/toolNames";
+import { getDir, useT } from "@/i18n";
 import { TabContextMenu, type TabContextMenuItem } from "@/components/app/TabContextMenu";
 
 interface TopTabsProps {
@@ -15,6 +17,7 @@ interface TopTabsProps {
 }
 
 export function TopTabs({ tools, selectedId, onSelect, onClose, onCloseMany, onHide }: TopTabsProps) {
+  const t = useT();
   const tabStripRef = useRef<HTMLDivElement>(null);
   const [tabsOverflow, setTabsOverflow] = useState(false);
   useEffect(() => {
@@ -46,18 +49,18 @@ export function TopTabs({ tools, selectedId, onSelect, onClose, onCloseMany, onH
     const others = tools.filter((entry) => entry.id !== tool.id);
     const toRight = tools.slice(index + 1);
     return [
-      { label: "Close", onSelect: () => onClose(tool) },
-      { label: "Close other tabs", disabled: others.length === 0, onSelect: () => onCloseMany(new Set(others.map((entry) => entry.id)), tool) },
-      { label: "Close tabs to the right", disabled: toRight.length === 0, onSelect: () => onCloseMany(new Set(toRight.map((entry) => entry.id)), tool) },
-      { label: "Close all tabs", onSelect: () => onCloseMany(new Set(tools.map((entry) => entry.id))) },
-      ...(onHide ? [{ label: tool.pluginId ? "Turn off this plugin" : "Hide this tool", onSelect: () => onHide(tool) }] : []),
+      { label: t("common.close"), onSelect: () => onClose(tool) },
+      { label: t("shell.tabs.closeOthers"), disabled: others.length === 0, onSelect: () => onCloseMany(new Set(others.map((entry) => entry.id)), tool) },
+      { label: t("shell.tabs.closeRight"), disabled: toRight.length === 0, onSelect: () => onCloseMany(new Set(toRight.map((entry) => entry.id)), tool) },
+      { label: t("shell.tabs.closeAll"), onSelect: () => onCloseMany(new Set(tools.map((entry) => entry.id))) },
+      ...(onHide ? [{ label: tool.pluginId ? t("shell.tabs.turnOffPlugin") : t("shell.tabs.hideTool"), onSelect: () => onHide(tool) }] : []),
     ];
   };
 
   return (
     <>
-      <div className="workspace-tabs" role="tablist" aria-label="Open tools" ref={tabStripRef} data-overflow={tabsOverflow || undefined}>
-        {tools.length === 0 && <span className="workspace-tab-placeholder">Workspace</span>}
+      <div className="workspace-tabs" role="tablist" aria-label={t("shell.phone.openTools")} ref={tabStripRef} data-overflow={tabsOverflow || undefined}>
+        {tools.length === 0 && <span className="workspace-tab-placeholder">{t("shell.tabs.workspace")}</span>}
         {tools.map((tool) => (
           <div className="workspace-tab-wrap" role="presentation" key={tool.id} onContextMenu={(event) => openTabMenu(event, tool)}>
             <button type="button" role="tab" id={`tab-${tool.id}`} aria-controls={`panel-${tool.id}`} aria-selected={selectedId === tool.id}
@@ -67,8 +70,8 @@ export function TopTabs({ tools, selectedId, onSelect, onClose, onCloseMany, onH
               onKeyDown={(event) => {
                 const index = tools.findIndex((entry) => entry.id === tool.id);
                 let next = index;
-                if (event.key === "ArrowRight") next = (index + 1) % tools.length;
-                else if (event.key === "ArrowLeft") next = (index - 1 + tools.length) % tools.length;
+                if (event.key === (getDir() === "rtl" ? "ArrowLeft" : "ArrowRight")) next = (index + 1) % tools.length;
+                else if (event.key === (getDir() === "rtl" ? "ArrowRight" : "ArrowLeft")) next = (index - 1 + tools.length) % tools.length;
                 else if (event.key === "Home") next = 0;
                 else if (event.key === "End") next = tools.length - 1;
                 else if (event.key === "Delete") { onClose(tool); return; }
@@ -77,13 +80,13 @@ export function TopTabs({ tools, selectedId, onSelect, onClose, onCloseMany, onH
                 onSelect(tools[next]);
                 document.getElementById(`tab-${tools[next].id}`)?.focus();
               }}>
-              <span data-tint={toolTint(tool.id)} className="flex shrink-0"><tool.icon size={14} className="tint-icon" aria-hidden="true" /></span><span>{tool.name}</span>
+              <span data-tint={toolTint(tool.id)} className="flex shrink-0"><tool.icon size={14} className="tint-icon" aria-hidden="true" /></span><span>{toolName(tool)}</span>
             </button>
-            <button type="button" className="tab-close" tabIndex={-1} aria-label={`Close ${tool.name}`} title="Close tab" onClick={() => onClose(tool)}><X size={12} aria-hidden="true" /></button>
+            <button type="button" className="tab-close" tabIndex={-1} aria-label={t("shell.tabs.closeTool", { name: toolName(tool) })} title={t("shell.tabs.closeTab")} onClick={() => onClose(tool)}><X size={12} aria-hidden="true" /></button>
           </div>
         ))}
       </div>
-      {tabMenu && <TabContextMenu x={tabMenu.x} y={tabMenu.y} label={`${tabMenu.tool.name} tab`} items={tabMenuItems(tabMenu.tool)} onClose={closeTabMenu} />}
+      {tabMenu && <TabContextMenu x={tabMenu.x} y={tabMenu.y} label={t("shell.tabs.tabLabel", { name: toolName(tabMenu.tool) })} items={tabMenuItems(tabMenu.tool)} onClose={closeTabMenu} />}
     </>
   );
 }

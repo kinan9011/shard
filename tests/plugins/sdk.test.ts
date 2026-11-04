@@ -8,7 +8,8 @@ const toastMock = vi.hoisted(() => ({ info: vi.fn(), success: vi.fn(), warning: 
 vi.mock("sonner", () => ({ toast: toastMock }));
 
 import { connect, PermissionError, SdkError } from "../../packages/plugin-sdk/src/index";
-import { attachBridge, notifyThemeChanged, notifyVisibilityChanged } from "@/plugins/bridge";
+import { setLanguage } from "@/i18n";
+import { attachBridge, notifyLocaleChanged, notifyThemeChanged, notifyVisibilityChanged, sendInputToPlugin } from "@/plugins/bridge";
 
 // Two real jsdom windows: the app (`window`) and a plugin frame. jsdom's postMessage does not set
 // `event.source`, so each side's postMessage is replaced by one that does. Both ends run their real code.
@@ -134,6 +135,24 @@ describe("plugin SDK against the host bridge", () => {
     expect(seen).toEqual([true]);
   });
 
+  it("gives the language at the handshake, on request, and on change until unsubscribed", async () => {
+    await setLanguage("he");
+    const client = sdk();
+    const seen: string[] = [];
+    const stop = client.locale.onChange((locale) => seen.push(`${locale.lang}:${locale.dir}`));
+    const info = await client.ready();
+    expect(info.locale).toEqual({ lang: "he", dir: "rtl" });
+    await setLanguage("fr");
+    notifyLocaleChanged();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(await client.locale.get()).toEqual({ lang: "fr", dir: "ltr" });
+    stop();
+    await setLanguage("de");
+    notifyLocaleChanged();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(seen).toEqual(["fr:ltr"]);
+  });
+
   it("keeps calling the other onChange callbacks when one throws", async () => {
     const client = sdk();
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -196,6 +215,45 @@ describe("plugin SDK against the host bridge", () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(seen).toEqual([false]);
+  });
+
+  it("delivers text sent from the app to onInput until unsubscribed", async () => {
+    const client = sdk();
+    const seen: string[] = [];
+    const stop = client.onInput((text) => seen.push(text));
+    await client.ready();
+    sendInputToPlugin("hello", "one");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(seen).toEqual(["one"]);
+    stop();
+    sendInputToPlugin("hello", "two");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(seen).toEqual(["one"]);
+  });
+
+  it("holds text that arrives before onInput is registered and gives it to the first listener once", async () => {
+    const client = sdk();
+    // Sent before the frame is ready: the app hands it over at the handshake, before the plugin can register.
+    sendInputToPlugin("hello", "waiting");
+    await client.ready();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const first: string[] = [];
+    const second: string[] = [];
+    client.onInput((text) => first.push(text));
+    client.onInput((text) => second.push(text));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(first).toEqual(["waiting"]);
+    expect(second).toEqual([]);
+  });
+
+  it("ignores an input event whose text is not a string, and one from another window", async () => {
+    const client = sdk();
+    const seen: string[] = [];
+    client.onInput((text) => seen.push(text));
+    pluginWindow.dispatchEvent(new MessageEvent("message", { data: { v: 1, event: "input", data: { text: 5 } }, source: window as MessageEventSource }));
+    pluginWindow.dispatchEvent(new MessageEvent("message", { data: { v: 1, event: "input", data: { text: "spoof" } }, source: pluginWindow as MessageEventSource }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(seen).toEqual([]);
   });
 
   it("tells the host about an uncaught error in the plugin", () => {

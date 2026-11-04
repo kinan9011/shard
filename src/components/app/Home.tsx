@@ -2,15 +2,19 @@ import { useState } from "react";
 import { ChevronRight, Download, Plus, Puzzle, RefreshCw, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toolTint, type CatalogTool } from "@/app/catalog";
+import { toolName } from "@/app/toolNames";
+import { useT } from "@/i18n";
 import { PinnedEditor } from "@/components/app/PinnedEditor";
 import type { PluginUpdate } from "@/plugins/api";
 import { listNames } from "@/plugins/format";
 
 function HomeToolCard({ tool, onSelect }: { tool: CatalogTool; onSelect: (tool: CatalogTool) => void }) {
+  const t = useT();
+  const name = toolName(tool);
   return (
     <button
       onClick={() => onSelect(tool)}
-      className="home-tool-row" aria-label={tool.name} data-tool={tool.id}
+      className="home-tool-row" aria-label={name} data-tool={tool.id}
     >
       <div
         className="home-tool-icon" data-tint={toolTint(tool.id)}
@@ -18,10 +22,10 @@ function HomeToolCard({ tool, onSelect }: { tool: CatalogTool; onSelect: (tool: 
         <tool.icon className="w-4 h-4" />
       </div>
       <span className="font-medium text-foreground text-sm">
-        {tool.name}
+        {name}
       </span>
-      {tool.source === "plugin" && <span className="ml-auto pr-1 text-2xs text-muted-foreground">Plugin</span>}
-      {tool.source !== "plugin" && <ChevronRight size={14} className="home-tool-arrow" aria-hidden="true" />}
+      {tool.source === "plugin" && <span className="ms-auto pe-1 text-2xs text-muted-foreground">{t("shell.tag.plugin")}</span>}
+      {tool.source !== "plugin" && <ChevronRight size={14} className="home-tool-arrow rtl:-scale-x-100" aria-hidden="true" />}
     </button>
   );
 }
@@ -77,35 +81,37 @@ interface HomeProps {
 }
 
 export function UpdateBanner({ updates, onReview }: { updates: readonly PluginUpdate[]; onReview: () => void }) {
+  const t = useT();
   return (
     <div className="mb-6 mt-2 flex items-center gap-3 rounded-lg bg-primary/[.14] px-3 py-2.5 text-sm text-foreground" role="status">
       <RefreshCw size={16} className="shrink-0 text-primary" aria-hidden="true" />
       <span className="flex-1">
-        {updates.length} plugin {updates.length === 1 ? "update is" : "updates are"} ready: {listNames(updates.map((update) => update.name))}.
+        {t("shell.updates.banner", { count: updates.length, names: listNames(updates.map((update) => update.name)) })}
       </span>
-      <Button type="button" variant="secondary" size="sm" className="h-7 px-3 text-sm" onClick={onReview}>Review</Button>
+      <Button type="button" variant="secondary" size="sm" className="h-7 px-3 text-sm" onClick={onReview}>{t("shell.updates.review")}</Button>
     </div>
   );
 }
 
 export function EmptyHome({ onBrowse, onInstall, className = "mx-auto h-full max-w-[420px]" }: { onBrowse: () => void; onInstall: () => void; className?: string }) {
+  const t = useT();
   return (
     <div className={`flex flex-col items-center justify-center gap-3 text-center ${className}`}>
       <span className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
         <Puzzle size={22} aria-hidden="true" />
       </span>
-      <h1 className="mt-1 text-lg font-semibold text-foreground">No tools installed yet</h1>
+      <h1 className="mt-1 text-lg font-semibold text-foreground">{t("shell.empty.title")}</h1>
       <p className="text-sm text-muted-foreground">
-        Install plugins from the Shard Official repository, or add your own from a zip file, a folder or a repo URL.
+        {t("shell.empty.body")}
       </p>
       <div className="mt-1.5 flex gap-2">
         <Button type="button" size="sm" className="h-[30px] gap-[7px] px-3 text-sm" onClick={onBrowse}>
           <Puzzle size={14} aria-hidden="true" />
-          Browse plugins
+          {t("shell.empty.browse")}
         </Button>
         <Button type="button" variant="secondary" size="sm" className="h-[30px] gap-[7px] px-3 text-sm" onClick={onInstall}>
           <Download size={14} aria-hidden="true" />
-          Install from file or URL
+          {t("shell.empty.install")}
         </Button>
       </div>
     </div>
@@ -113,6 +119,7 @@ export function EmptyHome({ onBrowse, onInstall, className = "mx-auto h-full max
 }
 
 export function Home({ recentTools, tools, pinned, pinnedTools, onPin, onUnpin, onMovePinned, onPinInstalled, onOpenPlugin, quickAccessTools, platform, paletteShortcutLabel, onSelect, onOpenPalette, updates, onReviewUpdates, empty, onBrowsePlugins, onInstallFromFile }: HomeProps) {
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [pickerFirst, setPickerFirst] = useState(false);
   if (empty) return <EmptyHome onBrowse={onBrowsePlugins} onInstall={onInstallFromFile} />;
@@ -125,21 +132,21 @@ export function Home({ recentTools, tools, pinned, pinnedTools, onPin, onUnpin, 
       {/* Welcome */}
       <div className="mb-6 md:mb-8">
         <h1 className="text-xl md:text-2xl font-bold text-foreground mb-2">
-          Your workspace
+          {t("shell.home.title")}
         </h1>
         <p className="text-muted-foreground text-sm md:text-base">
-          Open a tool, or search with the command palette.
+          {t("shell.home.subtitle")}
         </p>
       </div>
 
       <button type="button" className={`home-search ${editing ? "opacity-50" : ""}`} disabled={editing} onClick={onOpenPalette}>
         <Search size={17} aria-hidden="true" />
-        <span>Find a tool…</span>
+        <span>{t("shell.home.find")}</span>
         {!editing && <kbd>{paletteShortcutLabel}</kbd>}
       </button>
       {!editing && (
         <p className="home-paste-hint">
-          Or paste a JWT, JSON, a URL, a timestamp, or other text here with {platform === "darwin" ? "⌘V" : "Ctrl+V"} to find the right tool.
+          {t("shell.home.pasteHint", { shortcut: platform === "darwin" ? "⌘V" : "Ctrl+V" })}
         </p>
       )}
       {!editing && updates.length > 0 && <UpdateBanner updates={updates} onReview={onReviewUpdates} />}
@@ -159,26 +166,26 @@ export function Home({ recentTools, tools, pinned, pinnedTools, onPin, onUnpin, 
           />
         ) : pinnedTools.length > 0 ? (
           <HomeSection
-            title="Pinned tools"
+            title={t("shell.home.pinnedTools")}
             tools={pinnedTools}
             onSelect={onSelect}
-            action={<Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-sm text-muted-foreground" onClick={() => edit(false)}>Edit</Button>}
+            action={<Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-sm text-muted-foreground" onClick={() => edit(false)}>{t("shell.home.edit")}</Button>}
           />
         ) : (
           <div>
-            <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">Pinned tools</h2>
+            <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">{t("shell.home.pinnedTools")}</h2>
             <button
               type="button"
               onClick={() => edit(true)}
               className="flex h-14 w-full items-center justify-center gap-2 rounded-lg border-[1.5px] border-dashed border-input text-sm text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground"
             >
               <Plus size={14} aria-hidden="true" />
-              Pin tools to Home
+              {t("shell.home.pinTools")}
             </button>
           </div>
         )}
-        {!editing && recentTools.length > 0 && <HomeSection title="Recently Used" tools={recentTools} onSelect={onSelect} />}
-        {!editing && <HomeSection title="Quick Access" tools={quickAccessTools} onSelect={onSelect} />}
+        {!editing && recentTools.length > 0 && <HomeSection title={t("shell.home.recent")} tools={recentTools} onSelect={onSelect} />}
+        {!editing && <HomeSection title={t("shell.home.quickAccess")} tools={quickAccessTools} onSelect={onSelect} />}
       </div>
     </div>
   );

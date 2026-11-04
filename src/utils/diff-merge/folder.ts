@@ -1,4 +1,5 @@
 import type { FolderEntry, FolderMergeReport } from "@/lib/desktop";
+import { t } from "@/i18n";
 
 export type RowKind = "left" | "right" | "diff" | "same";
 export type MergeAction = "toRight" | "toLeft" | "ignore" | "none";
@@ -76,8 +77,6 @@ export function makeRow(p: Pair, kind: RowKind, action: MergeAction): FileRow {
   return { path: p.path, name: p.path.slice(cut), dir: p.path.slice(0, cut), depth: cut ? 1 : 0, kind, left: p.left, right: p.right, action };
 }
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
 /** Root rows first, then one group per parent folder, sorted by folder path. */
 export function groupRows(rows: FileRow[]): FolderGroup[] {
   const map = new Map<string, FileRow[]>();
@@ -88,7 +87,7 @@ export function groupRows(rows: FileRow[]): FolderGroup[] {
   }
   return [...map.keys()].sort(byPath).map((dir) => {
     const list = map.get(dir)!;
-    return { dir, summary: plural(list.length, "difference", "differences"), rows: list };
+    return { dir, summary: t("diffMerge.folder.differences", { count: list.length }), rows: list };
   });
 }
 
@@ -111,9 +110,10 @@ export function planCounts(rows: FileRow[]) {
 }
 
 export function plannedText(c: ReturnType<typeof planCounts>): string {
-  const moves = [c.toRight && `${c.toRight} to the right`, c.toLeft && `${c.toLeft} to the left`].filter(Boolean);
-  const rest = [c.ignored && `${c.ignored} ignored`, c.noAction && `${c.noAction} without an action`].filter(Boolean);
-  return (moves.length ? "Planned: " : "") + [...moves, ...rest].join(" · ");
+  const moves = [c.toRight && t("diffMerge.folder.plan.right", { count: c.toRight }), c.toLeft && t("diffMerge.folder.plan.left", { count: c.toLeft })].filter(Boolean);
+  const rest = [c.ignored && t("diffMerge.folder.plan.ignored", { count: c.ignored }), c.noAction && t("diffMerge.folder.plan.noAction", { count: c.noAction })].filter(Boolean);
+  const text = [...moves, ...rest].join(" · ");
+  return moves.length ? t("diffMerge.folder.plan.planned", { parts: text }) : text;
 }
 
 /** Operations for the backend: copies to the right first, then copies to the left. */
@@ -123,17 +123,17 @@ export function mergeOps(rows: FileRow[]): { path: string; action: "toRight" | "
 }
 
 export function mergeSubtitle(writes: number, replaces: number): string {
-  const first = `${plural(writes, "file", "files")} will be written.`;
-  return replaces ? `${first} ${plural(replaces, "existing file", "existing files")} will be replaced.` : first;
+  const first = t("diffMerge.folder.subtitle.written", { count: writes });
+  return replaces ? `${first} ${t("diffMerge.folder.subtitle.replaced", { count: replaces })}` : first;
 }
 
 export function doneNotice(r: FolderMergeReport): string {
   const right = r.copiedRight.length;
   const left = r.copiedLeft.length;
-  const parts = [right && `${right} copied to the right`, left && `${left} copied to the left`].filter(Boolean);
-  let text = parts.length ? `Merged ${plural(right + left, "item", "items")}: ${parts.join(", ")}.` : "Merged 0 items.";
-  if (r.backedUp.length === 1) text += ` The replaced copy of ${r.backedUp[0]} was backed up first.`;
-  else if (r.backedUp.length > 1) text += ` ${r.backedUp.length} replaced copies were backed up first.`;
+  const parts = [right && t("diffMerge.folder.done.right", { count: right }), left && t("diffMerge.folder.done.left", { count: left })].filter(Boolean);
+  let text = parts.length ? t("diffMerge.folder.done.merged", { count: right + left, parts: parts.join(", ") }) : t("diffMerge.folder.done.none");
+  if (r.backedUp.length === 1) text += ` ${t("diffMerge.folder.done.backedUpOne", { name: r.backedUp[0] })}`;
+  else if (r.backedUp.length > 1) text += ` ${t("diffMerge.folder.done.backedUpMany", { count: r.backedUp.length })}`;
   return text;
 }
 

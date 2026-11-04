@@ -3,6 +3,7 @@ import { ArrowRight, Ellipsis, FolderOpen, Lock, Puzzle, RefreshCw, ShieldCheck,
 import { toast } from "sonner";
 import { BuiltInToolSwitches } from "@/components/app/BuiltInToolSwitches";
 import { useDialogFocus } from "@/components/app/useDialogFocus";
+import { t, useT } from "@/i18n";
 import { isMobileApp } from "@/lib/platform";
 import { ConfirmUninstall } from "./ConfirmUninstall";
 import { AnchoredPanel } from "@/components/tools/diff-merge/Panels";
@@ -22,8 +23,8 @@ import { RuntimeBadge } from "./RuntimeBadge";
 function newPermissionSentence(added: readonly { name: string; count: number }[]): string {
   if (added.length === 0) return "";
   const [only] = added;
-  if (added.length === 1 && only) return `${only.name} asks for ${only.count === 1 ? "one new permission" : `${only.count} new permissions`}.`;
-  return `${listNames(added.map((item) => item.name))} ask for new permissions.`;
+  if (added.length === 1 && only) return t("plugins.installed.newPermission", { name: only.name, count: only.count });
+  return t("plugins.installed.newPermissions", { names: listNames(added.map((item) => item.name)) });
 }
 
 const asMessage = (failure: unknown) => (failure instanceof Error ? failure.message : String(failure));
@@ -36,7 +37,7 @@ function SectionTitle({ children }: { children: ReactNode }) {
   return <span className="text-2xs font-semibold uppercase tracking-[.06em] text-muted-foreground">{children}</span>;
 }
 
-const updatingLabel = (percent: number | null | undefined) => (typeof percent === "number" ? `Updating… ${percent}%` : "Updating…");
+const updatingLabel = (percent: number | null | undefined) => (typeof percent === "number" ? t("plugins.installed.updatingPercent", { percent }) : t("plugins.installed.updating"));
 
 interface InstalledTabProps {
   plugins: readonly InstalledPlugin[];
@@ -65,7 +66,7 @@ function MenuItem({ icon, children, destructive, onClick }: { icon: ReactNode; c
       type="button"
       role="menuitem"
       onClick={onClick}
-      className={cn("flex w-full items-center gap-2.5 rounded-[5px] px-2 py-1.5 text-left hover:bg-accent focus:bg-accent focus:outline-none", destructive && "text-destructive")}
+      className={cn("flex w-full items-center gap-2.5 rounded-[5px] px-2 py-1.5 text-start hover:bg-accent focus:bg-accent focus:outline-none", destructive && "text-destructive")}
     >
       <span className={cn("flex w-[14px] justify-center", !destructive && "text-muted-foreground")}>{icon}</span>
       {children}
@@ -74,6 +75,7 @@ function MenuItem({ icon, children, destructive, onClick }: { icon: ReactNode; c
 }
 
 function BuiltIns() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const core = useMemo(() => ALL_TOOLS.filter((tool) => tool.kind === "core"), []);
   const first = core.slice(0, 3).map((tool) => tool.name);
@@ -81,16 +83,17 @@ function BuiltIns() {
   return (
     <div className="flex flex-col rounded-lg bg-secondary">
       <div className="flex items-center gap-3 px-3.5 py-3">
-        <Lock size={15} aria-hidden="true" className="shrink-0 text-muted-foreground" />
+        <Lock size={15} aria-hidden="true" className="shrink-0 text-muted-foreground rtl:-scale-x-100" />
         <span className="flex-1">
-          <span className="font-medium text-foreground">{core.length} built-in tools</span>{" "}
+          <span className="font-medium text-foreground">{t("plugins.installed.builtInCount", { count: core.length })}</span>{" "}
           <span className="text-muted-foreground">
-            · {first.join(", ")}
-            {more > 0 ? ` and ${more} more` : ""}. Built in, so they can be hidden but not uninstalled.
+            {more > 0
+              ? t("plugins.installed.builtInSummaryMore", { names: first.join(", "), more })
+              : t("plugins.installed.builtInSummary", { names: first.join(", ") })}
           </span>
         </span>
         <button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)} className={cn(BUTTON, "border-transparent text-muted-foreground")}>
-          {open ? "Hide" : "Show"}
+          {open ? t("plugins.installed.hide") : t("plugins.installed.show")}
         </button>
       </div>
       {open && <BuiltInToolSwitches />}
@@ -100,13 +103,14 @@ function BuiltIns() {
 
 /** Screen 04 B: the built-in tools as chips. A chip toggles the tool's visibility (hidden, never uninstalled). */
 function BuiltInChips() {
+  const t = useT();
   const hidden = useHiddenTools();
   const core = useMemo(() => ALL_TOOLS.filter((tool) => tool.kind === "core"), []);
   return (
-    <section aria-label="Built-in tools" className="flex flex-col gap-2.5">
+    <section aria-label={t("plugins.installed.builtInTools")} className="flex flex-col gap-2.5">
       <div className="flex items-center gap-2.5">
-        <SectionTitle>{`Built-in · ${core.length}`}</SectionTitle>
-        <span className="text-xs text-muted-foreground">Can be hidden, not uninstalled</span>
+        <SectionTitle>{t("plugins.installed.builtInTitle", { count: core.length })}</SectionTitle>
+        <span className="text-xs text-muted-foreground">{t("plugins.installed.builtInHint")}</span>
       </div>
       <div className="flex flex-wrap gap-2">
         {core.map((tool) => {
@@ -116,9 +120,9 @@ function BuiltInChips() {
               key={tool.id}
               type="button"
               aria-pressed={shown}
-              title={`${shown ? "Hide" : "Show"} ${tool.name}`}
+              title={t(shown ? "plugins.installed.hideTool" : "plugins.installed.showTool", { name: tool.name })}
               onClick={() => setToolHidden(tool.id, shown)}
-              className={cn("inline-flex h-[38px] items-center gap-[9px] whitespace-nowrap rounded-lg border border-border bg-secondary pl-[5px] pr-3.5 text-foreground", !shown && "opacity-50")}
+              className={cn("inline-flex h-[38px] items-center gap-[9px] whitespace-nowrap rounded-lg border border-border bg-secondary ps-[5px] pe-3.5 text-foreground", !shown && "opacity-50")}
             >
               <span className={cn(TILE, "size-7 rounded-[7px]")}>
                 <tool.icon size={14} aria-hidden="true" />
@@ -134,6 +138,7 @@ function BuiltInChips() {
 
 /** Screen 04 A: updates, the installed plugins, and the built-in tools. */
 export function InstalledTab({ plugins, rows, repos, updates, onRequest, progress, refresh, variant = "list" }: InstalledTabProps) {
+  const t = useT();
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [managing, setManaging] = useState<InstalledPlugin | null>(null);
   const [removing, setRemoving] = useState<InstalledPlugin | null>(null);
@@ -166,15 +171,15 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
     run(plugin.id, async () => {
       await setPluginEnabled(plugin.id, enabled);
       await refreshPlugins();
-    }, `Couldn't ${enabled ? "enable" : "disable"} ${plugin.manifest.name}`);
+    }, t(enabled ? "plugins.installed.enableFailed" : "plugins.installed.disableFailed", { name: plugin.manifest.name }));
 
   const uninstall = (plugin: InstalledPlugin) => {
     setRemoving(null);
     void run(plugin.id, async () => {
       await uninstallPlugin(plugin.id);
-      toast.success("Uninstalled", { description: plugin.manifest.name });
+      toast.success(t("plugins.page.uninstalled"), { description: plugin.manifest.name });
       await Promise.allSettled([refreshPlugins(), refresh()]);
-    }, `Couldn't uninstall ${plugin.manifest.name}`);
+    }, t("plugins.page.uninstallFailed", { name: plugin.manifest.name }));
   };
 
   const saveGrants = (plugin: InstalledPlugin, grants: string[]) => {
@@ -182,8 +187,8 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
     void run(plugin.id, async () => {
       await setPluginGrants(plugin.id, grants);
       await refreshPlugins();
-      toast.success("Permissions saved", { description: plugin.manifest.name });
-    }, `Couldn't save the permissions of ${plugin.manifest.name}`);
+      toast.success(t("plugins.installed.permissionsSaved"), { description: plugin.manifest.name });
+    }, t("plugins.installed.permissionsFailed", { name: plugin.manifest.name }));
   };
 
   const openMenu = (plugin: InstalledPlugin, anchor: HTMLElement) => {
@@ -202,7 +207,7 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
   const menuButton = (plugin: InstalledPlugin) => (
     <button
       type="button"
-      aria-label={`Actions for ${plugin.manifest.name}`}
+      aria-label={t("plugins.installed.actionsFor", { name: plugin.manifest.name })}
       aria-haspopup="menu"
       aria-expanded={menu?.plugin.id === plugin.id}
       onClick={(event) => openMenu(plugin, event.currentTarget)}
@@ -213,27 +218,27 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
   );
 
   const banner = pairs.length > 0 && (
-    <section aria-label="Updates available" className="flex items-center gap-3.5 rounded-[10px] bg-primary/[.14] px-4 py-3">
+    <section aria-label={t("plugins.installed.updatesAvailable")} className="flex items-center gap-3.5 rounded-[10px] bg-primary/[.14] px-4 py-3">
       <RefreshCw size={16} aria-hidden="true" className="shrink-0 text-primary" />
       <span className="flex-1">
-        <span className="font-semibold text-foreground">{`${pairs.length} ${pairs.length === 1 ? "update" : "updates"} ready.`}</span>{" "}
+        <span className="font-semibold text-foreground">{t("plugins.installed.updatesReady", { count: pairs.length })}</span>{" "}
         {listNames(pairs.map(({ update }) => `${update.name} ${update.to}`))}.{" "}
         {newPermissionSentence(pairs.filter(({ update }) => update.newPermissions.length > 0).map(({ update }) => ({ name: update.name, count: update.newPermissions.length })))}
       </span>
       <button type="button" onClick={review} className={cn(BUTTON, "border-input bg-secondary text-secondary-foreground")}>
-        Review
+        {t("plugins.installed.review")}
       </button>
       <button type="button" onClick={() => pairs.forEach(startUpdate)} className={cn(BUTTON, "border-primary-solid bg-primary-solid text-primary-solid-foreground")}>
-        Update all
+        {t("plugins.installed.updateAll")}
       </button>
     </section>
   );
 
   const pluginCards = (
-    <section aria-label="Installed plugins" className="flex flex-col gap-2.5">
-      <SectionTitle>{`Plugins · ${plugins.length}`}</SectionTitle>
+    <section aria-label={t("plugins.installed.installedPlugins")} className="flex flex-col gap-2.5">
+      <SectionTitle>{t("plugins.installed.pluginsTitle", { count: plugins.length })}</SectionTitle>
       {plugins.length === 0 ? (
-        <p className="py-4 text-sm text-muted-foreground">No plugins installed yet.</p>
+        <p className="py-4 text-sm text-muted-foreground">{t("plugins.installed.none")}</p>
       ) : (
         <div ref={grid} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {plugins.map((plugin) => {
@@ -246,11 +251,11 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
                     <Puzzle size={20} aria-hidden="true" />
                   </span>
                   <Switch
-                    aria-label={`Enabled: ${plugin.manifest.name}`}
+                    aria-label={t("plugins.installed.enabledAria", { name: plugin.manifest.name })}
                     checked={plugin.enabled}
                     disabled={busy.has(plugin.id)}
                     onCheckedChange={(enabled) => void toggleEnabled(plugin, enabled)}
-                    className="h-[18px] w-8 border-0 p-0.5 [&>span]:size-3.5 [&>span]:data-[state=checked]:translate-x-3.5"
+                    className="h-[18px] w-8 border-0 p-0.5 [&>span]:size-3.5 [&>span]:data-[state=checked]:translate-x-3.5 rtl:[&>span]:data-[state=checked]:-translate-x-3.5"
                   />
                 </div>
                 <div className="flex min-w-0 flex-col">
@@ -263,11 +268,11 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
                       type="button"
                       data-update
                       disabled={updating}
-                      aria-label={`Update ${plugin.manifest.name}`}
+                      aria-label={t("plugins.installed.updateAria", { name: plugin.manifest.name })}
                       onClick={() => startUpdate(pair)}
                       className="inline-flex h-5 items-center rounded-[5px] bg-primary/15 px-[7px] text-2xs font-medium text-primary disabled:opacity-60"
                     >
-                      {updating ? updatingLabel(progress[pair.update.id]) : `Update ${pair.update.to}`}
+                      {updating ? updatingLabel(progress[pair.update.id]) : t("plugins.installed.updateTo", { version: pair.update.to })}
                     </button>
                   ) : (
                     <RuntimeBadge runtime={plugin.manifest.runtime} />
@@ -288,12 +293,12 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
       {cards && pluginCards}
       {cards && <BuiltInChips />}
       {!cards && pairs.length > 0 && (
-        <section aria-label="Updates available" className="flex flex-col gap-2">
+        <section aria-label={t("plugins.installed.updatesAvailable")} className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <SectionTitle>{`Updates available · ${pairs.length}`}</SectionTitle>
+            <SectionTitle>{t("plugins.installed.updatesTitle", { count: pairs.length })}</SectionTitle>
             <button type="button" onClick={() => pairs.forEach(startUpdate)} className={cn(BUTTON, "border-primary-solid bg-primary-solid text-primary-solid-foreground")}>
               <RefreshCw size={14} aria-hidden="true" />
-              Update all
+              {t("plugins.installed.updateAll")}
             </button>
           </div>
           <ul className="rounded-lg border border-border">
@@ -309,22 +314,22 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
                     <span className="flex items-center gap-2">
                       <span className="font-semibold text-foreground">{update.name}</span>
                       <span className="text-muted-foreground">{update.from}</span>
-                      <ArrowRight size={12} aria-label="to" className="shrink-0 text-muted-foreground" />
+                      <ArrowRight size={12} aria-label={t("plugins.installed.to")} className="shrink-0 text-muted-foreground" />
                       <span className="font-medium text-primary">{update.to}</span>
                     </span>
                     {update.changelog && <span className="truncate text-xs text-muted-foreground">{update.changelog}</span>}
                   </div>
                   {update.newPermissions.length > 0 && (
-                    <span className="inline-flex h-5 items-center rounded-[5px] bg-warning/15 px-[7px] text-2xs font-medium text-warning">New permission</span>
+                    <span className="inline-flex h-5 items-center rounded-[5px] bg-warning/15 px-[7px] text-2xs font-medium text-warning">{t("plugins.installed.newPermissionTag")}</span>
                   )}
                   <button
                     type="button"
                     disabled={updating}
-                    aria-label={`Update ${plugin.manifest.name}`}
+                    aria-label={t("plugins.installed.updateAria", { name: plugin.manifest.name })}
                     onClick={() => startUpdate(pair)}
                     className={cn(BUTTON, "border-input bg-secondary text-secondary-foreground")}
                   >
-                    {updating ? updatingLabel(progress[update.id]) : "Update"}
+                    {updating ? updatingLabel(progress[update.id]) : t("plugins.installed.update")}
                   </button>
                 </li>
               );
@@ -333,19 +338,19 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
         </section>
       )}
 
-      {!cards && <section aria-label="Installed plugins" className="flex flex-col gap-2">
-        <SectionTitle>{`Installed plugins · ${plugins.length}`}</SectionTitle>
+      {!cards && <section aria-label={t("plugins.installed.installedPlugins")} className="flex flex-col gap-2">
+        <SectionTitle>{t("plugins.installed.installedTitle", { count: plugins.length })}</SectionTitle>
         {plugins.length === 0 ? (
-          <p className="py-4 text-sm text-muted-foreground">No plugins installed yet.</p>
+          <p className="py-4 text-sm text-muted-foreground">{t("plugins.installed.none")}</p>
         ) : (
-          <div role="table" aria-label="Installed plugins" className="flex flex-col">
+          <div role="table" aria-label={t("plugins.installed.installedPlugins")} className="flex flex-col">
             <div role="row" className={cn(COLUMNS, "h-[30px] border-b border-border text-xs text-muted-foreground")}>
-              <span role="columnheader">Name</span>
-              <span role="columnheader">Version</span>
-              <span role="columnheader">Source</span>
-              <span role="columnheader">Runtime</span>
-              <span role="columnheader">Enabled</span>
-              <span role="columnheader" aria-label="Actions" />
+              <span role="columnheader">{t("plugins.installed.colName")}</span>
+              <span role="columnheader">{t("plugins.installed.colVersion")}</span>
+              <span role="columnheader">{t("plugins.installed.colSource")}</span>
+              <span role="columnheader">{t("plugins.installed.colRuntime")}</span>
+              <span role="columnheader">{t("plugins.installed.colEnabled")}</span>
+              <span role="columnheader" aria-label={t("plugins.installed.colActions")} />
             </div>
             {plugins.map((plugin) => (
               <div key={plugin.id} role="row" className={cn(COLUMNS, "h-12 border-b border-border", !plugin.enabled && "opacity-60")}>
@@ -366,17 +371,17 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
                 </span>
                 <span role="cell">
                   <Switch
-                    aria-label={`Enabled: ${plugin.manifest.name}`}
+                    aria-label={t("plugins.installed.enabledAria", { name: plugin.manifest.name })}
                     checked={plugin.enabled}
                     disabled={busy.has(plugin.id)}
                     onCheckedChange={(enabled) => void toggleEnabled(plugin, enabled)}
-                    className="h-[18px] w-8 border-0 p-0.5 [&>span]:size-3.5 [&>span]:data-[state=checked]:translate-x-3.5"
+                    className="h-[18px] w-8 border-0 p-0.5 [&>span]:size-3.5 [&>span]:data-[state=checked]:translate-x-3.5 rtl:[&>span]:data-[state=checked]:-translate-x-3.5"
                   />
                 </span>
                 <span role="cell" className="flex">
                   <button
                     type="button"
-                    aria-label={`Actions for ${plugin.manifest.name}`}
+                    aria-label={t("plugins.installed.actionsFor", { name: plugin.manifest.name })}
                     aria-haspopup="menu"
                     aria-expanded={menu?.plugin.id === plugin.id}
                     onClick={(event) => openMenu(plugin, event.currentTarget)}
@@ -403,7 +408,7 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
                 setMenu(null);
               }}
             >
-              Permissions…
+              {t("plugins.installed.menuPermissions")}
             </MenuItem>
             {!isMobileApp() && (
               <MenuItem
@@ -411,10 +416,10 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
                 onClick={() => {
                   const { plugin } = menu;
                   setMenu(null);
-                  void revealPluginFolder(plugin.id).catch((error) => toast.error("Couldn't open the folder", { description: asMessage(error) }));
+                  void revealPluginFolder(plugin.id).catch((error) => toast.error(t("plugins.installed.openFolderFailed"), { description: asMessage(error) }));
                 }}
               >
-                Show in folder
+                {t("plugins.installed.showInFolder")}
               </MenuItem>
             )}
             <div className="-mx-1 my-1 h-px bg-border" />
@@ -426,7 +431,7 @@ export function InstalledTab({ plugins, rows, repos, updates, onRequest, progres
                 setMenu(null);
               }}
             >
-              Uninstall
+              {t("plugins.uninstall.confirm")}
             </MenuItem>
           </div>
         )}

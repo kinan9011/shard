@@ -4,6 +4,7 @@
  */
 
 import { isMap, isScalar, isSeq, parseDocument as parseYamlDocument, type Node as YamlNode } from "yaml";
+import { t } from "@/i18n";
 import { withPosition } from "./conversion-error";
 import { LosslessNumber, readJson } from "./json-repair";
 import { stringifyJson } from "./json";
@@ -94,7 +95,7 @@ export function parseSide(text: string): DiffSide {
     const first = doc.errors[0];
     const pos = first.linePos?.[0];
     const yamlMessage = first.message.split("\n")[0].replace(/ at line \d+, column \d+:?$/, "").trim();
-    return { ok: false, error: withPosition(`Invalid YAML. ${yamlMessage}`, pos?.line, pos?.col), line: pos?.line, column: pos?.col };
+    return { ok: false, error: withPosition(t("conversion.invalidYaml", { message: yamlMessage }), pos?.line, pos?.col), line: pos?.line, column: pos?.col };
   }
   // A single plain word is valid YAML, but the user most likely typed broken JSON.
   if (!hasYamlStructure(doc.contents as YamlNode | null)) return jsonError;

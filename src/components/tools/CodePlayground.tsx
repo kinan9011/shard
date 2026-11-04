@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Play, Code2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { startRun } from "@/utils/code-runner";
+import { useT } from "@/i18n";
 
 type Language = "javascript" | "html" | "css";
 
@@ -80,6 +81,7 @@ body {
 };
 
 export function CodePlayground() {
+  const t = useT();
   const [language, setLanguage] = useState<Language>("javascript");
   const [code, setCode] = useState(snippets.javascript);
   const [status, setStatus] = useState<"idle" | "running" | "done">("idle");
@@ -117,13 +119,13 @@ export function CodePlayground() {
         },
       });
     } else {
-      toast.info(`${language.toUpperCase()} preview is read-only`);
+      toast.info(t("codePlayground.readOnly", { language: language.toUpperCase() }));
     }
   };
 
   const output =
     logs.join("\n") ||
-    (status === "done" ? result ?? "Code executed successfully" : status === "running" ? "Running..." : "");
+    (status === "done" ? result ?? t("codePlayground.success") : status === "running" ? t("codePlayground.running") : "");
 
   const updateLanguage = (lang: Language) => {
     resetOutput();
@@ -148,16 +150,18 @@ export function CodePlayground() {
                 </SelectContent>
               </Select>
               <Button onClick={runCode} size="sm" disabled={language !== "javascript"}>
-                <Play className="h-4 w-4 mr-1" />
-                Run
+                <Play className="h-4 w-4 me-1" />
+                {t("codePlayground.run")}
               </Button>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Code Input */}
               <div className="space-y-2">
-                <div className="text-sm font-medium">Code</div>
+                <div className="text-sm font-medium">{t("codePlayground.code")}</div>
                 <Textarea
+                  dir="ltr"
+                  data-dir-lock
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   className="min-h-[400px] font-mono text-sm"
@@ -167,18 +171,18 @@ export function CodePlayground() {
 
               {/* Output */}
               <div className="space-y-2">
-                <div className="text-sm font-medium">Output</div>
+                <div className="text-sm font-medium">{t("codePlayground.output")}</div>
                 {error ? (
                   <div className="min-h-[400px] p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
                     <div className="flex items-center gap-2 text-destructive mb-2">
                       <AlertCircle className="h-4 w-4" />
-                      <span className="font-medium">Error</span>
+                      <span className="font-medium">{t("codePlayground.error")}</span>
                     </div>
                     <pre className="text-sm text-destructive whitespace-pre-wrap">{error}</pre>
                   </div>
                 ) : (
                   <div className="min-h-[400px] p-4 bg-muted rounded-lg">
-                    <pre className="text-sm whitespace-pre-wrap">{output || "Output will appear here..."}</pre>
+                    <pre className="text-sm whitespace-pre-wrap">{output || t("codePlayground.placeholder")}</pre>
                   </div>
                 )}
               </div>
@@ -189,14 +193,14 @@ export function CodePlayground() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Notes</CardTitle>
+          <CardTitle className="text-base">{t("codePlayground.notes")}</CardTitle>
         </CardHeader>
         <CardContent>
           <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-            <li>JavaScript runs in an isolated sandbox. It cannot reach the app, your files, or the network.</li>
-            <li>HTML and CSS are provided for reference and copying</li>
-            <li>Console output is captured and displayed. You can use await at the top level.</li>
-            <li>A run stops after 5 seconds, so a loop that never ends cannot freeze the app.</li>
+            <li>{t("codePlayground.note.sandbox")}</li>
+            <li>{t("codePlayground.note.reference")}</li>
+            <li>{t("codePlayground.note.console")}</li>
+            <li>{t("codePlayground.note.timeout")}</li>
           </ul>
         </CardContent>
       </Card>

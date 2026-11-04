@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Download, Puzzle, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { t, useT } from "@/i18n";
 import type { Repo } from "@/plugins/api";
 import type { PluginRuntime } from "@/plugins/types";
 import { rowKey, type CatalogAction, type CatalogRow } from "@/plugins/usePluginCatalog";
@@ -14,7 +15,8 @@ type Sort = "name" | "newest";
 const OTHER = "Other";
 const chipOf = (runtime: PluginRuntime): RuntimeChip => (runtime === "web" ? "web" : "wasm");
 const categoryOf = (row: CatalogRow) => row.entry.category?.trim() || OTHER;
-const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+/** The category as shown: the fallback bucket is worded here, the others come from the plugins. */
+const categoryLabel = (name: string) => (name === OTHER ? t("plugins.browse.other") : name);
 const selectClass = "h-[30px] rounded-md border border-input bg-background px-2 text-sm text-foreground";
 
 interface BrowseTabProps {
@@ -34,11 +36,12 @@ interface BrowseTabProps {
 
 // Update stays disabled: it goes through the permission dialog in "update" mode, which the Installed tab brings.
 function RowAction({ action, progress, onInstall }: { action: CatalogAction; progress: number | null | undefined; onInstall: () => void }) {
+  const t = useT();
   if (action.kind === "installed" && progress === undefined) {
     return (
       <span className="inline-flex h-5 items-center gap-1 rounded-[5px] bg-success/15 px-[7px] text-2xs font-medium text-success">
         <Check size={12} aria-hidden="true" />
-        Installed
+        {t("plugins.detail.installed")}
       </span>
     );
   }
@@ -52,7 +55,7 @@ function RowAction({ action, progress, onInstall }: { action: CatalogAction; pro
       className="relative z-10 inline-flex h-7 items-center gap-[7px] whitespace-nowrap rounded-md border border-input bg-secondary px-3 text-sm font-medium text-secondary-foreground disabled:opacity-60"
     >
       {action.kind === "install" && !installing && <Download size={14} aria-hidden="true" />}
-      {installing ? installingLabel(progress) : action.kind === "update" ? `Update to ${action.to}` : "Install"}
+      {installing ? installingLabel(progress) : action.kind === "update" ? t("plugins.detail.updateTo", { version: action.to }) : t("plugins.detail.install")}
     </button>
   );
 }
@@ -83,13 +86,14 @@ function PluginRow({ row, onSelect, onInstall, progress }: { row: CatalogRow; on
 }
 
 function CompactRow({ row, selected, onSelect }: { row: CatalogRow; selected: boolean; onSelect: () => void }) {
+  const t = useT();
   const { entry } = row;
   return (
     <button
       type="button"
       aria-pressed={selected}
       onClick={onSelect}
-      className={cn("flex h-[54px] shrink-0 items-center gap-3 rounded-lg px-2.5 text-left", selected ? "bg-secondary" : "hover:bg-secondary/60")}
+      className={cn("flex h-[54px] shrink-0 items-center gap-3 rounded-lg px-2.5 text-start", selected ? "bg-secondary" : "hover:bg-secondary/60")}
     >
       <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-primary">
         <Puzzle size={16} aria-hidden="true" />
@@ -98,8 +102,8 @@ function CompactRow({ row, selected, onSelect }: { row: CatalogRow; selected: bo
         <span className="truncate font-medium text-foreground">{entry.name}</span>
         <span className="truncate text-xs text-muted-foreground">{entry.repoName}</span>
       </span>
-      {row.action.kind === "update" && <span role="img" aria-label="Update available" className="size-[7px] shrink-0 rounded-full bg-primary" />}
-      {row.action.kind === "installed" && <Check size={14} strokeWidth={2.5} role="img" aria-label="Installed" className="shrink-0 text-success" />}
+      {row.action.kind === "update" && <span role="img" aria-label={t("plugins.browse.updateAvailable")} className="size-[7px] shrink-0 rounded-full bg-primary" />}
+      {row.action.kind === "installed" && <Check size={14} strokeWidth={2.5} role="img" aria-label={t("plugins.detail.installed")} className="shrink-0 text-success" />}
     </button>
   );
 }
@@ -114,7 +118,7 @@ function PluginCard({ row, onOpen, onInstall, progress }: { row: CatalogRow; onO
         </span>
         <div className="flex min-w-0 flex-col">
           {/* The name is the card's button; its ::after covers the card, the action button sits above it. */}
-          <button type="button" onClick={onOpen} data-testid="plugin-name" className="truncate text-left font-semibold text-foreground after:absolute after:inset-0 after:content-['']">
+          <button type="button" onClick={onOpen} data-testid="plugin-name" className="truncate text-start font-semibold text-foreground after:absolute after:inset-0 after:content-['']">
             {entry.name}
           </button>
           <span className="truncate text-xs text-muted-foreground">{`${entry.repoName} · v${entry.version}`}</span>
@@ -138,6 +142,7 @@ function FilterTitle({ children, id }: { children: string; id: string }) {
 }
 
 export function BrowseTab({ rows, repos, loading, error, onInstall, onUninstall, progress, variant = "list", onOpen }: BrowseTabProps) {
+  const t = useT();
   const [selectedRepo, setRepo] = useState("");
   // A repository that was removed or turned off must not leave an empty list behind.
   const repo = repos.some((item) => item.url === selectedRepo) ? selectedRepo : "";
@@ -193,11 +198,11 @@ export function BrowseTab({ rows, repos, loading, error, onInstall, onUninstall,
   const notice = error && rows.length === 0 ? (
     <p role="alert" className="px-4 py-3 text-sm text-destructive">{error}</p>
   ) : loading && rows.length === 0 ? (
-    <p className="px-4 py-6 text-sm text-muted-foreground">Loading plugins…</p>
+    <p className="px-4 py-6 text-sm text-muted-foreground">{t("plugins.browse.loading")}</p>
   ) : rows.length === 0 ? (
-    <p className="px-4 py-6 text-sm text-muted-foreground">No plugins yet. Add a repository to see its plugins.</p>
+    <p className="px-4 py-6 text-sm text-muted-foreground">{t("plugins.browse.empty")}</p>
   ) : shown.length === 0 ? (
-    <p className="px-4 py-6 text-sm text-muted-foreground">No plugins match.</p>
+    <p className="px-4 py-6 text-sm text-muted-foreground">{t("plugins.browse.noMatch")}</p>
   ) : null;
   const errorBanner = error && rows.length > 0 ? <p role="alert" className="px-4 py-3 text-sm text-destructive">{error}</p> : null;
 
@@ -209,8 +214,8 @@ export function BrowseTab({ rows, repos, loading, error, onInstall, onUninstall,
         type="search"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Search plugins"
-        aria-label="Search plugins"
+        placeholder={t("plugins.browse.search")}
+        aria-label={t("plugins.browse.search")}
         className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
       />
     </label>
@@ -221,15 +226,15 @@ export function BrowseTab({ rows, repos, loading, error, onInstall, onUninstall,
       <div className="flex min-w-0 flex-1 flex-col gap-3.5 overflow-y-auto px-4 pb-5 pt-4 sm:px-7">
         <div className="flex flex-wrap items-center gap-2.5">
           {searchBox("w-[300px] max-w-full shrink-0")}
-          <select aria-label="Repository" className={selectClass} value={repo} onChange={(event) => setRepo(event.target.value)}>
-            <option value="">All repositories</option>
+          <select aria-label={t("plugins.browse.repository")} className={selectClass} value={repo} onChange={(event) => setRepo(event.target.value)}>
+            <option value="">{t("plugins.browse.allRepositories")}</option>
             {repos.map((item) => (
               <option key={item.url} value={item.url}>
                 {item.name}
               </option>
             ))}
           </select>
-          <div role="group" aria-label="Category" className="ml-auto flex flex-wrap gap-1.5">
+          <div role="group" aria-label={t("plugins.browse.category")} className="ms-auto flex flex-wrap gap-1.5">
             {["", ...categories.map(([name]) => name)].map((name) => (
               <button
                 key={name || "all"}
@@ -241,7 +246,7 @@ export function BrowseTab({ rows, repos, loading, error, onInstall, onUninstall,
                   activeCategory === name ? "bg-foreground font-semibold text-background" : "border border-input text-muted-foreground hover:text-foreground",
                 )}
               >
-                {name || "All"}
+                {name ? categoryLabel(name) : t("plugins.browse.all")}
               </button>
             ))}
           </div>
@@ -265,7 +270,7 @@ export function BrowseTab({ rows, repos, loading, error, onInstall, onUninstall,
           // Escape in the search box clears the box, it does not close the pane.
           if (event.key === "Escape" && !event.defaultPrevented && !(event.target instanceof HTMLInputElement)) setSelectedKey("");
         }}>
-        <div className="flex w-[380px] shrink-0 flex-col gap-2 overflow-hidden border-r border-border px-3 py-3.5">
+        <div className="flex w-[380px] shrink-0 flex-col gap-2 overflow-hidden border-e border-border px-3 py-3.5">
           {searchBox("w-full shrink-0")}
           <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
             {errorBanner}
@@ -280,11 +285,11 @@ export function BrowseTab({ rows, repos, loading, error, onInstall, onUninstall,
 
   return (
     <>
-      <div className="flex w-[200px] shrink-0 flex-col gap-[18px] overflow-y-auto border-r border-border py-[18px] pl-7 pr-4">
+      <div className="flex w-[200px] shrink-0 flex-col gap-[18px] overflow-y-auto border-e border-border py-[18px] ps-7 pe-4">
         <div className="flex flex-col gap-1.5">
-          <FilterTitle id="plugins-filter-repo">Repository</FilterTitle>
+          <FilterTitle id="plugins-filter-repo">{t("plugins.browse.repository")}</FilterTitle>
           <select aria-labelledby="plugins-filter-repo" className={selectClass} value={repo} onChange={(event) => setRepo(event.target.value)}>
-            <option value="">All repositories</option>
+            <option value="">{t("plugins.browse.allRepositories")}</option>
             {repos.map((item) => (
               <option key={item.url} value={item.url}>
                 {item.name}
@@ -293,7 +298,7 @@ export function BrowseTab({ rows, repos, loading, error, onInstall, onUninstall,
           </select>
         </div>
         <div role="group" aria-labelledby="plugins-filter-category" className="flex flex-col gap-0.5">
-          <span className="mb-1"><FilterTitle id="plugins-filter-category">Category</FilterTitle></span>
+          <span className="mb-1"><FilterTitle id="plugins-filter-category">{t("plugins.browse.category")}</FilterTitle></span>
           {[[ "", inRepo.length ] as const, ...categories].map(([name, count]) => (
             <button
               key={name || "all"}
@@ -305,13 +310,13 @@ export function BrowseTab({ rows, repos, loading, error, onInstall, onUninstall,
                 activeCategory === name ? "bg-secondary font-medium text-foreground" : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
               )}
             >
-              <span className="truncate">{name || "All"}</span>
+              <span className="truncate">{name ? categoryLabel(name) : t("plugins.browse.all")}</span>
               <span className="text-xs">{count}</span>
             </button>
           ))}
         </div>
         <div role="group" aria-labelledby="plugins-filter-runtime" className="flex flex-col gap-2">
-          <FilterTitle id="plugins-filter-runtime">Runtime</FilterTitle>
+          <FilterTitle id="plugins-filter-runtime">{t("plugins.browse.runtime")}</FilterTitle>
           {([["web", "Web"], ["wasm", "Web + WASM"]] as const).map(([chip, label]) => (
             <button key={chip} type="button" role="checkbox" aria-checked={runtimes.has(chip)} onClick={() => toggleRuntime(chip)} className="flex items-center gap-2 text-sm text-foreground">
               <span
@@ -328,11 +333,11 @@ export function BrowseTab({ rows, repos, loading, error, onInstall, onUninstall,
       <div className="flex min-w-0 flex-1 flex-col px-4 pt-3.5">
         <div className="flex items-center gap-2.5 pb-2.5">
           {searchBox("w-[340px] max-w-full shrink")}
-          <div className="ml-auto flex shrink-0 items-center gap-2">
-            <span className="text-xs text-muted-foreground">{`${plural(shown.length, "plugin", "plugins")} from ${plural(shownRepos, "repository", "repositories")}`}</span>
-            <select aria-label="Sort" className={selectClass} value={sort} onChange={(event) => setSort(event.target.value as Sort)}>
-              <option value="name">Sort: Name</option>
-              <option value="newest">Sort: Newest</option>
+          <div className="ms-auto flex shrink-0 items-center gap-2">
+            <span className="text-xs text-muted-foreground">{t("plugins.browse.summary", { plugins: t("plugins.browse.pluginCount", { count: shown.length }), repos: t("plugins.browse.repoCount", { count: shownRepos }) })}</span>
+            <select aria-label={t("plugins.browse.sort")} className={selectClass} value={sort} onChange={(event) => setSort(event.target.value as Sort)}>
+              <option value="name">{t("plugins.browse.sortName")}</option>
+              <option value="newest">{t("plugins.browse.sortNewest")}</option>
             </select>
           </div>
         </div>

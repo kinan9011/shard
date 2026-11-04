@@ -1,10 +1,13 @@
 import { Toaster as Sonner } from "sonner";
+import { useLocale } from "@/i18n";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
+  const { dir } = useLocale();
   return (
     <Sonner
+      dir={dir}
       className="toaster group"
       toastOptions={{
         classNames: {

@@ -1,16 +1,17 @@
+import type { TKey } from "@/i18n";
 import { contrastRatio, hslToRgb } from "./theme-colors";
 
 export const ACCENT_STORAGE_KEY = "shard-accent";
 
 /** Accent colors: a hue and saturation. The lightness is chosen per mode so the accent reads on that mode's background. */
 export const ACCENTS = [
-  { id: "blue", name: "Blue", hue: 213, saturation: 77 },
-  { id: "teal", name: "Teal", hue: 174, saturation: 70 },
-  { id: "green", name: "Green", hue: 142, saturation: 60 },
-  { id: "orange", name: "Orange", hue: 24, saturation: 90 },
-  { id: "pink", name: "Pink", hue: 330, saturation: 75 },
-  { id: "purple", name: "Purple", hue: 270, saturation: 65 },
-] as const;
+  { id: "blue", name: "Blue", nameKey: "settings.accent.blue", hue: 213, saturation: 77 },
+  { id: "teal", name: "Teal", nameKey: "settings.accent.teal", hue: 174, saturation: 70 },
+  { id: "green", name: "Green", nameKey: "settings.accent.green", hue: 142, saturation: 60 },
+  { id: "orange", name: "Orange", nameKey: "settings.accent.orange", hue: 24, saturation: 90 },
+  { id: "pink", name: "Pink", nameKey: "settings.accent.pink", hue: 330, saturation: 75 },
+  { id: "purple", name: "Purple", nameKey: "settings.accent.purple", hue: 270, saturation: 65 },
+] as const satisfies readonly { id: string; name: string; nameKey: TKey; hue: number; saturation: number }[];
 
 export type AccentId = (typeof ACCENTS)[number]["id"];
 

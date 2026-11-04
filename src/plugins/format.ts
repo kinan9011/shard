@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import type { InstalledPlugin, Repo } from "./api";
 import type { PluginRuntime } from "./types";
 
@@ -17,7 +18,7 @@ export function sourceLabel(plugin: InstalledPlugin, repos: readonly Repo[]): st
   const { kind, repo, url } = plugin.source;
   if (kind === "repo" && repo) return repos.find((item) => item.url === repo)?.name ?? repo.replace(/^https:\/\/github\.com\//, "");
   if (kind === "url" && url) return url.replace(/^https?:\/\/(www\.)?(github\.com\/)?/, "");
-  return kind === "zip" ? "Zip file" : "Folder";
+  return kind === "zip" ? t("plugins.format.zipFile") : t("plugins.format.folder");
 }
 
 /** A repository address without the scheme, as the Repositories table shows it. */
@@ -26,15 +27,15 @@ export const repoAddress = (url: string): string => url.replace(/^https?:\/\//, 
 /** When a repository was last read, as the Status column words it. */
 export function syncedAgo(at: number, now: number = Date.now()): string {
   const minutes = Math.floor((now - at) / 60_000);
-  if (minutes < 1) return "Synced just now";
-  if (minutes < 60) return `Synced ${minutes} min ago`;
+  if (minutes < 1) return t("plugins.format.syncedNow");
+  if (minutes < 60) return t("plugins.format.syncedMinutes", { count: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `Synced ${hours} h ago`;
+  if (hours < 24) return t("plugins.format.syncedHours", { count: hours });
   const days = Math.floor(hours / 24);
-  return days === 1 ? "Synced yesterday" : `Synced ${days} days ago`;
+  return days === 1 ? t("plugins.format.syncedYesterday") : t("plugins.format.syncedDays", { count: days });
 }
 
 /** "A", "A and B", "A, B and C". */
 export function listNames(names: readonly string[]): string {
-  return names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  return names.length < 2 ? names.join("") : t("plugins.format.listAnd", { head: names.slice(0, -1).join(t("plugins.format.listSeparator")), last: names[names.length - 1] });
 }

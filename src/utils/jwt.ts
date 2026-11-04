@@ -9,6 +9,7 @@ import {
   parseKeyText,
   toPem,
 } from "@/utils/crypto-keys";
+import { t, type TKey } from "@/i18n";
 
 export interface JwtHeader {
   alg?: string;
@@ -54,7 +55,7 @@ export function decodeJwt(token: string): DecodedJwt {
       payload: {},
       signature: "",
       isValid: false,
-      error: "Please enter a JWT token",
+      error: t("jwt.error.empty"),
     };
   }
 
@@ -66,7 +67,7 @@ export function decodeJwt(token: string): DecodedJwt {
         payload: {},
         signature: "",
         isValid: false,
-        error: "Invalid JWT format. Expected 3 parts separated by dots.",
+        error: t("jwt.error.format"),
       };
     }
 
@@ -77,7 +78,7 @@ export function decodeJwt(token: string): DecodedJwt {
       try {
         return new TextDecoder().decode(base64ToBytes(str));
       } catch (e) {
-        throw new Error(`Failed to decode base64url: ${(e as Error).message}`);
+        throw new Error(t("jwt.error.base64url", { message: (e as Error).message }));
       }
     };
 
@@ -90,7 +91,7 @@ export function decodeJwt(token: string): DecodedJwt {
     try {
       header = JSON.parse(headerJson);
     } catch (e) {
-      throw new Error(`Failed to parse header JSON: ${(e as Error).message}`);
+      throw new Error(t("jwt.error.headerJson", { message: (e as Error).message }));
     }
 
     try {
@@ -117,7 +118,7 @@ export function decodeJwt(token: string): DecodedJwt {
       try {
         payload = JSON.parse(cleaned);
       } catch {
-        throw new Error(`Failed to parse payload JSON: ${(e as Error).message}`);
+        throw new Error(t("jwt.error.payloadJson", { message: (e as Error).message }));
       }
     }
 
@@ -138,7 +139,7 @@ export function decodeJwt(token: string): DecodedJwt {
       payload: {},
       signature: "",
       isValid: false,
-      error: "Invalid JWT token: " + (error as Error).message,
+      error: t("jwt.error.invalid", { message: (error as Error).message }),
     };
   }
 }
@@ -181,31 +182,31 @@ export function isValidJwtFormat(token: string): boolean {
 // ---------------------------------------------------------------------------
 // Time claims
 
-const TIME_UNITS: [string, number][] = [
-  ["y", 365 * 86_400_000],
-  ["d", 86_400_000],
-  ["h", 3_600_000],
-  ["min", 60_000],
-  ["s", 1000],
+const TIME_UNITS: [TKey, number][] = [
+  ["jwt.unit.year", 365 * 86_400_000],
+  ["jwt.unit.day", 86_400_000],
+  ["jwt.unit.hour", 3_600_000],
+  ["jwt.unit.minute", 60_000],
+  ["jwt.unit.second", 1000],
 ];
 
 /** A distance such as "in 1 h 30 min" or "3 d 4 h ago", with at most two units. */
 export function formatRelativeTime(deltaMs: number): string {
   let rest = Math.round(Math.abs(deltaMs) / 1000) * 1000;
-  if (rest === 0) return "now";
+  if (rest === 0) return t("jwt.time.now");
   const parts: string[] = [];
   for (const [unit, size] of TIME_UNITS) {
     if (parts.length === 2) break;
     const count = Math.floor(rest / size);
     if (count > 0) {
-      parts.push(`${count} ${unit}`);
+      parts.push(`${count} ${t(unit)}`);
       rest -= count * size;
     } else if (parts.length > 0) {
       break;
     }
   }
   const text = parts.join(" ");
-  return deltaMs > 0 ? `in ${text}` : `${text} ago`;
+  return t(deltaMs > 0 ? "jwt.time.in" : "jwt.time.ago", { text });
 }
 
 export type JwtTimeState = "active" | "expired" | "not-yet-valid" | "no-expiry";
@@ -226,26 +227,27 @@ export interface JwtTimeInfo {
   claims: JwtTimeClaim[];
 }
 
-const TIME_CLAIMS: [JwtTimeClaim["claim"], string][] = [
-  ["iat", "Issued at (iat)"],
-  ["nbf", "Not before (nbf)"],
-  ["exp", "Expires at (exp)"],
+const TIME_CLAIMS: [JwtTimeClaim["claim"], TKey][] = [
+  ["iat", "jwt.claim.iat"],
+  ["nbf", "jwt.claim.nbf"],
+  ["exp", "jwt.claim.exp"],
 ];
 
 /** Reads iat, nbf and exp, and tells whether the token is valid at `now`. */
 export function describeTimeClaims(payload: JwtPayload, now: number = Date.now()): JwtTimeInfo {
   const claims: JwtTimeClaim[] = [];
-  for (const [claim, label] of TIME_CLAIMS) {
+  for (const [claim, labelKey] of TIME_CLAIMS) {
+    const label = t(labelKey);
     const value = payload[claim];
     if (value === undefined) continue;
     if (typeof value !== "number" || !Number.isFinite(value)) {
-      claims.push({ claim, label, value, date: null, relative: "", warning: "Not a number" });
+      claims.push({ claim, label, value, date: null, relative: "", warning: t("jwt.claim.notNumber") });
       continue;
     }
     const date = new Date(value * 1000);
     const entry: JwtTimeClaim = { claim, label, value, date, relative: formatRelativeTime(date.getTime() - now) };
     // Seconds stay below 1e11 until the year 5138. Larger values are almost always milliseconds.
-    if (value > 1e11) entry.warning = "This looks like milliseconds. JWT times are in seconds.";
+    if (value > 1e11) entry.warning = t("jwt.claim.milliseconds");
     claims.push(entry);
   }
 
@@ -256,16 +258,16 @@ export function describeTimeClaims(payload: JwtPayload, now: number = Date.now()
   let summary: string;
   if (exp !== undefined && exp <= now) {
     state = "expired";
-    summary = `Expired ${formatRelativeTime(exp - now)}`;
+    summary = t("jwt.summary.expired", { when: formatRelativeTime(exp - now) });
   } else if (nbf !== undefined && nbf > now) {
     state = "not-yet-valid";
-    summary = `Not valid yet (valid ${formatRelativeTime(nbf - now)})`;
+    summary = t("jwt.summary.notYet", { when: formatRelativeTime(nbf - now) });
   } else if (exp !== undefined) {
     state = "active";
-    summary = `Expires ${formatRelativeTime(exp - now)}`;
+    summary = t("jwt.summary.expires", { when: formatRelativeTime(exp - now) });
   } else {
     state = "no-expiry";
-    summary = "No exp claim";
+    summary = t("jwt.summary.noExp");
   }
   return { state, summary, claims };
 }
@@ -350,8 +352,8 @@ const isPrivateJwk = (jwk: JsonWebKey) => typeof jwk.d === "string";
 
 /** Checks a JWK's own `alg` and `kty` against the token algorithm before import. */
 function checkJwkFits(jwk: JsonWebKey & { alg?: string }, alg: string, spec: AlgorithmSpec): void {
-  if (jwk.alg && jwk.alg !== alg) throw new KeyInputError(`The key is for ${jwk.alg}, but the token uses ${alg}.`);
-  if (jwk.kty !== spec.kty) throw new KeyInputError(`The key type ${jwk.kty} does not fit ${alg}.`);
+  if (jwk.alg && jwk.alg !== alg) throw new KeyInputError(t("jwt.key.wrongAlg", { keyAlg: jwk.alg, alg }));
+  if (jwk.kty !== spec.kty) throw new KeyInputError(t("jwt.key.wrongType", { kty: jwk.kty ?? "", alg }));
 }
 
 async function importOrExplain(
@@ -367,9 +369,9 @@ async function importOrExplain(
       : await crypto.subtle.importKey(format, data as BufferSource, importParams(spec), true, [usage]);
   } catch (error) {
     if ((error as Error).name === "NotSupportedError" && spec.family === "ed") {
-      throw new KeyInputError("This system does not support Ed25519 keys.");
+      throw new KeyInputError(t("jwt.key.noEd25519"));
     }
-    throw new KeyInputError(`The key does not fit ${alg}. Check that the key type and curve match the algorithm.`);
+    throw new KeyInputError(t("jwt.key.doesNotFit", { alg }));
   }
 }
 
@@ -389,7 +391,7 @@ async function verificationKeys(
   const parsed = parseKeyText(text);
   switch (parsed.kind) {
     case "secret":
-      throw new KeyInputError("Paste a PEM public key, a JWK, or a JWKS.");
+      throw new KeyInputError(t("jwt.key.pastePublic"));
     case "spki":
       return [{ key: await importOrExplain("spki", parsed.der, spec, alg, "verify") }];
     case "pkcs8":
@@ -401,10 +403,10 @@ async function verificationKeys(
       let candidates = parsed.keys;
       if (typeof kid === "string") {
         candidates = candidates.filter((jwk) => jwk.kid === kid);
-        if (candidates.length === 0) throw new KeyInputError(`No key in the JWKS has kid "${kid}".`);
+        if (candidates.length === 0) throw new KeyInputError(t("jwt.key.noKid", { kid }));
       } else {
         candidates = candidates.filter((jwk) => jwk.kty === spec.kty && (!jwk.alg || jwk.alg === alg));
-        if (candidates.length === 0) throw new KeyInputError(`No key in the JWKS fits ${alg}.`);
+        if (candidates.length === 0) throw new KeyInputError(t("jwt.key.noFit", { alg }));
       }
       const keys: { key: CryptoKey; kid?: string }[] = [];
       for (const jwk of candidates) {
@@ -421,7 +423,7 @@ function secretBytes(secret: string, secretIsBase64: boolean): Uint8Array {
   try {
     return base64ToBytes(secret);
   } catch {
-    throw new KeyInputError("The secret is not valid Base64.");
+    throw new KeyInputError(t("jwt.key.badBase64"));
   }
 }
 
@@ -454,23 +456,22 @@ export async function verifyJwtSignature(
 
   const alg = typeof decoded.header.alg === "string" ? decoded.header.alg : "";
   if (alg === "none") {
-    return { status: "unsupported", message: 'Unsigned token (alg "none")' };
+    return { status: "unsupported", message: t("jwt.verify.unsigned") };
   }
   const spec = algorithmSpec(alg);
   if (!spec) {
-    return { status: "unsupported", message: "Algorithm not supported for verification" };
+    return { status: "unsupported", message: t("jwt.verify.unsupported") };
   }
 
   if (!key.trim()) {
-    const what = spec.family === "hmac" ? "a secret" : "a public key";
-    return { status: "error", message: `Enter ${what} to verify the signature.` };
+    return { status: "error", message: t(spec.family === "hmac" ? "jwt.verify.needSecret" : "jwt.verify.needPublicKey") };
   }
 
   let signatureBytes: Uint8Array;
   try {
     signatureBytes = base64ToBytes(decoded.signature);
   } catch {
-    return { status: "invalid", message: "Signature invalid" };
+    return { status: "invalid", message: t("jwt.verify.invalid") };
   }
 
   const [headerB64, payloadB64] = trimmed.split(".");
@@ -480,7 +481,7 @@ export async function verifyJwtSignature(
     let keys: { key: CryptoKey; kid?: string }[];
     if (spec.family === "hmac") {
       if (parseKeyText(key).kind !== "secret") {
-        throw new KeyInputError(`This looks like a public or private key. ${alg} tokens use a shared secret.`);
+        throw new KeyInputError(t("jwt.verify.keyForSecret", { alg }));
       }
       const raw = secretBytes(key, Boolean(options.secretIsBase64));
       keys = [{ key: await crypto.subtle.importKey("raw", raw as BufferSource, { name: "HMAC", hash: spec.hash! }, false, ["verify"]) }];
@@ -490,14 +491,14 @@ export async function verifyJwtSignature(
 
     for (const candidate of keys) {
       if (await crypto.subtle.verify(signParams(spec), candidate.key, signatureBytes as BufferSource, data)) {
-        const message = candidate.kid ? `Signature valid (kid "${candidate.kid}")` : "Signature valid";
+        const message = candidate.kid ? t("jwt.verify.validKid", { kid: candidate.kid }) : t("jwt.verify.valid");
         return { status: "valid", message };
       }
     }
-    return { status: "invalid", message: "Signature invalid" };
+    return { status: "invalid", message: t("jwt.verify.invalid") };
   } catch (error) {
     if (error instanceof KeyInputError) return { status: "error", message: error.message };
-    return { status: "error", message: "Verification failed: " + (error as Error).message };
+    return { status: "error", message: t("jwt.verify.failed", { message: (error as Error).message }) };
   }
 }
 
@@ -506,18 +507,18 @@ export async function verifyJwtSignature(
 
 async function signingKey(text: string, alg: string, spec: AlgorithmSpec, secretIsBase64: boolean): Promise<CryptoKey> {
   if (spec.family === "hmac") {
-    if (!text) throw new KeyInputError("Enter a secret to sign the token.");
+    if (!text) throw new KeyInputError(t("jwt.sign.needSecret"));
     const raw = secretBytes(text, secretIsBase64);
     return crypto.subtle.importKey("raw", raw as BufferSource, { name: "HMAC", hash: spec.hash! }, false, ["sign"]);
   }
-  if (!text.trim()) throw new KeyInputError("Enter a private key to sign the token.");
+  if (!text.trim()) throw new KeyInputError(t("jwt.sign.needPrivateKey"));
   const parsed = parseKeyText(text);
   if (parsed.kind === "pkcs8") return importOrExplain("pkcs8", parsed.der, spec, alg, "sign");
   if (parsed.kind === "jwk" && isPrivateJwk(parsed.jwk)) {
     checkJwkFits(parsed.jwk, alg, spec);
     return importOrExplain("jwk", jwkForImport(parsed.jwk, false), spec, alg, "sign");
   }
-  throw new KeyInputError("Paste a private key (PEM or JWK) to sign the token. A public key can only verify.");
+  throw new KeyInputError(t("jwt.sign.pastePrivate"));
 }
 
 /** Signs `header` and `payload` with the algorithm in `header.alg`. Throws with a readable message. */
@@ -529,7 +530,7 @@ export async function signJwt(
 ): Promise<string> {
   const alg = typeof header.alg === "string" ? header.alg : "";
   const spec = algorithmSpec(alg);
-  if (!spec) throw new Error(`Choose an algorithm to sign with. "${alg || "(none)"}" is not supported.`);
+  if (!spec) throw new Error(t("jwt.sign.chooseAlg", { alg: alg || "(none)" }));
   const cryptoKey = await signingKey(key, alg, spec, Boolean(options.secretIsBase64));
   const data = `${textToBase64Url(JSON.stringify(header))}.${textToBase64Url(JSON.stringify(payload))}`;
   const signature = await crypto.subtle.sign(signParams(spec), cryptoKey, new TextEncoder().encode(data));
@@ -539,7 +540,7 @@ export async function signJwt(
 /** Generates a new key pair for an asymmetric algorithm, as PKCS#8 and SPKI PEM. */
 export async function generateJwtKeyPair(alg: string): Promise<{ privateKeyPem: string; publicKeyPem: string }> {
   const spec = algorithmSpec(alg);
-  if (!spec || spec.family === "hmac") throw new Error(`${alg} does not use a key pair.`);
+  if (!spec || spec.family === "hmac") throw new Error(t("jwt.sign.noKeyPair", { alg }));
   const params =
     spec.family === "rsa" || spec.family === "pss"
       ? { ...importParams(spec), modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]) }
@@ -558,7 +559,7 @@ export async function derivePublicKey(
   options: { kid?: string } = {}
 ): Promise<{ pem: string; jwk: JsonWebKey & { kid?: string; alg?: string; use?: string } }> {
   const spec = algorithmSpec(alg);
-  if (!spec || spec.family === "hmac") throw new Error(`${alg} does not use a key pair.`);
+  if (!spec || spec.family === "hmac") throw new Error(t("jwt.sign.noKeyPair", { alg }));
   const privateKey = await signingKey(privateKeyText, alg, spec, false);
   const publicKey = await publicFromPrivate(privateKey, spec, alg);
   const exported = jwkForImport(await crypto.subtle.exportKey("jwk", publicKey), true);

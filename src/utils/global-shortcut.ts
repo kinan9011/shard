@@ -1,3 +1,5 @@
+import { t } from "@/i18n";
+
 /**
  * The system-wide shortcut that brings Shard up with the command palette open.
  * It records KeyboardEvent.code (for example "KeyD"), not .key: on macOS, Option+D reports
@@ -56,7 +58,7 @@ const KEY_LABELS: Record<string, string> = {
 
 /** A readable label such as "Cmd+Shift+Space" or "Ctrl+Alt+D". */
 export function formatGlobalShortcut(shortcut: GlobalShortcut | null, platform: string | undefined): string {
-  if (!shortcut) return "Not set";
+  if (!shortcut) return t("shell.shortcut.notSet");
   const mac = platform === "darwin";
   const key = KEY_LABELS[shortcut.code] ?? shortcut.code.replace(/^Key/, "").replace(/^Digit/, "").replace(/^Numpad/, "Num ");
   return [

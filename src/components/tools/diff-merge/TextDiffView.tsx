@@ -7,6 +7,7 @@ import { buildPatch } from "@/utils/diff-merge/patch";
 import { DEFAULT_SETTINGS, SETTINGS_EVENT, loadSettings, saveSettings, type DiffSettings } from "@/utils/diff-merge/settings";
 import { toast } from "sonner";
 import { saveFile } from "@/lib/desktop";
+import { useT } from "@/i18n";
 import { CopyButton } from "../CopyButton";
 import type { Mode } from "./ModeSwitch";
 import { DiffPanes, type DiffPanesHandle, type PaneDoc, type PaneMeta } from "./DiffPanes";
@@ -28,26 +29,27 @@ function UnifiedHeader({ nameA, nameB, language, patch, result, patchName }: {
   result: string;
   patchName: string;
 }) {
+  const t = useT();
   const savePatch = async () => {
     try {
       await saveFile(new Blob([patch]), patchName);
     } catch {
-      toast.error("Could not save the file.");
+      toast.error(t("diffMerge.saveFailed"));
     }
   };
   return (
     <div
-      className="col-span-2 flex min-w-0 items-center justify-between gap-3 py-0 pl-[10px] pr-3 text-xs font-medium"
+      className="col-span-2 flex min-w-0 items-center justify-between gap-3 py-0 ps-[10px] pe-3 text-xs font-medium"
       style={{ background: "hsl(var(--muted) / .35)", borderBottom: "1px solid hsl(var(--border) / .5)" }}
     >
       <div className="flex min-w-0 items-center gap-2">
         <span className="truncate whitespace-nowrap px-1.5 py-0.5">{`${nameA} → ${nameB}`}</span>
-        <span className="inline-flex h-5 items-center rounded-full border border-border pl-[9px] pr-1.5 text-[11px] font-semibold">{language}</span>
+        <span className="inline-flex h-5 items-center rounded-full border border-border ps-[9px] pe-1.5 text-[11px] font-semibold">{language}</span>
       </div>
       <div className="flex items-center gap-0.5 font-normal">
-        <CopyButton value={patch} label="Copy patch" />
-        <button type="button" className="toolbar-text-button" disabled={!patch} onClick={() => void savePatch()}>Save patch</button>
-        <CopyButton value={result} label="Copy result" />
+        <CopyButton value={patch} label={t("diffMerge.unified.copyPatch")} />
+        <button type="button" className="toolbar-text-button" disabled={!patch} onClick={() => void savePatch()}>{t("diffMerge.unified.savePatch")}</button>
+        <CopyButton value={result} label={t("diffMerge.unified.copyResult")} />
       </div>
     </div>
   );
@@ -70,6 +72,7 @@ interface Props {
 }
 
 export const TextDiffView = memo(forwardRef<TextDiffHandle, Props>(function TextDiffView({ initial, onModeChange, embedded = false, focusOnLoad = false }, handle) {
+  const t = useT();
   const rootRef = useRef<HTMLDivElement>(null);
   const panes = useRef<DiffPanesHandle>(null);
   const [settings, setSettings] = useState<DiffSettings>(() => loadSettings());
@@ -77,7 +80,8 @@ export const TextDiffView = memo(forwardRef<TextDiffHandle, Props>(function Text
   const [current, setCurrent] = useState(0);
   const [editors, setEditors] = useState<DiffEditors | null>(null);
   const [meta, setMeta] = useState<Record<"a" | "b", PaneMeta>>(() => ({ a: blankMeta(initial?.[0]), b: blankMeta(initial?.[1]) }));
-  const [message, setMessage] = useState<string | null>(null);
+  /** The 1-based number of the change just applied, or null. */
+  const [appliedChange, setMessage] = useState<number | null>(null);
   const [narrow, setNarrow] = useState(false);
   /** The apply that set the message causes one recompute; that one must not clear it. */
   const applying = useRef(false);
@@ -182,7 +186,7 @@ export const TextDiffView = memo(forwardRef<TextDiffHandle, Props>(function Text
   };
   const onApplied = useCallback((index: number) => {
     applying.current = true;
-    setMessage(`Applied change ${index + 1} — Ctrl+Z to undo`);
+    setMessage(index + 1);
   }, []);
 
   const applyFromUnified = useCallback((index: number, dir: Direction) => {
@@ -200,10 +204,13 @@ export const TextDiffView = memo(forwardRef<TextDiffHandle, Props>(function Text
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [unified, editors?.a, editors?.b, blocks],
   );
-  const nameA = meta.a.name || "Original";
-  const nameB = meta.b.name || "Modified";
+  // The patch keeps English names: it is a file format, not interface text.
+  const patchNameA = meta.a.name || "Original";
+  const patchNameB = meta.b.name || "Modified";
+  const nameA = meta.a.name || t("diffMerge.original");
+  const nameB = meta.b.name || t("diffMerge.modified");
   const result = useMemo(() => joinEol(texts.b, meta.b.eol), [texts.b, meta.b.eol]);
-  const patch = useMemo(() => (unified ? buildPatch(texts.a, texts.b, nameA, nameB) : ""), [unified, texts, nameA, nameB]);
+  const patch = useMemo(() => (unified ? buildPatch(texts.a, texts.b, patchNameA, patchNameB) : ""), [unified, texts, patchNameA, patchNameB]);
 
   // Capture phase: CodeMirror binds Mod-Shift-Arrow itself, so only our action may see these keys.
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -242,11 +249,12 @@ export const TextDiffView = memo(forwardRef<TextDiffHandle, Props>(function Text
       />
       {editors && !editors.precise && (
         <div role="status" className="flex-shrink-0 border-b border-border bg-muted px-5 py-1.5 text-xs text-muted-foreground">
-          Diff is approximate for very large input
+          {t("diffMerge.approximate")}
         </div>
       )}
       {/* The side-by-side editors stay mounted while hidden, so their undo history survives a view switch. */}
-      <div className={unified ? "hidden" : "flex min-h-0 flex-1 flex-col"}>
+      {/* The two files stay left and right in every language: the merge arrows and the "left"/"right" labels refer to them. */}
+      <div dir="ltr" className={unified ? "hidden" : "flex min-h-0 flex-1 flex-col"}>
         <DiffPanes
           ref={panes}
           settings={effective}
@@ -259,7 +267,7 @@ export const TextDiffView = memo(forwardRef<TextDiffHandle, Props>(function Text
         />
       </div>
       {unified && (
-        <div className="grid min-h-0 flex-1" style={{ gridTemplateColumns: "minmax(0,1fr) 14px", gridTemplateRows: "38px minmax(0,1fr)" }}>
+        <div dir="ltr" className="grid min-h-0 flex-1" style={{ gridTemplateColumns: "minmax(0,1fr) 14px", gridTemplateRows: "38px minmax(0,1fr)" }}>
           <UnifiedHeader
             nameA={nameA}
             nameB={nameB}
@@ -286,7 +294,7 @@ export const TextDiffView = memo(forwardRef<TextDiffHandle, Props>(function Text
         cursor={editors?.cursor ?? null}
         language={languageLabel(meta[focused].language)}
         stats={blockStats(blocks ?? [])}
-        message={message}
+        message={appliedChange === null ? null : t("diffMerge.applied", { n: appliedChange })}
         eol={meta[focused].eol}
       />
     </div>

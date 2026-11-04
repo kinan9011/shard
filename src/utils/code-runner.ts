@@ -5,11 +5,15 @@
  * a runaway loop off the app's thread.
  */
 
+import { t } from "@/i18n";
+
 /** A run that does not finish in this time is stopped. Logs from timers show until then. */
 export const RUN_TIMEOUT_MS = 5000;
 
+/** The English text. The runner reports it through `t("codeRunner.timeout")`, in the current language. */
 export const TIMEOUT_ERROR = `The code ran for more than ${RUN_TIMEOUT_MS / 1000} seconds and was stopped. Look for a loop that never ends.`;
 
+/** The English text. The runner reports it through `t("codeRunner.startFailed")`. */
 export const START_ERROR = "The code could not start because this window cannot run a sandboxed worker.";
 
 /** A message from the runner frame to the app. */
@@ -101,7 +105,7 @@ export function buildRunnerDocument(): string {
     // A Worker that cannot load reports an error before it sends anything
     worker.onerror = (error) => {
       error.preventDefault();
-      send(alive ? { type: "error", message: error.message || "The code failed." } : { type: "unsupported" });
+      send(alive ? { type: "error", message: error.message || "" } : { type: "unsupported" });
     };
     worker.postMessage(event.data);
   });
@@ -123,7 +127,7 @@ export function startRun(code: string, handlers: RunHandlers): () => void {
   const frame = document.createElement("iframe");
   frame.setAttribute("sandbox", RUNNER_SANDBOX);
   frame.setAttribute("srcdoc", buildRunnerDocument());
-  frame.title = "Code runner";
+  frame.title = t("codeRunner.frameTitle");
   frame.hidden = true;
 
   let finished = false;
@@ -138,7 +142,7 @@ export function startRun(code: string, handlers: RunHandlers): () => void {
   };
 
   const timer = setTimeout(() => {
-    if (!finished) handlers.onError(TIMEOUT_ERROR);
+    if (!finished) handlers.onError(t("codeRunner.timeout", { seconds: RUN_TIMEOUT_MS / 1000 }));
     stop();
   }, RUN_TIMEOUT_MS);
 
@@ -158,11 +162,11 @@ export function startRun(code: string, handlers: RunHandlers): () => void {
         break;
       case "error":
         finished = true;
-        handlers.onError(String(message.message));
+        handlers.onError(String(message.message) || t("codeRunner.failed"));
         break;
       case "unsupported":
         finished = true;
-        handlers.onError(START_ERROR);
+        handlers.onError(t("codeRunner.startFailed"));
         stop();
         break;
     }

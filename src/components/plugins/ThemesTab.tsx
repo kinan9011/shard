@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useT, type TKey } from "@/i18n";
 import { installTheme, previewTheme, removeTheme, themeCatalog, type ThemeCatalogEntry } from "@/lib/desktop";
 import { refreshThemeUpdates } from "@/hooks/useThemeUpdates";
 import { ThemeSwatches } from "@/components/app/ThemeSwatches";
@@ -19,6 +20,7 @@ export interface ThemeApply {
 
 /** The color themes the repositories list, with swatches, Install, Update, Apply and Remove. Installed themes land in the themes folder of Settings. */
 export function ThemesTab({ themes, apply, onAddRepository }: { themes: CustomThemes; apply?: ThemeApply; onAddRepository?: () => void }) {
+  const t = useT();
   const [catalog, setCatalog] = useState<ThemeCatalogEntry[] | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState<ReadonlySet<string>>(new Set());
@@ -102,14 +104,14 @@ export function ThemesTab({ themes, apply, onAddRepository }: { themes: CustomTh
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-y-auto px-4 py-3 sm:px-7">
       <div className="flex justify-end pb-2">
-        <ActionButton disabled={syncing} onClick={() => void sync()}>{syncing ? "Syncing…" : "Sync repositories"}</ActionButton>
+        <ActionButton disabled={syncing} onClick={() => void sync()}>{syncing ? t("plugins.themes.syncing") : t("plugins.themes.sync")}</ActionButton>
       </div>
       {catalog?.length === 0 && (
         <div className="flex flex-col items-start gap-3 py-6 text-sm text-muted-foreground">
-          <p>No repository lists themes yet. Shard Themes is built in: use Sync repositories above to read it. Or add another repository that lists themes.</p>
+          <p>{t("plugins.themes.empty")}</p>
           <div className="flex flex-wrap gap-2">
-            {onAddRepository && <ActionButton onClick={onAddRepository}>Add a repository</ActionButton>}
-            <a className="inline-flex h-[30px] items-center text-primary underline-offset-2 hover:underline" href="https://github.com/kinan9011/shard/blob/main/docs/themes.md" target="_blank" rel="noreferrer">How themes work</a>
+            {onAddRepository && <ActionButton onClick={onAddRepository}>{t("plugins.themes.addRepository")}</ActionButton>}
+            <a className="inline-flex h-[30px] items-center text-primary underline-offset-2 hover:underline" href="https://github.com/kinan9011/shard/blob/main/docs/themes.md" target="_blank" rel="noreferrer">{t("plugins.themes.howItWorks")}</a>
           </div>
         </div>
       )}
@@ -119,7 +121,7 @@ export function ThemesTab({ themes, apply, onAddRepository }: { themes: CustomTh
         // The file of that id came from this repository, or from the user or another repository, which Install never replaces.
         const ours = installed?.repo === entry.repo;
         const update = ours && isNewerVersion(entry.version, installed.version);
-        const label = !installed ? "Install" : !ours ? "Id in use" : update ? "Update" : "Installed";
+        const [label, labelAria]: readonly [TKey, TKey] = !installed ? ["plugins.themes.install", "plugins.themes.installAria"] : !ours ? ["plugins.themes.idInUse", "plugins.themes.idInUseAria"] : update ? ["plugins.themes.update", "plugins.themes.updateAria"] : ["plugins.themes.installed", "plugins.themes.installedAria"];
         return (
           <div key={key} className="flex items-center justify-between gap-6 border-b border-border py-2.5 text-sm">
             <span className="flex min-w-0 flex-col">
@@ -132,30 +134,30 @@ export function ThemesTab({ themes, apply, onAddRepository }: { themes: CustomTh
             <span className="flex shrink-0 items-center gap-2">
               {ours && removing === entry.id ? (
                 <>
-                  <span className="text-xs text-muted-foreground">Deletes the file.</span>
-                  <ActionButton onClick={() => setRemoving(null)}>Cancel</ActionButton>
-                  <ActionButton aria-label={`Delete ${entry.name}`} className="text-destructive" onClick={() => void remove(entry.id)}>Delete</ActionButton>
+                  <span className="text-xs text-muted-foreground">{t("plugins.themes.deletesFile")}</span>
+                  <ActionButton onClick={() => setRemoving(null)}>{t("common.cancel")}</ActionButton>
+                  <ActionButton aria-label={t("plugins.themes.deleteAria", { name: entry.name })} className="text-destructive" onClick={() => void remove(entry.id)}>{t("common.delete")}</ActionButton>
                 </>
               ) : (
                 <>
-                  {ours && <ActionButton aria-label={`Remove ${entry.name}`} onClick={() => setRemoving(entry.id)}>Remove</ActionButton>}
+                  {ours && <ActionButton aria-label={t("plugins.themes.removeAria", { name: entry.name })} onClick={() => setRemoving(entry.id)}>{t("plugins.repos.remove")}</ActionButton>}
                   {ours && apply && installed && (
                     <ActionButton
-                      aria-label={`Apply ${entry.name}`}
+                      aria-label={t("plugins.themes.applyAria", { name: entry.name })}
                       disabled={apply.scheme === entry.id || !installed[apply.dark ? "dark" : "light"]}
-                      title={!installed[apply.dark ? "dark" : "light"] ? `This theme has no ${apply.dark ? "dark" : "light"} colors` : undefined}
+                      title={!installed[apply.dark ? "dark" : "light"] ? t(apply.dark ? "plugins.themes.noDark" : "plugins.themes.noLight") : undefined}
                       onClick={() => apply.onScheme(entry.id)}
                     >
-                      {apply.scheme === entry.id ? "In use" : "Apply"}
+                      {apply.scheme === entry.id ? t("plugins.themes.inUse") : t("plugins.themes.apply")}
                     </ActionButton>
                   )}
                   <ActionButton
-                    aria-label={`${label} ${entry.name}`}
-                    title={!installed || ours ? undefined : "A theme with this id is already in the themes folder. Remove it in Settings to install this one."}
+                    aria-label={t(labelAria, { name: entry.name })}
+                    title={!installed || ours ? undefined : t("plugins.themes.idInUseHint")}
                     disabled={busy.has(key) || (Boolean(installed) && !update)}
                     onClick={() => void install(entry)}
                   >
-                    {label}
+                    {t(label)}
                   </ActionButton>
                 </>
               )}

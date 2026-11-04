@@ -3,6 +3,9 @@
  * TypeScript, Go, Rust, Python, Swift, Kotlin, or JSON Schema.
  */
 
+import { t } from "@/i18n";
+import { withPosition } from "./conversion-error";
+
 export type CodeLanguage = "typescript" | "go" | "rust" | "python" | "swift" | "kotlin" | "json-schema";
 
 export const CODE_LANGUAGES: { id: CodeLanguage; label: string }[] = [
@@ -270,10 +273,10 @@ export function parseJsonInput(input: string): unknown {
   try {
     return JSON.parse(input);
   } catch (error) {
-    const raw = error instanceof Error ? error.message : "Check the syntax.";
+    const raw = error instanceof Error ? error.message : t("conversion.checkSyntax");
     const { line, column } = errorPosition(input, raw);
-    const text = `Invalid JSON. ${raw.replace(/\s*\(line \d+ column \d+\)/, "").replace(/ in JSON at position \d+.*$/, "")}`;
-    throw new JsonInputError(line ? `Line ${line}, column ${column ?? 1}: ${text}` : text, line, column);
+    const text = t("conversion.invalidJson", { message: raw.replace(/\s*\(line \d+ column \d+\)/, "").replace(/ in JSON at position \d+.*$/, "") });
+    throw new JsonInputError(withPosition(text, line, column), line, column);
   }
 }
 

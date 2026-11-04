@@ -1,20 +1,21 @@
+import { t } from "@/i18n";
 import type { UpdateState } from "@/lib/desktop";
 
 /** The label of the button that acts on the app update. */
 export function updateButtonLabel(state: UpdateState): string {
   switch (state.status) {
     case "checking":
-      return "Checking...";
+      return t("settings.update.checking");
     case "available":
-      return state.version ? `Update to v${state.version}` : "Update";
+      return state.version ? t("settings.update.toVersion", { version: state.version }) : t("settings.update.update");
     case "downloading":
-      return state.progress ? `Downloading ${Math.round(state.progress)}%` : "Downloading...";
+      return state.progress ? t("settings.update.downloadingPercent", { percent: Math.round(state.progress) }) : t("settings.update.downloading");
     case "downloaded":
-      return "Restart to Update";
+      return t("settings.update.restart");
     case "unsupported":
-      return "Dev Build";
+      return t("settings.update.devBuild");
     default:
-      return "Check for Updates";
+      return t("settings.update.check");
   }
 }
 
@@ -27,19 +28,17 @@ export function updateNoticeLabel(state: UpdateState): string {
 export function updateStatusLabel(state: UpdateState): string {
   switch (state.status) {
     case "available":
-      return state.version ? `Version ${state.version} is available.` : "An update is available.";
+      return state.version ? t("settings.update.statusAvailableVersion", { version: state.version }) : t("settings.update.statusAvailable");
     case "downloading":
-      return state.progress ? `Downloading update: ${Math.round(state.progress)}%` : "Downloading update...";
+      return state.progress ? t("settings.update.statusDownloadingPercent", { percent: Math.round(state.progress) }) : t("settings.update.statusDownloading");
     case "downloaded":
-      return state.version
-        ? `Version ${state.version} is ready. It installs when you quit Shard.`
-        : "An update is ready. It installs when you quit Shard.";
+      return state.version ? t("settings.update.statusReadyVersion", { version: state.version }) : t("settings.update.statusReady");
     case "checking":
-      return "Checking for updates...";
+      return t("settings.update.statusChecking");
     case "error":
-      return "The update did not complete. Check your connection and try again.";
+      return t("settings.update.statusError");
     case "unsupported":
-      return "Updates are disabled in development builds.";
+      return t("settings.update.statusUnsupported");
     default:
       return "";
   }

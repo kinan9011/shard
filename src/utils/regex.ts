@@ -55,6 +55,9 @@ export function toggleFlag(flags: string, flag: RegexFlag): string {
   return normalizeFlags(flags.includes(flag) ? flags.replace(flag, "") : flags + flag);
 }
 
+/** Starts the error text for an invalid pattern. The tester shows this part in the app language. */
+export const INVALID_PATTERN_PREFIX = "Invalid pattern: ";
+
 /** Builds the RegExp, or returns a short error message for an invalid pattern. */
 export function compileRegex(pattern: string, flags: string): { ok: true; regex: RegExp } | { ok: false; error: string } {
   try {
@@ -63,7 +66,7 @@ export function compileRegex(pattern: string, flags: string): { ok: true; regex:
     const message = error instanceof Error ? error.message : String(error);
     // Engines prefix the message with the whole pattern, which the user can already see.
     const reason = message.replace(/^Invalid regular expression: \/[\s\S]*\/[a-z]*: /, "");
-    return { ok: false, error: `Invalid pattern: ${reason}` };
+    return { ok: false, error: `${INVALID_PATTERN_PREFIX}${reason}` };
   }
 }
 

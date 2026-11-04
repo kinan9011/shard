@@ -51,6 +51,7 @@ describe("Layout setting", () => {
     expect(screen.getByRole("navigation", { name: "Tools" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Settings sections" })).getByRole("button", { name: "Appearance" }));
     expect(within(main()).getByRole("radio", { name: /^Sidebar/ })).toBeChecked();
     expect(within(main()).getByRole("radio", { name: /^Launcher/ })).toBeEnabled();
     fireEvent.click(within(main()).getByRole("radio", { name: /^Launcher/ }));
@@ -125,7 +126,7 @@ describe("Launcher shell", () => {
     expect(main().querySelector("[data-variant]")).toHaveAttribute("data-variant", "cards");
 
     fireEvent.click(within(bar).getByRole("button", { name: "Settings" }));
-    expect(within(main()).getByRole("heading", { name: "Appearance" })).toBeInTheDocument();
+    expect(within(main()).getByRole("heading", { name: "General" })).toBeInTheDocument();
   });
 });
 

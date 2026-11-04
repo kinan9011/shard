@@ -14,9 +14,18 @@ export interface Theme {
   vars: Record<string, string>;
 }
 
+export interface Locale {
+  /** The BCP 47 tag of the app language, e.g. "de" or "zh-CN". */
+  lang: string;
+  /** The reading direction of that language. Set it on your `<html dir>` to follow the app. */
+  dir: "ltr" | "rtl";
+}
+
 export interface ReadyInfo {
   pluginId: string;
   theme: Theme;
+  /** The app language at the time of the handshake. */
+  locale: Locale;
   /** Whether the plugin's tab is on screen right now. */
   visible: boolean;
 }
@@ -86,11 +95,22 @@ export interface ShardSdk {
     /** Calls `callback` whenever the app theme or color scheme changes. Returns an unsubscribe function. */
     onChange(callback: (theme: Theme) => void): () => void;
   };
+  locale: {
+    get(): Promise<Locale>;
+    /** Calls `callback` whenever the app language changes. Returns an unsubscribe function. */
+    onChange(callback: (locale: Locale) => void): () => void;
+  };
   /**
    * Calls `callback(true)` when the plugin's tab is shown and `callback(false)` when another tab covers it.
    * A hidden plugin should pause timers and animations. Returns an unsubscribe function.
    */
   onVisibilityChange(callback: (visible: boolean) => void): () => void;
+  /**
+   * Calls `callback(text)` when the user sends text to this plugin from another tool ("Send to…") or from a paste.
+   * Needs no permission: the user chose to hand over this text. Text that arrives before the first callback is
+   * registered is held and delivered to it, so register right after `ready()`. Returns an unsubscribe function.
+   */
+  onInput(callback: (text: string) => void): () => void;
   /** Shows a notification in the app. */
   toast(message: string, kind?: ToastKind): Promise<void>;
   /** Needs `clipboard:read` / `clipboard:write`. */
@@ -175,7 +195,11 @@ export function connect(options: ConnectOptions = {}): ShardSdk {
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const pending = new Map<string, Pending>();
   const listeners = new Set<(theme: Theme) => void>();
+  const localeListeners = new Set<(locale: Locale) => void>();
   const visibilityListeners = new Set<(visible: boolean) => void>();
+  const inputListeners = new Set<(text: string) => void>();
+  // The newest text that arrived while nobody listened. The host sends it at the handshake, before the plugin can register.
+  let heldInput: string | null = null;
 
   // An uncaught error tells the host, which then offers Reload and Disable. Without the handshake the host does the same after 10 s.
   self.addEventListener("error", (event: ErrorEvent) => {
@@ -194,6 +218,16 @@ export function connect(options: ConnectOptions = {}): ShardSdk {
     if (event.source !== target) return;
     const data = event.data;
     if (!data || typeof data !== "object" || data.v !== PROTOCOL_VERSION) return;
+    if (data.event === "locale") {
+      for (const listener of [...localeListeners]) {
+        try {
+          listener(data.data as Locale);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+      return;
+    }
     if (data.event === "theme") {
       for (const listener of [...listeners]) {
         // One failing callback must not keep the others from the update.
@@ -209,6 +243,22 @@ export function connect(options: ConnectOptions = {}): ShardSdk {
       for (const listener of [...visibilityListeners]) {
         try {
           listener(Boolean(data.data?.visible));
+        } catch (error) {
+          console.error(error);
+        }
+      }
+      return;
+    }
+    if (data.event === "input") {
+      const text = data.data?.text;
+      if (typeof text !== "string") return;
+      if (inputListeners.size === 0) {
+        heldInput = text;
+        return;
+      }
+      for (const listener of [...inputListeners]) {
+        try {
+          listener(text);
         } catch (error) {
           console.error(error);
         }
@@ -255,10 +305,37 @@ export function connect(options: ConnectOptions = {}): ShardSdk {
         };
       },
     },
+    locale: {
+      get: () => call<Locale>("locale.get"),
+      onChange(callback) {
+        localeListeners.add(callback);
+        return () => {
+          localeListeners.delete(callback);
+        };
+      },
+    },
     onVisibilityChange(callback) {
       visibilityListeners.add(callback);
       return () => {
         visibilityListeners.delete(callback);
+      };
+    },
+    onInput(callback) {
+      inputListeners.add(callback);
+      if (heldInput !== null) {
+        const text = heldInput;
+        heldInput = null;
+        // Not inline: the caller has not received its unsubscribe function yet.
+        queueMicrotask(() => {
+          try {
+            callback(text);
+          } catch (error) {
+            console.error(error);
+          }
+        });
+      }
+      return () => {
+        inputListeners.delete(callback);
       };
     },
     toast: (message, kind = "info") => call<void>("toast", { message, kind }),

@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Info, Puzzle, Search } from "lucide-react";
 import { toast } from "sonner";
+import { useT } from "@/i18n";
+import { LanguageSelect } from "@/components/app/LanguageSelect";
 import { Button } from "@/components/ui/button";
 import { BatchPermissionDialog } from "@/components/plugins/BatchPermissionDialog";
 import { PermissionDialog } from "@/components/plugins/PermissionDialog";
 import { PickerBody } from "@/components/app/PinnedEditor";
 import { LayoutChoice } from "@/components/app/settings/LayoutChoice";
 import { CORE_NAMES } from "@/app/firstRun";
+import { ALL_TOOLS } from "@/app/toolRegistry";
+import { toolName } from "@/app/toolNames";
 import { OFFICIAL_REPO_URL } from "@/app/installableTools";
-import { MAX_PINNED, pickerItems, pinLimitMessage, type PickerItem } from "@/app/pinned";
+import { MAX_PINNED, pickerItems, pinLimitText, type PickerItem } from "@/app/pinned";
 import type { CatalogTool } from "@/app/catalog";
 import { listRepos, repoBundles, syncRepos, type Repo } from "@/plugins/api";
 import { formatSize } from "@/plugins/format";
@@ -22,7 +26,6 @@ import { cn } from "@/lib/utils";
 import type { Layout } from "@/utils/theme";
 
 const OTHER = "Other";
-const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 const message = (failure: unknown) => (failure instanceof Error ? failure.message : String(failure));
 
 type Load = { phase: "loading" } | { phase: "ready"; repo: Repo; bundles: PluginBundle[] } | { phase: "offline"; reason: string };
@@ -107,7 +110,7 @@ function BundleCard({ bundle, checked, onToggle }: { bundle: BundleCardData; che
       <span className="flex items-center justify-between" aria-hidden="true">
         <span className="flex">
           {bundle.rows.slice(0, STACK_LIMIT).map((row, index) => (
-            <span key={row.entry.id} className={cn("rounded-[9px]", ring, index > 0 && "-ml-1.5")}>
+            <span key={row.entry.id} className={cn("rounded-[9px]", ring, index > 0 && "-ms-1.5")}>
               <span className="grid size-[34px] place-items-center rounded-lg bg-primary/15 text-primary">
                 <Puzzle size={17} />
               </span>
@@ -128,6 +131,7 @@ function BundleCard({ bundle, checked, onToggle }: { bundle: BundleCardData; che
 
 /** First run: screen 2a (Layout), 08 A (starter tools), 08 B (bundles, Launcher layout) and the pin step. */
 export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPin, onUnpin, onPinInstalled, onOpenPlugin, onFinish }: FirstRunWizardProps) {
+  const t = useT();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   // The Launcher offers bundles first; "Choose plugins one by one" (or a failed install) switches to the list.
   const [oneByOne, setOneByOne] = useState(false);
@@ -158,8 +162,8 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
     try {
       // The plugin repository, not just any built-in one: Shard Themes is built in too and lists no plugins.
       const official = (await listRepos()).find((repo) => repo.url === OFFICIAL_REPO_URL);
-      if (!official) return settle({ phase: "offline", reason: "Shard Official is not in your repositories." });
-      if (!official.enabled) return settle({ phase: "offline", reason: "Shard Official is turned off in Plugins → Repositories." });
+      if (!official) return settle({ phase: "offline", reason: t("wizard.reasonMissing") });
+      if (!official.enabled) return settle({ phase: "offline", reason: t("wizard.reasonDisabled") });
       const synced = (await syncRepos(official.url)).find((repo) => repo.url === official.url) ?? official;
       if (synced.lastError) return settle({ phase: "offline", reason: synced.lastError });
       await refresh();
@@ -169,7 +173,7 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
     } catch (failure) {
       settle({ phase: "offline", reason: message(failure) });
     }
-  }, [refresh]);
+  }, [refresh, t]);
 
   useEffect(() => {
     void connect();
@@ -256,7 +260,7 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
       if (pinned.includes(item.id)) onUnpin(item.id);
       else onPin(item.id);
     } else if (pinned.length >= MAX_PINNED) {
-      toast.error(pinLimitMessage);
+      toast.error(pinLimitText());
     } else {
       pinOnInstall.current.add(item.id);
       flow.request(item.row);
@@ -265,7 +269,8 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
   const items = useMemo(() => pickerItems(tools, catalog.rows), [tools, catalog.rows]);
 
   const mac = platform === "darwin";
-  const footerStatus = installing ? `Installing ${plural(chosen.length, "plugin", "plugins")}…` : null;
+  const pluginCount = t("wizard.pluginCount", { count: chosen.length });
+  const footerStatus = installing ? t("wizard.installing", { plugins: pluginCount }) : null;
   const dialogs = (
     <>
       {asking && load.phase === "ready" && (
@@ -307,12 +312,12 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
           <span className="mb-2 scale-[1.6]">
             <BrandMark className="size-[22px]" />
           </span>
-          <h1 className="text-2xl font-semibold">Welcome to Shard</h1>
-          <p className="text-muted-foreground">Start with a set of tools. The {CORE_NAMES.length} built-in tools are included, and you can hide them or add and remove plugins any time.</p>
+          <h1 className="text-2xl font-semibold">{t("wizard.bundlesTitle")}</h1>
+          <p className="text-muted-foreground">{t("wizard.bundlesHint", { n: CORE_NAMES.length })}</p>
         </div>
         <div className="min-h-0 w-[820px] max-w-full flex-1 overflow-y-auto px-4 sm:px-0">
           {load.phase === "loading" ? (
-            <p className="text-center text-muted-foreground" role="status">Loading plugins…</p>
+            <p className="text-center text-muted-foreground" role="status">{t("wizard.loading")}</p>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5">
               {bundleCards.map((bundle) => (
@@ -322,16 +327,16 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
           )}
           <div className="py-[18px] text-center">
             <button type="button" onClick={chooseOneByOne} disabled={installing} className="rounded text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">
-              Choose plugins one by one
+              {t("wizard.oneByOne")}
             </button>
           </div>
         </div>
         <div className="flex w-[820px] max-w-full items-center gap-2.5 border-t border-border px-4 pb-7 pt-4 sm:px-0">
           <span className="flex-1 text-muted-foreground" role="status">
-            {footerStatus ?? `${plural(chosenBundles.length, "bundle", "bundles")} · ${plural(chosen.length, "plugin", "plugins")}${bytes > 0 ? ` · ${formatSize(bytes)}` : ""}`}
+            {footerStatus ?? t(bytes > 0 ? "wizard.bundlesStatusSize" : "wizard.bundlesStatus", { bundles: t("wizard.bundleCount", { count: chosenBundles.length }), plugins: pluginCount, size: formatSize(bytes) })}
           </span>
-          <Button type="button" variant="ghost" size="sm" className="h-[30px] px-3 text-sm text-muted-foreground" disabled={installing} onClick={() => setStep(3)}>Skip</Button>
-          <Button type="button" size="sm" className="h-[30px] px-3 text-sm" disabled={chosen.length === 0 || installing} onClick={installAndContinue}>Install and continue</Button>
+          <Button type="button" variant="ghost" size="sm" className="h-[30px] px-3 text-sm text-muted-foreground" disabled={installing} onClick={() => setStep(3)}>{t("wizard.skip")}</Button>
+          <Button type="button" size="sm" className="h-[30px] px-3 text-sm" disabled={chosen.length === 0 || installing} onClick={installAndContinue}>{t("wizard.install")}</Button>
         </div>
 {dialogs}
       </div>
@@ -341,19 +346,19 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
   return (
     <div className="relative flex h-[100dvh] flex-col bg-background text-foreground sm:flex-row" data-platform={platform}>
       <div data-tauri-drag-region className="absolute inset-x-0 top-0 z-10 h-7" />
-      <aside className={cn("flex w-full shrink-0 flex-col gap-4 border-b border-border p-5 sm:w-[300px] sm:gap-7 sm:border-b-0 sm:border-r sm:p-7", mac && "pt-14")}>
+      <aside className={cn("flex w-full shrink-0 flex-col gap-4 border-b border-border p-5 sm:w-[300px] sm:gap-7 sm:border-b-0 sm:border-e sm:p-7", mac && "pt-14")}>
         <div className="flex items-center gap-2.5">
           <BrandMark className="size-[22px]" />
           <span className="font-semibold">Shard</span>
         </div>
         <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold">Welcome</h1>
-          <p className="text-muted-foreground">Set up the tools you need. You can change everything later in {step === 1 ? "Settings" : "Plugins"}.</p>
+          <h1 className="text-xl font-semibold">{t("wizard.welcomeTitle")}</h1>
+          <p className="text-muted-foreground">{step === 1 ? t("wizard.welcomeHintSettings") : t("wizard.welcomeHintPlugins")}</p>
         </div>
-        <ol aria-label="Setup steps" className="flex flex-col gap-1">
-          <Step number={1} label="Layout" state={step === 1 ? "active" : "done"} />
-          <Step number={2} label="Pick starter tools" state={step === 2 ? "active" : step === 3 ? "done" : "todo"} />
-          <Step number={3} label="Pin tools to Home" state={step === 3 ? "active" : "todo"} />
+        <ol aria-label={t("wizard.steps")} className="flex flex-col gap-1">
+          <Step number={1} label={t("wizard.step.layout")} state={step === 1 ? "active" : "done"} />
+          <Step number={2} label={t("wizard.step.starter")} state={step === 2 ? "active" : step === 3 ? "done" : "todo"} />
+          <Step number={3} label={t("wizard.step.pin")} state={step === 3 ? "active" : "todo"} />
         </ol>
       </aside>
 
@@ -361,15 +366,19 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
         {step === 1 ? (
           <>
             <div className="flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto px-4 pt-6 sm:px-12 sm:pt-10">
+              <div className="flex items-center gap-3">
+                <label htmlFor="wizard-language" className="font-medium">{t("language.label")}</label>
+                <LanguageSelect id="wizard-language" />
+              </div>
               <div className="flex flex-col gap-1">
-                <h2 className="text-xl font-semibold">How do you want to move between tools?</h2>
-                <p className="text-muted-foreground">You can switch at any time in Settings → Appearance.</p>
+                <h2 className="text-xl font-semibold">{t("wizard.step1.title")}</h2>
+                <p className="text-muted-foreground">{t("wizard.step1.hint")}</p>
               </div>
               <LayoutChoice layout={layout} onLayout={onLayout} className="gap-4" />
             </div>
             <div className="flex items-center gap-2.5 border-t border-border px-4 py-3.5 sm:px-12">
-              <span className="flex-1 text-muted-foreground">Step 1 of 3</span>
-              <Button type="button" size="sm" className="h-[30px] px-3 text-sm" onClick={() => setStep(2)}>Continue</Button>
+              <span className="flex-1 text-muted-foreground">{t("wizard.step1.status")}</span>
+              <Button type="button" size="sm" className="h-[30px] px-3 text-sm" onClick={() => setStep(2)}>{t("wizard.continue")}</Button>
             </div>
           </>
         ) : step === 2 ? (
@@ -377,8 +386,8 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
             <div className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-hidden px-10 pt-8">
               <div className="flex items-end justify-between gap-5">
                 <div className="flex flex-col gap-1">
-                  <h2 className="text-xl font-semibold">Pick your starter tools</h2>
-                  <p className="text-muted-foreground">Plugins come from the Shard Official repository. The {CORE_NAMES.length} built-in tools are included; hide any you don't need in Settings → Built-in tools.</p>
+                  <h2 className="text-xl font-semibold">{t("wizard.step2.title")}</h2>
+                  <p className="text-muted-foreground">{t("wizard.step2.hint", { n: CORE_NAMES.length })}</p>
                 </div>
                 {load.phase === "ready" && (
                   <div className="flex h-8 w-full shrink-0 items-center sm:w-[260px] gap-[9px] rounded-[7px] border border-border bg-background px-2.5 text-muted-foreground focus-within:border-ring focus-within:shadow-[0_0_0_3px_hsl(var(--ring)/.16)]">
@@ -386,8 +395,8 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
                     <input
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
-                      aria-label="Search plugins"
-                      placeholder="Search plugins"
+                      aria-label={t("wizard.step2.search")}
+                      placeholder={t("wizard.step2.search")}
                       className="min-w-0 flex-1 !border-transparent bg-transparent text-foreground !shadow-none !outline-none placeholder:text-muted-foreground"
                     />
                   </div>
@@ -395,24 +404,24 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto">
-                {load.phase === "loading" && <p className="text-muted-foreground" role="status">Loading plugins…</p>}
+                {load.phase === "loading" && <p className="text-muted-foreground" role="status">{t("wizard.loading")}</p>}
                 {load.phase === "offline" && (
                   <div role="alert" className="flex max-w-[420px] flex-col gap-3 rounded-lg border border-border bg-secondary p-4">
-                    <h3 className="font-semibold text-foreground">Couldn't reach Shard Official</h3>
+                    <h3 className="font-semibold text-foreground">{t("wizard.offlineTitle")}</h3>
                     <p className="break-words text-xs text-muted-foreground">{load.reason}</p>
-                    <p className="text-xs text-muted-foreground">You can add plugins later from Plugins. The built-in tools work without them.</p>
+                    <p className="text-xs text-muted-foreground">{t("wizard.offlineHint")}</p>
                     <div className="flex gap-2">
-                      <Button type="button" size="sm" className="h-[30px] px-3 text-sm" onClick={() => void connect()}>Retry</Button>
-                      <Button type="button" variant="ghost" size="sm" className="h-[30px] px-3 text-sm text-muted-foreground" onClick={() => setStep(3)}>Skip</Button>
+                      <Button type="button" size="sm" className="h-[30px] px-3 text-sm" onClick={() => void connect()}>{t("wizard.retry")}</Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-[30px] px-3 text-sm text-muted-foreground" onClick={() => setStep(3)}>{t("wizard.skip")}</Button>
                     </div>
                   </div>
                 )}
-                {load.phase === "ready" && rows.length === 0 && <p className="text-muted-foreground" role="status">{query.trim() ? `No plugins match “${query.trim()}”.` : "Shard Official has no plugins to add right now."}</p>}
+                {load.phase === "ready" && rows.length === 0 && <p className="text-muted-foreground" role="status">{query.trim() ? t("wizard.noMatch", { query: query.trim() }) : t("wizard.noPlugins")}</p>}
                 {load.phase === "ready" && groups.length > 0 && (
                   <div className="grid grid-cols-1 gap-x-7 gap-y-[18px] md:grid-cols-2">
                     {groups.map(([category, members]) => (
-                      <section key={category} aria-label={category} className="flex flex-col gap-1">
-                        <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-[.06em] text-muted-foreground">{category}</h3>
+                      <section key={category} aria-label={category === OTHER ? t("wizard.categoryOther") : category} className="flex flex-col gap-1">
+                        <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-[.06em] text-muted-foreground">{category === OTHER ? t("wizard.categoryOther") : category}</h3>
                         {members.map((row) => (
                           <PluginChoice key={row.entry.id} row={row} checked={selected.has(row.entry.id)} onToggle={() => toggle(row.entry.id)} />
                         ))}
@@ -423,34 +432,34 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
                 <p className="mb-6 mt-[18px] flex items-center gap-2.5 rounded-lg bg-secondary p-3">
                   <Info size={15} className="shrink-0 text-muted-foreground" aria-hidden="true" />
                   <span className="flex-1">
-                    <span className="text-muted-foreground">Built-in: </span>
-                    {CORE_NAMES.join(", ")}
+                    <span className="text-muted-foreground">{t("wizard.step2.builtIn")}</span>
+                    {CORE_NAMES.map((name) => { const tool = ALL_TOOLS.find((candidate) => candidate.name === name); return tool ? toolName(tool) : name; }).join(", ")}
                   </span>
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2.5 border-t border-border px-10 py-3.5">
               <span className="flex-1 text-muted-foreground" role="status">
-                {footerStatus ?? `Step 2 of 3 · ${plural(chosen.length, "plugin", "plugins")} selected${bytes > 0 ? ` · ${formatSize(bytes)}` : ""}`}
+                {footerStatus ?? (bytes > 0 ? t("wizard.step2.selectedSize", { count: chosen.length, size: formatSize(bytes) }) : t("wizard.step2.selected", { count: chosen.length }))}
               </span>
-              <Button type="button" variant="ghost" size="sm" className="h-[30px] px-3 text-sm text-muted-foreground" disabled={installing} onClick={() => setStep(3)}>Skip</Button>
-              <Button type="button" size="sm" className="h-[30px] px-3 text-sm" disabled={chosen.length === 0 || installing} onClick={installAndContinue}>Install and continue</Button>
+              <Button type="button" variant="ghost" size="sm" className="h-[30px] px-3 text-sm text-muted-foreground" disabled={installing} onClick={() => setStep(3)}>{t("wizard.skip")}</Button>
+              <Button type="button" size="sm" className="h-[30px] px-3 text-sm" disabled={chosen.length === 0 || installing} onClick={installAndContinue}>{t("wizard.install")}</Button>
             </div>
           </>
         ) : (
           <>
             <div className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-hidden px-10 pt-8">
               <div className="flex flex-col gap-1">
-                <h2 className="text-xl font-semibold">Pin tools to Home</h2>
-                <p className="text-muted-foreground">Pinned tools show on Home and at the top of the sidebar. You can change them later.</p>
+                <h2 className="text-xl font-semibold">{t("wizard.step3.title")}</h2>
+                <p className="text-muted-foreground">{t("wizard.step3.hint")}</p>
               </div>
               <div className="mb-6 flex min-h-0 max-w-[460px] flex-col overflow-hidden rounded-lg border border-border bg-card">
                 <PickerBody items={items} pinned={pinned} progress={flow.progress} onPick={pick} listClassName="min-h-0 flex-1" />
               </div>
             </div>
             <div className="flex items-center gap-2.5 border-t border-border px-10 py-3.5">
-              <span className="flex-1 text-muted-foreground">Step 3 of 3</span>
-              <Button type="button" size="sm" className="h-[30px] px-3 text-sm" onClick={onFinish}>Done</Button>
+              <span className="flex-1 text-muted-foreground">{t("wizard.step3.status")}</span>
+              <Button type="button" size="sm" className="h-[30px] px-3 text-sm" onClick={onFinish}>{t("wizard.done")}</Button>
             </div>
           </>
         )}

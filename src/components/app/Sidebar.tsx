@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Folder, FolderOpen, House, Minus, Pin, Puzzle, Search, X } from "lucide-react";
 import { MAX_PINNED } from "@/app/pinned";
+import { categoryName, categorySearchNames, toolName, toolSearchNames } from "@/app/toolNames";
+import { useT } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toolTint, type CatalogTool } from "@/app/catalog";
@@ -27,25 +29,27 @@ interface ToolButtonProps {
 }
 
 function ToolButton({ tool, isPinned, isSelected, onSelect, onTogglePinned }: ToolButtonProps) {
+  const t = useT();
+  const name = toolName(tool);
   return (
     <div className="sidebar-tool group relative flex items-center">
       <button
         type="button"
-        className="tree-row pl-7 pr-7"
+        className="tree-row ps-7 pe-7"
         data-selected={isSelected || undefined}
         aria-current={isSelected ? "page" : undefined}
         onClick={() => onSelect(tool)}
       >
         <span data-tint={toolTint(tool.id)} className="flex"><tool.icon className="tint-icon h-3.5 w-3.5 shrink-0" aria-hidden="true" /></span>
-        <span className="flex-1 truncate text-left">{tool.name}</span>
+        <span className="flex-1 truncate text-start">{name}</span>
       </button>
       <button
         type="button"
         onClick={() => onTogglePinned(tool.id)}
-        className={`sidebar-favorite absolute right-1 rounded p-1 ${isPinned ? "is-favorite" : ""}`}
+        className={`sidebar-favorite absolute end-1 rounded p-1 ${isPinned ? "is-favorite" : ""}`}
         aria-pressed={isPinned}
-        aria-label={`Pin ${tool.name}`}
-        title={isPinned ? "Unpin from Home" : "Pin to Home"}
+        aria-label={t("shell.sidebar.pin", { name })}
+        title={isPinned ? t("shell.sidebar.unpinFromHome") : t("shell.sidebar.pinToHome")}
       >
         <Pin
           aria-hidden="true"
@@ -85,6 +89,7 @@ export function Sidebar({
   open, onOpenChange, searchQuery, onSearchChange, selectedId, tools, categories, pinned, pinnedTools,
   onSelect, onTogglePinned, onOpenPalette, paletteShortcutLabel, onOpenPlugins, categoryMode, empty, footer,
 }: SidebarProps) {
+  const t = useT();
   // `toggled` holds the categories that differ from the mode's starting point. "Remember" and "All closed" start
   // closed (so it lists the open ones), "All open" starts open (so it lists the closed ones). Only "Remember"
   // saves it. Changing the mode resets it, and "Remember" gets the saved list back.
@@ -117,8 +122,8 @@ export function Sidebar({
     const query = searchQuery.trim().toLowerCase();
     return tools.filter(
       (tool) =>
-        tool.name.toLowerCase().includes(query) ||
-        tool.category.toLowerCase().includes(query) ||
+        toolSearchNames(tool).some((name) => name.toLowerCase().includes(query)) ||
+        categorySearchNames(tool.category).some((name) => name.toLowerCase().includes(query)) ||
         tool.keywords.some((keyword) => keyword.startsWith(query))
     );
   }, [tools, searchQuery]);
@@ -148,18 +153,18 @@ export function Sidebar({
         aria-hidden={!open}
         style={!open ? { visibility: "hidden" } : undefined}
         className={`${
-          open ? "w-60 translate-x-0" : "w-0 -translate-x-full sm:translate-x-0"
+          open ? "w-60 translate-x-0" : "w-0 -translate-x-full rtl:translate-x-full sm:translate-x-0 rtl:sm:translate-x-0"
         } h-full workspace-sidebar flex flex-col transition-all duration-200 overflow-hidden
-        fixed sm:relative inset-y-0 left-0 z-50 sm:z-auto`}
+        fixed sm:relative inset-y-0 start-0 z-50 sm:z-auto`}
       >
         <div className="tool-window-header">
-          <h2>Tools</h2>
+          <h2>{t("shell.sidebar.title")}</h2>
           {!empty && !searchQuery && (
             <button
               type="button"
               className="chrome-button"
-              aria-label={anyExpanded ? "Collapse all categories" : "Expand all categories"}
-              title={anyExpanded ? "Collapse all" : "Expand all"}
+              aria-label={anyExpanded ? t("shell.sidebar.collapseAllLabel") : t("shell.sidebar.expandAllLabel")}
+              title={anyExpanded ? t("shell.sidebar.collapseAll") : t("shell.sidebar.expandAll")}
               onClick={() => setAllExpanded(!anyExpanded)}
             >
               {anyExpanded ? <ChevronsDownUp size={14} aria-hidden="true" /> : <ChevronsUpDown size={14} aria-hidden="true" />}
@@ -167,8 +172,8 @@ export function Sidebar({
           )}
           <button
             type="button"
-            aria-label="Close sidebar"
-            title="Hide"
+            aria-label={t("shell.sidebar.close")}
+            title={t("shell.sidebar.hide")}
             className="chrome-button"
             onClick={() => onOpenChange(false)}
           >
@@ -180,21 +185,21 @@ export function Sidebar({
         {/* Search */}
         <div className="px-2 pb-2">
           <div className="relative">
-            <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+            <Search className="absolute start-2 top-2 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
             <Input
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Escape" && searchQuery) { e.preventDefault(); onSearchChange(""); } }}
-              placeholder="Search..."
-              aria-label="Filter tools"
-              className="h-7 pl-7 pr-14 text-sm text-foreground placeholder:text-muted-foreground"
+              placeholder={t("shell.sidebar.searchPlaceholder")}
+              aria-label={t("shell.sidebar.filterLabel")}
+              className="h-7 ps-7 pe-14 text-sm text-foreground placeholder:text-muted-foreground"
             />
             <button
               type="button"
               onClick={onOpenPalette}
               className="sidebar-search-kbd"
-              aria-label={`Open command palette (${paletteShortcutLabel})`}
-              title="Open command palette"
+              aria-label={t("shell.sidebar.openPaletteLabel", { shortcut: paletteShortcutLabel })}
+              title={t("shell.sidebar.openPalette")}
             >
               {paletteShortcutLabel}
             </button>
@@ -202,7 +207,7 @@ export function Sidebar({
         </div>
 
         {/* Navigation */}
-        <nav aria-label="Tools" className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+        <nav aria-label={t("shell.sidebar.title")} className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
           {/* Home */}
           <button
             type="button"
@@ -212,7 +217,7 @@ export function Sidebar({
             onClick={() => onSelect(null)}
           >
             <House className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span>Home</span>
+            <span>{t("shell.sidebar.home")}</span>
           </button>
 
           {/* Pinned */}
@@ -221,9 +226,9 @@ export function Sidebar({
               <div className="flex items-center justify-between px-2 py-1 text-xs font-medium text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Pin className="h-3 w-3" aria-hidden="true" />
-                  <span>Pinned</span>
+                  <span>{t("shell.sidebar.pinned")}</span>
                 </div>
-                <span className="text-2xs" aria-label={`${pinnedTools.length} of ${MAX_PINNED} pinned`}>
+                <span className="text-2xs" aria-label={t("shell.sidebar.pinnedCount", { count: pinnedTools.length, max: MAX_PINNED })}>
                   {pinnedTools.length}/{MAX_PINNED}
                 </span>
               </div>
@@ -234,11 +239,11 @@ export function Sidebar({
           {/* Categories */}
           {empty ? (
             <div className="mt-3 flex flex-col gap-2.5 rounded-md border border-dashed border-border p-3">
-              <span className="text-sm font-medium text-foreground">No tools installed</span>
-              <span className="text-xs text-muted-foreground">Tools you install show up here, grouped by category.</span>
+              <span className="text-sm font-medium text-foreground">{t("shell.sidebar.emptyTitle")}</span>
+              <span className="text-xs text-muted-foreground">{t("shell.sidebar.emptyBody")}</span>
               <Button type="button" size="sm" className="w-fit gap-1.5 px-3 text-sm" onClick={onOpenPlugins}>
                 <Puzzle className="h-3.5 w-3.5" aria-hidden="true" />
-                Browse plugins
+                {t("shell.empty.browse")}
               </Button>
             </div>
           ) : !searchQuery ? (
@@ -253,9 +258,9 @@ export function Sidebar({
                     onClick={() => toggleCategory(category.name)}
                     className="tree-row"
                   >
-                    {expanded ? <ChevronDown className="h-3 w-3 shrink-0" aria-hidden="true" /> : <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />}
+                    {expanded ? <ChevronDown className="h-3 w-3 shrink-0" aria-hidden="true" /> : <ChevronRight className="h-3 w-3 shrink-0 rtl:-scale-x-100" aria-hidden="true" />}
                     <FolderIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-                    <span className="truncate text-left">{category.name}</span>
+                    <span className="truncate text-start">{categoryName(category.name)}</span>
                     <span className="tree-count">{category.tools.length}</span>
                   </button>
                   {expanded && category.tools.map(renderTool)}
@@ -267,8 +272,8 @@ export function Sidebar({
               {filteredTools.map(renderTool)}
               {filteredTools.length === 0 && (
                 <div className="px-2 py-3 text-xs text-muted-foreground" role="status">
-                  <p>No tools match “{searchQuery.trim()}”.</p>
-                  <button type="button" className="sidebar-empty-action" onClick={onOpenPalette}>Search in the command palette</button>
+                  <p>{t("shell.sidebar.noMatch", { query: searchQuery.trim() })}</p>
+                  <button type="button" className="sidebar-empty-action" onClick={onOpenPalette}>{t("shell.sidebar.searchInPalette")}</button>
                 </div>
               )}
             </div>

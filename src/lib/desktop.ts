@@ -7,6 +7,7 @@ import { platform as getOsPlatform } from "@tauri-apps/plugin-os";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
+import { t } from "@/i18n";
 import { isMobileApp } from "@/lib/platform";
 import type { UserTheme } from "@/utils/theme";
 import type { ToolManifest } from "@/utils/tool-manifest";
@@ -57,6 +58,8 @@ export interface DesktopBridge {
    * it off with null. Resolves to an error message when the system refuses it, otherwise null.
    */
   setGlobalShortcut?: (accelerator: string | null) => Promise<string | null>;
+  /** Sets the tray menu's labels in the current language. */
+  setTrayLabels?: (labels: { open: string; search: string; quit: string }) => Promise<void>;
   /** Calls back when the tray menu or the global shortcut asks for the command palette. */
   onOpenCommandPalette?: (callback: () => void) => () => void;
   /**
@@ -113,7 +116,7 @@ function createTauriBridge(): DesktopBridge {
     if (isDev) {
       setUpdateState({
         status: "unsupported",
-        message: "Update checks are disabled in development builds.",
+        message: t("shell.update.checksDisabled"),
       });
       return withCurrentVersion();
     }
@@ -140,7 +143,7 @@ function createTauriBridge(): DesktopBridge {
       console.error("Update check failed:", error);
       setUpdateState({
         status: "error",
-        message: error instanceof Error ? error.message : String(error ?? "Unable to check for updates."),
+        message: error instanceof Error ? error.message : String(error ?? t("shell.update.checkFailed")),
       });
     }
 
@@ -186,7 +189,7 @@ function createTauriBridge(): DesktopBridge {
       if (isDev) {
         setUpdateState({
           status: "unsupported",
-          message: "Updates are disabled in development builds.",
+          message: t("shell.update.disabled"),
         });
       }
       return false;
@@ -220,7 +223,7 @@ function createTauriBridge(): DesktopBridge {
       console.error("Update download failed:", error);
       setUpdateState({
         status: "error",
-        message: error instanceof Error ? error.message : String(error ?? "Unable to download the update."),
+        message: error instanceof Error ? error.message : String(error ?? t("shell.update.downloadFailed")),
       });
       throw error;
     }
@@ -311,6 +314,14 @@ function createTauriBridge(): DesktopBridge {
     }
   };
 
+  const setTrayLabels = async ({ open, search, quit }: { open: string; search: string; quit: string }) => {
+    try {
+      await invoke("set_tray_labels", { open, search, quit });
+    } catch (error) {
+      console.error("Failed to set the tray labels:", error);
+    }
+  };
+
   const onOpenCommandPalette = (callback: () => void) => {
     let active = true;
     let unlisten: (() => void) | undefined;
@@ -332,6 +343,7 @@ function createTauriBridge(): DesktopBridge {
     setWindowTheme,
     setZoom,
     setGlobalShortcut,
+    setTrayLabels,
     onOpenCommandPalette,
     onFileDrop: nodePlatform === "linux" ? onFileDrop : undefined,
     writeToolManifest,
@@ -447,7 +459,7 @@ export const isDesktop = (): boolean => isTauri();
 
 function requireDesktop(): void {
   if (!isTauri()) {
-    throw new Error("Folder compare needs the desktop app.");
+    throw new Error(t("shell.desktop.folderCompare"));
   }
 }
 
@@ -516,7 +528,7 @@ export async function listThemes(): Promise<UserThemeList> {
 /** Asks for a theme file and adds it. Resolves to null when the user cancels; rejects with the reason a file is refused. */
 export async function importTheme(): Promise<UserTheme | null> {
   if (!isTauri()) {
-    throw new Error("Custom themes need the desktop app.");
+    throw new Error(t("shell.desktop.themes"));
   }
   return invoke<UserTheme | null>("theme_import");
 }

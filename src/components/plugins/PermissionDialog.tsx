@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Check, Puzzle, TriangleAlert } from "lucide-react";
+import { useT } from "@/i18n";
 import { useDialogFocus } from "@/components/app/useDialogFocus";
 import { permissionRows, type PermissionGroupKey, type PermissionRow } from "@/plugins/permissions";
 import { grantsFor } from "@/plugins/useInstallFlow";
@@ -27,6 +28,7 @@ interface PermissionDialogProps {
 
 /** Screen 07 A: what the plugin asks for, where it comes from, and the choice to install. */
 export function PermissionDialog({ mode = "install", granted, newPermissions = [], entry, official, verified, onCancel, onConfirm }: PermissionDialogProps) {
+  const t = useT();
   const rows = permissionRows(entry);
   const isNew = (row: PermissionRow) => row.names.some((name) => newPermissions.includes(name));
   // Optional permissions start on, except in update and manage, where they keep the choice made before (new ones start on).
@@ -40,7 +42,7 @@ export function PermissionDialog({ mode = "install", granted, newPermissions = [
       if (!next.delete(key)) next.add(key);
       return next;
     });
-  const title = `Allow ${entry.name} to:`;
+  const title = t("plugins.permissionDialog.title", { name: entry.name });
 
   return (
     <div
@@ -63,7 +65,7 @@ export function PermissionDialog({ mode = "install", granted, newPermissions = [
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <h2 className="text-base font-semibold text-foreground">{title}</h2>
-            <span className="truncate text-xs text-muted-foreground">{`${mode === "update" ? "Update to version" : "Version"} ${entry.version} from ${entry.repo.replace(/^https:\/\//, "")}`}</span>
+            <span className="truncate text-xs text-muted-foreground">{t(mode === "update" ? "plugins.permissionDialog.updateFrom" : "plugins.permissionDialog.versionFrom", { version: entry.version, repo: entry.repo.replace(/^https:\/\//, "") })}</span>
           </div>
         </div>
         <div className="max-h-[50vh] overflow-y-auto px-5 pb-1 pt-2">
@@ -73,36 +75,36 @@ export function PermissionDialog({ mode = "install", granted, newPermissions = [
           {verified ? (
             <span className="flex items-center gap-2">
               <Check size={14} strokeWidth={2.5} aria-hidden="true" className="shrink-0 text-success" />
-              SHA-256 checksum matches the release.
+              {t("plugins.permissionDialog.checksumOk")}
             </span>
           ) : (
             <span className="flex items-center gap-2">
               <TriangleAlert size={14} aria-hidden="true" className="shrink-0 text-warning" />
-              Unverified. It doesn't come from one of your repositories, so its checksum can't be checked.
+              {t("plugins.permissionDialog.unverified")}
             </span>
           )}
           {!official && (
             <span className="flex items-center gap-2">
               <TriangleAlert size={14} aria-hidden="true" className="shrink-0 text-warning" />
-              Third-party plugin. It isn't listed in the Shard Official repository.
+              {t("plugins.permissionDialog.thirdParty")}
             </span>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-border px-5 py-3">
-          <span className="min-w-[12rem] flex-1 text-xs text-muted-foreground">{mode === "manage" ? "" : "Optional permissions can be changed later in Installed."}</span>
+          <span className="min-w-[12rem] flex-1 text-xs text-muted-foreground">{mode === "manage" ? "" : t("plugins.permissionDialog.optionalNote")}</span>
           <button
             type="button"
             onClick={onCancel}
-            className="ml-auto inline-flex h-[30px] items-center rounded-md border border-input bg-secondary px-3 text-sm font-medium text-secondary-foreground"
+            className="ms-auto inline-flex h-[30px] items-center rounded-md border border-input bg-secondary px-3 text-sm font-medium text-secondary-foreground"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
             onClick={() => onConfirm(grantsFor(rows, enabled))}
             className="inline-flex h-[30px] items-center whitespace-nowrap rounded-md border border-primary-solid bg-primary-solid px-3 text-sm font-medium text-primary-foreground"
           >
-            {mode === "install" ? "Allow and install" : mode === "update" ? "Allow and update" : "Save"}
+            {mode === "install" ? t("plugins.permissionDialog.allowInstall") : mode === "update" ? t("plugins.permissionDialog.allowUpdate") : t("common.save")}
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, Ellipsis, GitBranch, Lock, Plus, RefreshCw, Trash2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
+import { t, useT } from "@/i18n";
 import { AnchoredPanel } from "@/components/tools/diff-merge/Panels";
 import { Switch } from "@/components/ui/switch";
 import { themeCatalog } from "@/lib/desktop";
@@ -13,7 +14,7 @@ const asMessage = (failure: unknown) => (failure instanceof Error ? failure.mess
 
 const COLUMNS = "grid grid-cols-[minmax(0,1fr)_140px_100px_190px_50px_64px] items-center px-3.5";
 const BADGE = "inline-flex h-5 items-center rounded-[5px] border px-[7px] text-2xs font-medium whitespace-nowrap";
-const SWITCH = "h-[18px] w-8 border-0 p-0.5 [&>span]:size-3.5 [&>span]:data-[state=checked]:translate-x-3.5";
+const SWITCH = "h-[18px] w-8 border-0 p-0.5 [&>span]:size-3.5 [&>span]:data-[state=checked]:translate-x-3.5 rtl:[&>span]:data-[state=checked]:-translate-x-3.5";
 const CARD_BUTTON = "inline-flex h-[26px] items-center gap-[7px] whitespace-nowrap rounded-md border border-transparent px-3 text-sm font-medium text-muted-foreground hover:bg-background hover:text-foreground disabled:opacity-60";
 const ICON_BUTTON = "grid size-[30px] place-items-center rounded-md text-muted-foreground hover:bg-secondary disabled:opacity-60";
 
@@ -40,7 +41,7 @@ function MenuItem({ icon, children, destructive, onClick }: { icon: ReactNode; c
       type="button"
       role="menuitem"
       onClick={onClick}
-      className={cn("flex w-full items-center gap-2.5 rounded-[5px] px-2 py-1.5 text-left hover:bg-accent focus:bg-accent focus:outline-none", destructive && "text-destructive")}
+      className={cn("flex w-full items-center gap-2.5 rounded-[5px] px-2 py-1.5 text-start hover:bg-accent focus:bg-accent focus:outline-none", destructive && "text-destructive")}
     >
       <span className={cn("flex w-[14px] justify-center", !destructive && "text-muted-foreground")}>{icon}</span>
       {children}
@@ -49,6 +50,7 @@ function MenuItem({ icon, children, destructive, onClick }: { icon: ReactNode; c
 }
 
 function Status({ repo }: { repo: Repo }) {
+  const t = useT();
   if (repo.lastError) {
     return (
       <span className="flex min-w-0 items-center gap-1.5 text-xs text-destructive" title={repo.lastError}>
@@ -57,11 +59,12 @@ function Status({ repo }: { repo: Repo }) {
       </span>
     );
   }
-  return <span className="text-xs text-muted-foreground">{repo.lastSync != null ? syncedAgo(repo.lastSync) : "Not synced yet"}</span>;
+  return <span className="text-xs text-muted-foreground">{repo.lastSync != null ? syncedAgo(repo.lastSync) : t("plugins.repos.notSynced")}</span>;
 }
 
 /** Screen 05 A: the repositories, with add, sync, on/off and remove, and the two switches of `repos.json`. */
 export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: RepositoriesTabProps) {
+  const t = useT();
   const cards = variant === "cards";
   const [url, setUrl] = useState("");
   const [adding, setAdding] = useState(false);
@@ -75,12 +78,12 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
     let current = true;
     repoSettings().then(
       (loaded) => current && setSettings(loaded),
-      (error) => current && toast.error("Couldn't read the settings", { description: asMessage(error) }),
+      (error) => current && toast.error(t("plugins.repos.readSettingsFailed"), { description: asMessage(error) }),
     );
     return () => {
       current = false;
     };
-  }, []);
+  }, [t]);
 
   const counts = useMemo(() => {
     const out = new Map<string, number>();
@@ -113,8 +116,8 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
     const plugins = counts.get(repo.url) ?? 0;
     const themes = themeCounts.get(repo.url) ?? 0;
     const parts = [];
-    if (plugins > 0 || themes === 0) parts.push(`${plugins} ${plugins === 1 ? "plugin" : "plugins"}`);
-    if (themes > 0) parts.push(`${themes} ${themes === 1 ? "theme" : "themes"}`);
+    if (plugins > 0 || themes === 0) parts.push(t("plugins.repos.pluginCount", { count: plugins }));
+    if (themes > 0) parts.push(t("plugins.repos.themeCount", { count: themes }));
     return parts.join(", ");
   };
 
@@ -136,11 +139,11 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
     setAdding(true);
     try {
       const added = await addRepo(value);
-      toast.success("Repository added", { description: added.name });
+      toast.success(t("plugins.repos.added"), { description: added.name });
       setUrl("");
       await refresh();
     } catch (error) {
-      toast.error("Couldn't add the repository", { description: asMessage(error) });
+      toast.error(t("plugins.repos.addFailed"), { description: asMessage(error) });
     } finally {
       setAdding(false);
     }
@@ -150,21 +153,21 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
     run(repo.url, async () => {
       const after = (await syncRepos(repo.url)).find((item) => item.url === repo.url);
       await refresh();
-      if (after?.lastError) toast.error(`Couldn't sync ${repo.name}`, { description: after.lastError });
-    }, `Couldn't sync ${repo.name}`);
+      if (after?.lastError) toast.error(t("plugins.repos.syncFailed", { name: repo.name }), { description: after.lastError });
+    }, t("plugins.repos.syncFailed", { name: repo.name }));
 
   const toggle = (repo: Repo, enabled: boolean) =>
     run(repo.url, async () => {
       await setRepoEnabled(repo.url, enabled);
       await refresh();
-    }, `Couldn't turn ${enabled ? "on" : "off"} ${repo.name}`);
+    }, t(enabled ? "plugins.repos.turnOnFailed" : "plugins.repos.turnOffFailed", { name: repo.name }));
 
   const remove = (repo: Repo) =>
     run(repo.url, async () => {
       await removeRepo(repo.url);
-      toast.success("Repository removed", { description: repo.name });
+      toast.success(t("plugins.repos.removed"), { description: repo.name });
       await refresh();
-    }, `Couldn't remove ${repo.name}`);
+    }, t("plugins.repos.removeFailed", { name: repo.name }));
 
   const save = async (patch: Partial<RepoSettings>) => {
     if (!settings || saving) return;
@@ -175,7 +178,7 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
       setSettings(await setRepoSettings(patch));
     } catch (error) {
       setSettings(before);
-      toast.error("Couldn't save the setting", { description: asMessage(error) });
+      toast.error(t("plugins.repos.saveFailed"), { description: asMessage(error) });
     } finally {
       setSaving(false);
     }
@@ -190,11 +193,11 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
     <div className="relative flex min-w-0 flex-1 flex-col gap-5 overflow-y-auto px-4 py-5 sm:px-7">
       <div className="flex flex-col gap-2">
         <div className="flex gap-2">
-          <label className="flex h-[34px] w-full min-w-0 sm:w-[480px] sm:shrink-0 items-center gap-[9px] rounded-[7px] border border-input bg-background pl-[11px] pr-2 text-muted-foreground focus-within:border-ring">
+          <label className="flex h-[34px] w-full min-w-0 sm:w-[480px] sm:shrink-0 items-center gap-[9px] rounded-[7px] border border-input bg-background ps-[11px] pe-2 text-muted-foreground focus-within:border-ring">
             <GitBranch size={15} aria-hidden="true" className="shrink-0" />
             <input
               type="text"
-              aria-label="Repository URL"
+              aria-label={t("plugins.installDialog.urlLabel")}
               placeholder="https://github.com/owner/repo"
               value={url}
               disabled={adding}
@@ -213,11 +216,11 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
             className="inline-flex h-[34px] items-center gap-[7px] whitespace-nowrap rounded-md border border-primary-solid bg-primary-solid px-3 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed"
           >
             <Plus size={14} aria-hidden="true" />
-            Add repository
+            {t("plugins.repos.add")}
           </button>
         </div>
         <span className="text-xs text-muted-foreground">
-          A repository either lists many plugins in an index.json, or is a single plugin published as GitHub Releases. Shard detects which.
+          {t("plugins.repos.hint")}
         </span>
       </div>
 
@@ -235,29 +238,29 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="flex items-center gap-2">
                       <span className="truncate font-semibold text-foreground">{repo.name}</span>
-                      {repo.official && <span className={cn(BADGE, "border-transparent bg-primary/15 text-primary")}>Official</span>}
+                      {repo.official && <span className={cn(BADGE, "border-transparent bg-primary/15 text-primary")}>{t("plugins.repos.official")}</span>}
                     </span>
                     <span className="truncate font-mono text-xs text-muted-foreground">{repoAddress(repo.url)}</span>
                   </div>
-                  <Switch aria-label={`Enabled: ${repo.name}`} checked={repo.enabled} disabled={working} onCheckedChange={(enabled) => void toggle(repo, enabled)} className={SWITCH} />
+                  <Switch aria-label={t("plugins.installed.enabledAria", { name: repo.name })} checked={repo.enabled} disabled={working} onCheckedChange={(enabled) => void toggle(repo, enabled)} className={SWITCH} />
                 </div>
                 <div className="flex items-center gap-2.5 text-xs">
                   {repo.type && <span className={cn(BADGE, "border-input bg-background text-muted-foreground")}>{TYPE_LABEL[repo.type]}</span>}
                   {label !== null && <span className="text-foreground">{label}</span>}
-                  <span className="ml-auto flex min-w-0">
+                  <span className="ms-auto flex min-w-0">
                     <Status repo={repo} />
                   </span>
                 </div>
                 <div className="flex gap-1.5 border-t border-border pt-2.5">
                   <button type="button" disabled={working} onClick={() => void sync(repo)} className={CARD_BUTTON}>
                     <RefreshCw size={14} aria-hidden="true" className={cn(working && "animate-spin")} />
-                    {repo.lastError ? "Retry" : "Sync now"}
+                    {repo.lastError ? t("plugins.repos.retry") : t("plugins.repos.syncNow")}
                   </button>
                   {repo.official ? (
-                    <span className="ml-auto self-center text-xs text-muted-foreground">Official repository can be turned off, not removed</span>
+                    <span className="ms-auto self-center text-xs text-muted-foreground">{t("plugins.repos.officialHint")}</span>
                   ) : (
                     <button type="button" disabled={working} onClick={() => void remove(repo)} className={CARD_BUTTON}>
-                      Remove
+                      {t("plugins.repos.remove")}
                     </button>
                   )}
                 </div>
@@ -266,14 +269,14 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
           })}
         </div>
       ) : (
-      <div role="table" aria-label="Repositories" className="flex flex-col">
+      <div role="table" aria-label={t("plugins.repos.title")} className="flex flex-col">
         <div role="row" className={cn(COLUMNS, "h-[30px] border-b border-border text-xs text-muted-foreground")}>
-          <span role="columnheader">Repository</span>
-          <span role="columnheader">Type</span>
-          <span role="columnheader">Plugins</span>
-          <span role="columnheader">Status</span>
-          <span role="columnheader">On</span>
-          <span role="columnheader" aria-label="Actions" />
+          <span role="columnheader">{t("plugins.repos.colRepository")}</span>
+          <span role="columnheader">{t("plugins.repos.colType")}</span>
+          <span role="columnheader">{t("plugins.repos.colPlugins")}</span>
+          <span role="columnheader">{t("plugins.repos.colStatus")}</span>
+          <span role="columnheader">{t("plugins.repos.colOn")}</span>
+          <span role="columnheader" aria-label={t("plugins.installed.colActions")} />
         </div>
         {repos.map((repo) => {
           const working = busy.has(repo.url);
@@ -283,7 +286,7 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
               <span role="cell" className="flex min-w-0 flex-col">
                 <span className="flex items-center gap-2">
                   <span className="truncate font-semibold text-foreground">{repo.name}</span>
-                  {repo.official && <span className={cn(BADGE, "border-transparent bg-primary/15 text-primary")}>Official</span>}
+                  {repo.official && <span className={cn(BADGE, "border-transparent bg-primary/15 text-primary")}>{t("plugins.repos.official")}</span>}
                 </span>
                 <span className="truncate font-mono text-xs text-muted-foreground">{repoAddress(repo.url)}</span>
               </span>
@@ -293,24 +296,24 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
               <span role="cell" className={label === null ? "text-muted-foreground" : "text-foreground"}>
                 {label ?? "–"}
               </span>
-              <span role="cell" className="flex min-w-0 pr-2">
+              <span role="cell" className="flex min-w-0 pe-2">
                 <Status repo={repo} />
               </span>
               <span role="cell">
-                <Switch aria-label={`Enabled: ${repo.name}`} checked={repo.enabled} disabled={working} onCheckedChange={(enabled) => void toggle(repo, enabled)} className={SWITCH} />
+                <Switch aria-label={t("plugins.installed.enabledAria", { name: repo.name })} checked={repo.enabled} disabled={working} onCheckedChange={(enabled) => void toggle(repo, enabled)} className={SWITCH} />
               </span>
               <span role="cell" className="flex gap-0.5">
-                <button type="button" aria-label={`Sync ${repo.name}`} disabled={working} onClick={() => void sync(repo)} className={ICON_BUTTON}>
+                <button type="button" aria-label={t("plugins.repos.syncAria", { name: repo.name })} disabled={working} onClick={() => void sync(repo)} className={ICON_BUTTON}>
                   <RefreshCw size={16} aria-hidden="true" className={cn(working && "animate-spin")} />
                 </button>
                 {repo.official ? (
-                  <span role="img" aria-label="The official repository can't be removed" title="The official repository can't be removed" className="grid w-[30px] place-items-center text-muted-foreground">
+                  <span role="img" aria-label={t("plugins.repos.officialLocked")} title={t("plugins.repos.officialLocked")} className="grid w-[30px] place-items-center text-muted-foreground">
                     <Lock size={14} aria-hidden="true" />
                   </span>
                 ) : (
                   <button
                     type="button"
-                    aria-label={`Actions for ${repo.name}`}
+                    aria-label={t("plugins.installed.actionsFor", { name: repo.name })}
                     aria-haspopup="menu"
                     aria-expanded={menu?.repo.url === repo.url}
                     disabled={working}
@@ -329,19 +332,19 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
 
       <div className="flex flex-wrap items-center gap-x-7 gap-y-3 pt-1">
         <span className="flex items-center gap-2.5">
-          <span className="text-muted-foreground">Check for updates</span>
+          <span className="text-muted-foreground">{t("plugins.repos.checkForUpdates")}</span>
           <span className="relative inline-flex">
             <select
-              aria-label="Check for updates"
+              aria-label={t("plugins.repos.checkForUpdates")}
               value={settings?.checkOnStart === false ? "manual" : "start"}
               disabled={!settings || saving}
               onChange={(event) => void save({ checkOnStart: event.target.value === "start" })}
-              className="h-[30px] appearance-none rounded-md border border-input bg-background pl-[11px] pr-8 text-sm text-foreground disabled:opacity-60"
+              className="h-[30px] appearance-none rounded-md border border-input bg-background ps-[11px] pe-8 text-sm text-foreground disabled:opacity-60"
             >
-              <option value="start">When the app starts</option>
-              <option value="manual">Manually</option>
+              <option value="start">{t("plugins.repos.whenStarts")}</option>
+              <option value="manual">{t("plugins.repos.manually")}</option>
             </select>
-            <ChevronDown size={14} aria-hidden="true" className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <ChevronDown size={14} aria-hidden="true" className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
           </span>
         </span>
         <label className="flex items-center gap-2.5">
@@ -351,7 +354,7 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
             onCheckedChange={(allowOutside) => void save({ allowOutside })}
             className={SWITCH}
           />
-          {cards ? "Allow installs from outside these repositories" : "Allow installs from zip files, folders and URLs outside these repositories"}
+          {cards ? t("plugins.repos.allowOutsideShort") : t("plugins.repos.allowOutside")}
         </label>
       </div>
 
@@ -366,7 +369,7 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
                 void sync(repo);
               }}
             >
-              {menu.repo.lastError ? "Retry" : "Sync now"}
+              {menu.repo.lastError ? t("plugins.repos.retry") : t("plugins.repos.syncNow")}
             </MenuItem>
             <div className="-mx-1 my-1 h-px bg-border" />
             <MenuItem
@@ -378,7 +381,7 @@ export function RepositoriesTab({ repos, rows, refresh, variant = "list" }: Repo
                 void remove(repo);
               }}
             >
-              Remove
+              {t("plugins.repos.remove")}
             </MenuItem>
           </div>
         )}

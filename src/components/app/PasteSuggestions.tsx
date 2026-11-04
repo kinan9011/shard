@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { ClipboardPaste, X } from "lucide-react";
+import { useT } from "@/i18n";
 import type { PasteSuggestion } from "@/utils/clipboard-detect";
 
 interface PasteSuggestionsProps {
@@ -12,6 +13,7 @@ interface PasteSuggestionsProps {
 
 /** Suggests tools for text the user pasted outside a field. Enter opens (or installs) the first, Esc dismisses. */
 export function PasteSuggestions({ suggestions, toolName, onOpen, onDismiss }: PasteSuggestionsProps) {
+  const t = useT();
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target;
@@ -33,22 +35,21 @@ export function PasteSuggestions({ suggestions, toolName, onOpen, onDismiss }: P
   }, [onDismiss, onOpen, suggestions]);
 
   const [best, ...others] = suggestions;
-  const action = (item: PasteSuggestion) => (item.install ? "Install" : "Open");
   return (
     <div className="paste-suggestions" role="status" aria-live="polite">
       <ClipboardPaste size={16} aria-hidden="true" className="shrink-0 text-primary" />
       <p className="text-sm">
-        Looks like {best.label}.
+        {t("shell.paste.looksLike", { label: best.label })}
       </p>
       <button type="button" className="native-button" onClick={() => onOpen(best.toolId)}>
-        {action(best)} {toolName(best.toolId)} <kbd>↵</kbd>
+        {t(best.install ? "shell.paste.install" : "shell.paste.open", { name: toolName(best.toolId) })} <kbd>↵</kbd>
       </button>
       {others.map((item) => (
         <button key={item.toolId} type="button" className="toolbar-text-button" onClick={() => onOpen(item.toolId)}>
-          {item.install ? `Install ${toolName(item.toolId)}` : toolName(item.toolId)}
+          {item.install ? t("shell.paste.install", { name: toolName(item.toolId) }) : toolName(item.toolId)}
         </button>
       ))}
-      <button type="button" className="toolbar-text-button" aria-label="Dismiss suggestion" title="Dismiss (Esc)" onClick={onDismiss}>
+      <button type="button" className="toolbar-text-button" aria-label={t("shell.paste.dismiss")} title={t("shell.paste.dismissTitle")} onClick={onDismiss}>
         <X size={14} aria-hidden="true" />
       </button>
     </div>

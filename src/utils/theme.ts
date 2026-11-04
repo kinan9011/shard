@@ -1,3 +1,5 @@
+import { t, type TKey } from "@/i18n";
+
 export const SYSTEM_THEME_QUERY = "(prefers-color-scheme: dark)";
 export const THEME_STORAGE_KEY = "shard-theme-preference";
 
@@ -50,6 +52,15 @@ export const syncDarkClass = (
 };
 
 export const SCHEME_STORAGE_KEY = "shard-color-scheme";
+
+/** Names of the built-in schemes that are words, so they translate. The others (Adwaita, Kate...) are proper names. */
+const SCHEME_NAME_KEYS: Readonly<Record<string, TKey>> = { default: "settings.scheme.default", classic: "settings.scheme.classic" };
+
+/** The name to show for a scheme: translated for the built-in ones, as written for a theme of the user's. */
+export const schemeName = (scheme: Pick<ColorScheme, "id" | "name" | "user">): string => {
+  const key = scheme.user ? undefined : SCHEME_NAME_KEYS[scheme.id];
+  return key ? t(key) : scheme.name;
+};
 
 export interface ColorScheme {
   id: string;

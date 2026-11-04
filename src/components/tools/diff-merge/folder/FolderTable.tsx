@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { ArrowLeft, ArrowRight, Ban, Database, File, FileCode, FileText, Folder, Image } from "lucide-react";
 import type { FolderEntry } from "@/lib/desktop";
+import { useT } from "@/i18n";
 import { allowedActions, formatDate, formatSize, type FileRow, type FolderGroup, type MergeAction } from "@/utils/diff-merge/folder";
 
 export type TableCommand =
@@ -27,10 +28,10 @@ for (const e of "txt md sum attrs log csv lock ini env".split(" ")) EXT_ICON[e] 
 const iconFor = (name: string) => EXT_ICON[name.slice(name.indexOf(".") + 1).toLowerCase()] ?? EXT_ICON[name.slice(name.lastIndexOf(".") + 1).toLowerCase()] ?? File;
 
 const CHIP = {
-  toRight: { color: "hsl(var(--primary))", bg: "hsl(var(--primary) / .14)", title: "Copy left to right" },
-  toLeft: { color: "hsl(var(--primary))", bg: "hsl(var(--primary) / .14)", title: "Copy right to left" },
-  ignore: { color: "hsl(var(--muted-foreground))", bg: "transparent", title: "Ignored" },
-  none: { color: "hsl(var(--warning))", bg: "hsl(var(--warning) / .14)", title: "Different, no action yet" },
+  toRight: { color: "hsl(var(--primary))", bg: "hsl(var(--primary) / .14)", title: "diffMerge.folder.copyLeftToRight" },
+  toLeft: { color: "hsl(var(--primary))", bg: "hsl(var(--primary) / .14)", title: "diffMerge.folder.copyRightToLeft" },
+  ignore: { color: "hsl(var(--muted-foreground))", bg: "transparent", title: "diffMerge.folder.ignored" },
+  none: { color: "hsl(var(--warning))", bg: "hsl(var(--warning) / .14)", title: "diffMerge.folder.differentNoAction" },
 } as const;
 
 function ChipIcon({ action }: { action: MergeAction }) {
@@ -55,7 +56,7 @@ function Side({ row, side, entry }: { row: FileRow; side: "left" | "right"; entr
       <span className="truncate">{entry ? row.name : ""}</span>
     </span>
   );
-  const size = <span role="gridcell" className="text-right" style={{ paddingRight: 12, opacity: dim }}>{entry ? formatSize(entry.size) : ""}</span>;
+  const size = <span role="gridcell" className="text-end" style={{ paddingRight: 12, opacity: dim }}>{entry ? formatSize(entry.size) : ""}</span>;
   const date = <span role="gridcell" className="text-muted-foreground" style={{ paddingLeft: 12, opacity: dim }}>{entry ? formatDate(entry.modifiedMs) : ""}</span>;
   return side === "left" ? <>{name}{size}{date}</> : <>{date}{size}{name}</>;
 }
@@ -70,9 +71,10 @@ interface RowProps {
 
 /** One file row. Memoised: a click on one row's action re-renders that row, not the whole table. */
 const FolderRow = memo(function FolderRow({ row, selected, onRowClick, onChip, onMenu }: RowProps) {
+  const t = useT();
   const chip = CHIP[row.action];
   // `none` on a row that has a single side reads as "no action", not "different".
-  const title = row.action === "none" && row.kind !== "diff" ? "No action yet" : chip.title;
+  const title = t(row.action === "none" && row.kind !== "diff" ? "diffMerge.folder.noActionYet" : chip.title);
   return (
     <div
       role="row"
@@ -126,6 +128,7 @@ interface Props {
 }
 
 export function FolderTable({ groups, selected, onSelect, onChip, onMenu, onCommand }: Props) {
+  const t = useT();
   const box = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
@@ -212,7 +215,7 @@ export function FolderTable({ groups, selected, onSelect, onChip, onMenu, onComm
     <div
       ref={box}
       role="grid"
-      aria-label="Folder comparison"
+      aria-label={t("diffMerge.folder.comparison")}
       aria-multiselectable="true"
       tabIndex={0}
       onKeyDown={onKeyDown}
@@ -223,13 +226,13 @@ export function FolderTable({ groups, selected, onSelect, onChip, onMenu, onComm
         className="grid flex-shrink-0 items-center text-xs font-medium text-muted-foreground"
         style={{ gridTemplateColumns: COLUMNS, height: HEADER_HEIGHT, borderBottom: "1px solid hsl(var(--border) / .7)" }}
       >
-        <span role="columnheader" style={{ paddingLeft: 16 }}>Name</span>
-        <span role="columnheader" className="text-right" style={{ paddingRight: 12, borderLeft: border }}>Size</span>
-        <span role="columnheader" style={{ paddingLeft: 12, borderLeft: border }}>Modified</span>
-        <span role="columnheader" className="text-center" style={{ borderLeft: border, borderRight: border }}>Action</span>
-        <span role="columnheader" style={{ paddingLeft: 12 }}>Modified</span>
-        <span role="columnheader" className="text-right" style={{ paddingRight: 12, borderLeft: border }}>Size</span>
-        <span role="columnheader" style={{ paddingLeft: 16, borderLeft: border }}>Name</span>
+        <span role="columnheader" style={{ paddingLeft: 16 }}>{t("diffMerge.folder.col.name")}</span>
+        <span role="columnheader" className="text-end" style={{ paddingRight: 12, borderLeft: border }}>{t("diffMerge.folder.col.size")}</span>
+        <span role="columnheader" style={{ paddingLeft: 12, borderLeft: border }}>{t("diffMerge.folder.col.modified")}</span>
+        <span role="columnheader" className="text-center" style={{ borderLeft: border, borderRight: border }}>{t("diffMerge.folder.col.action")}</span>
+        <span role="columnheader" style={{ paddingLeft: 12 }}>{t("diffMerge.folder.col.modified")}</span>
+        <span role="columnheader" className="text-end" style={{ paddingRight: 12, borderLeft: border }}>{t("diffMerge.folder.col.size")}</span>
+        <span role="columnheader" style={{ paddingLeft: 16, borderLeft: border }}>{t("diffMerge.folder.col.name")}</span>
       </div>
       <div ref={body} className="min-h-0 flex-1 overflow-y-auto text-[13px]" onScroll={windowed ? (e) => setScrollTop(e.currentTarget.scrollTop) : undefined}>
         {windowed ? (

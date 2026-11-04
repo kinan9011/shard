@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { contrastRatio, parseColor } from "./theme-colors";
 
 const TEXT = 4.5;
@@ -52,4 +53,5 @@ export function contrastWarnings(tokens: Readonly<Record<string, string>> | unde
   return out;
 }
 
-export const describeWarning = (w: ContrastWarning): string => `${w.foreground} on ${w.background} is ${w.ratio.toFixed(1)}:1, it needs ${w.needed}:1`;
+export const describeWarning = (w: ContrastWarning): string =>
+  t("settings.contrast.warning", { foreground: w.foreground, background: w.background, ratio: w.ratio.toFixed(1), needed: w.needed });

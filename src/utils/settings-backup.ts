@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import type { UserTheme } from "@/utils/theme";
 
 /** One file that holds what a person set up in Shard, to move it to another machine or to keep it before a reset. */
@@ -23,6 +24,7 @@ export const PREF_KEYS: readonly string[] = [
   "shard-color-scheme",
   "shard-accent",
   "shard-fonts",
+  "shard-language",
   "shard-sidebar-categories",
   "shard-open-tools-in",
   "shard-layout",
@@ -34,6 +36,7 @@ export const PREF_KEYS: readonly string[] = [
   "shard-json-layout",
   "shard-recent-tools",
   "shard-sidebar-expanded",
+  "shard-remember-inputs",
 ];
 
 /** `shard-<tool>-layout` is one key per tool, with a name that depends on the tool. */
@@ -78,46 +81,46 @@ const record = (value: unknown): value is Record<string, unknown> => typeof valu
 
 /** Reads a backup file. What is wrong with a part of it is left out and named in `skipped`; a file that is not a backup is an error. */
 export function parseBackup(text: string): Parsed {
-  if (text.length > MAX_BACKUP_BYTES) return { ok: false, error: "The file is larger than 2 MB, so it is not a Shard backup." };
+  if (text.length > MAX_BACKUP_BYTES) return { ok: false, error: t("settings.backup.errorTooLarge") };
   let data: unknown;
   try {
     data = JSON.parse(text);
   } catch {
-    return { ok: false, error: "The file is not JSON." };
+    return { ok: false, error: t("settings.backup.errorNotJson") };
   }
-  if (!record(data) || data.app !== "shard") return { ok: false, error: "This is not a Shard backup." };
-  if (data.schema !== 1) return { ok: false, error: `This backup has schema ${String(data.schema)}; this version of Shard reads schema 1.` };
+  if (!record(data) || data.app !== "shard") return { ok: false, error: t("settings.backup.errorNotBackup") };
+  if (data.schema !== 1) return { ok: false, error: t("settings.backup.errorSchema", { schema: String(data.schema) }) };
 
   const skipped: string[] = [];
   const prefs: Record<string, string> = {};
   for (const [key, value] of Object.entries(record(data.prefs) ? data.prefs : {})) {
-    if (!isPrefKey(key)) skipped.push(`${key}: not a setting`);
-    else if (!sane(value)) skipped.push(`${key}: not a usable value`);
+    if (!isPrefKey(key)) skipped.push(t("settings.backup.skipNotSetting", { key }));
+    else if (!sane(value)) skipped.push(t("settings.backup.skipBadValue", { key }));
     else prefs[key] = value;
   }
   const list = (name: string): unknown[] => (Array.isArray(data[name]) ? (data[name] as unknown[]).slice(0, MAX_ITEMS) : []);
 
   const repos = list("repos").flatMap((item) => {
     if (record(item) && typeof item.url === "string" && GITHUB.test(item.url)) return [{ url: item.url, enabled: item.enabled !== false }];
-    skipped.push(`repository ${record(item) ? String(item.url) : "?"}: not a GitHub address`);
+    skipped.push(t("settings.backup.skipRepo", { url: record(item) ? String(item.url) : "?" }));
     return [];
   });
   const plugins = list("plugins").flatMap((item) => {
     if (record(item) && typeof item.id === "string" && ID.test(item.id) && typeof item.repo === "string" && GITHUB.test(item.repo)) {
       return [{ id: item.id, repo: item.repo, version: typeof item.version === "string" ? item.version : "", enabled: item.enabled !== false }];
     }
-    skipped.push(`plugin ${record(item) ? String(item.id) : "?"}: not listed with a repository`);
+    skipped.push(t("settings.backup.skipPlugin", { id: record(item) ? String(item.id) : "?" }));
     return [];
   });
   const themes = list("themes").flatMap((item): Backup["themes"] => {
     if (!record(item) || typeof item.id !== "string" || !ID.test(item.id)) {
-      skipped.push("a theme without a valid id");
+      skipped.push(t("settings.backup.skipThemeId"));
       return [];
     }
     if (typeof item.repo === "string" && GITHUB.test(item.repo)) return [{ id: item.id, repo: item.repo }];
     // The Rust side checks every token of a full theme when it saves it.
     if (record(item.theme) && item.theme.id === item.id) return [{ id: item.id, theme: item.theme as unknown as UserTheme }];
-    skipped.push(`theme ${item.id}: nothing to restore it from`);
+    skipped.push(t("settings.backup.skipThemeSource", { id: item.id }));
     return [];
   });
   const rs = data.repoSettings;

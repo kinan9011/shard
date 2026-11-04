@@ -1,4 +1,5 @@
 import type { MouseEvent } from "react";
+import { useT } from "@/i18n";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import type { EditorView } from "@codemirror/view";
 import type { LineRange } from "@/utils/diff-merge/blocks";
@@ -40,6 +41,7 @@ const CHIP_SHADOW = "0 0 0 1px hsl(var(--border)), 0 1px 2px rgb(0 0 0 / .15)";
 
 /** The 64px column between the panes: curved ribbons joining each change, and the >> / << merge arrows. */
 export function Gutter({ editors, current, runs, onApply }: Props) {
+  const t = useT();
   useGeometryTick(editors.a, editors.b);
   const { a, b, blocks } = editors;
   if (!a || !b) return null;
@@ -57,7 +59,7 @@ export function Gutter({ editors, current, runs, onApply }: Props) {
 
   return (
     <div className="absolute inset-0 overflow-hidden">
-      <svg width={GUTTER_WIDTH} height="100%" className="pointer-events-none absolute left-0 top-0" aria-hidden="true">
+      <svg width={GUTTER_WIDTH} height="100%" className="pointer-events-none absolute start-0 top-0" aria-hidden="true">
         {ribbons.map((r) => (
           <path key={r.key} d={ribbonPath(r.left.top, r.left.bottom, r.right.top, r.right.bottom)} style={{ fill: "hsl(var(--muted))", stroke: "none" }} />
         ))}
@@ -91,8 +93,8 @@ export function Gutter({ editors, current, runs, onApply }: Props) {
           <div key={block.index}>
             <button
               type="button"
-              title={`Apply left to right (change ${n})`}
-              aria-label={`Apply left to right (change ${n})`}
+              title={t("diffMerge.gutter.leftToRight", { n })}
+              aria-label={t("diffMerge.gutter.leftToRight", { n })}
               className="absolute grid h-[18px] w-[18px] place-items-center rounded"
               style={style(left.empty ? left.top - 9 : left.top + 2, 3)}
               onClick={(e) => onApply(block.index, "toRight", e)}
@@ -101,8 +103,8 @@ export function Gutter({ editors, current, runs, onApply }: Props) {
             </button>
             <button
               type="button"
-              title={`Apply right to left (change ${n})`}
-              aria-label={`Apply right to left (change ${n})`}
+              title={t("diffMerge.gutter.rightToLeft", { n })}
+              aria-label={t("diffMerge.gutter.rightToLeft", { n })}
               className="absolute grid h-[18px] w-[18px] place-items-center rounded"
               style={style(right.empty ? right.top - 9 : right.top + 2, GUTTER_WIDTH - 21)}
               onClick={(e) => onApply(block.index, "toLeft", e)}

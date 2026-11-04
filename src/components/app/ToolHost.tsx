@@ -3,6 +3,8 @@ import { TOOL_COMPONENTS, type BuiltinToolId } from "@/app/toolRegistry";
 import type { CatalogTool } from "@/app/catalog";
 import { ToolActiveContext } from "@/hooks/useToolActive";
 import { PluginFrame } from "@/components/plugins/PluginFrame";
+import { toolName } from "@/app/toolNames";
+import { useT } from "@/i18n";
 
 // Memoized so a shell state change (sidebar search, menus, paste) does not re-render every open tool.
 const ToolPanel = memo(function ToolPanel({ id, name, source }: { id: string; name: string; source: CatalogTool["source"] }) {
@@ -24,13 +26,14 @@ interface ToolHostProps {
 
 // Every open tool stays mounted (hidden when not selected) so its state survives tab switches.
 export function ToolHost({ tools, selectedId }: ToolHostProps) {
+  const t = useT();
   return (
     <>
       {tools.map((tool) => (
         <section key={tool.id} id={`panel-${tool.id}`} role="tabpanel" aria-labelledby={`tab-${tool.id}`} hidden={selectedId !== tool.id} {...(tool.source === "plugin" && selectedId !== tool.id ? INERT : {})} className={`tool-panel ${tool.source === "plugin" || WORKSPACE_TOOL_IDS.has(tool.id) ? "tool-panel-editor" : "tool-panel-form"}`}>
 
           <ToolActiveContext.Provider value={selectedId === tool.id}>
-            <Suspense fallback={<div className="p-8 text-muted-foreground">Loading {tool.name}…</div>}><ToolPanel id={tool.id} name={tool.name} source={tool.source} /></Suspense>
+            <Suspense fallback={<div className="p-8 text-muted-foreground">{t("shell.toolHost.loading", { name: toolName(tool) })}</div>}><ToolPanel id={tool.id} name={tool.name} source={tool.source} /></Suspense>
           </ToolActiveContext.Provider>
         </section>
       ))}

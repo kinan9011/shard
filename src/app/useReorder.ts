@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent, type RefObject } from "react";
 import type { CatalogTool } from "@/app/catalog";
+import { toolName } from "@/app/toolNames";
+import { t } from "@/i18n";
 
 interface ReorderOptions {
   tools: CatalogTool[];
@@ -35,7 +37,7 @@ export function useReorder({ tools, onMove, horizontal = false }: ReorderOptions
     if (!neighbour) return;
     refocus.current = tool.id;
     onMove(tool.id, neighbour.id);
-    setAnnouncement(`${tool.name} moved to position ${tools.indexOf(neighbour) + 1} of ${tools.length}`);
+    setAnnouncement(t("shell.reorder.moved", { name: toolName(tool), position: tools.indexOf(neighbour) + 1, total: tools.length }));
   };
 
   /** Props for one tile: draggable, reorderable from the keyboard. */

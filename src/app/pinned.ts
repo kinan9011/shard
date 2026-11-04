@@ -1,9 +1,12 @@
 import type { CatalogTool } from "@/app/catalog";
+import { t } from "@/i18n";
 import type { CatalogRow } from "@/plugins/usePluginCatalog";
 
 export const PINNED_STORAGE_KEY = "shard-pinned";
 export const MAX_PINNED = 12;
+/** @deprecated English only. Use `pinLimitText()`, which follows the language. */
 export const pinLimitMessage = `You can pin up to ${MAX_PINNED} tools. Unpin one first.`;
+export const pinLimitText = () => t("shell.pinned.limit", { max: MAX_PINNED });
 const LEGACY_KEY = "shard-favorites";
 
 function readIds(storage: Storage, key: string): string[] | null {

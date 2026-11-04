@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n";
 import { useInstallFlow } from "@/plugins/useInstallFlow";
 import { toast } from "sonner";
 import { uninstallPlugin } from "@/plugins/api";
@@ -37,6 +38,7 @@ interface PluginsPageProps {
 
 /** The Plugins destination: Browse, Installed, Themes and Repositories. */
 export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = false, variant = "list", customThemes, themeApply }: PluginsPageProps) {
+  const t = useT();
   const catalog = usePluginCatalog();
   const { plugins } = usePlugins();
   const install = useInstallFlow({ onOpen: (id) => onOpenPlugin?.(id), refresh: catalog.refresh });
@@ -45,10 +47,10 @@ export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = fal
     const name = row.installed?.manifest.name ?? row.entry.name;
     try {
       await uninstallPlugin(row.entry.id);
-      toast.success("Uninstalled", { description: name });
+      toast.success(t("plugins.page.uninstalled"), { description: name });
       await Promise.allSettled([refreshPlugins(), catalog.refresh()]);
     } catch (error) {
-      toast.error(`Couldn't uninstall ${name}`, { description: error instanceof Error ? error.message : String(error) });
+      toast.error(t("plugins.page.uninstallFailed", { name }), { description: error instanceof Error ? error.message : String(error) });
     }
   };
   const pending = install.pending;
@@ -90,8 +92,8 @@ export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = fal
       <div className={cn("flex shrink-0 flex-col gap-3.5 border-b border-border px-4 pt-5 sm:px-7", detail && "hidden")}>
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
           <div className="flex flex-col gap-0.5">
-            <h1 className="text-xl font-semibold leading-[1.3] text-foreground">Plugins</h1>
-            <p className="text-sm text-muted-foreground">Add tools from your repositories, a zip file, a folder or a repo URL.</p>
+            <h1 className="text-xl font-semibold leading-[1.3] text-foreground">{t("plugins.page.title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("plugins.page.subtitle")}</p>
           </div>
           <button
             type="button"
@@ -99,33 +101,33 @@ export function PluginsPage({ tab, onTabChange, onOpenPlugin, startInstall = fal
             className="inline-flex h-[30px] items-center gap-[7px] whitespace-nowrap rounded-md border border-input bg-secondary px-3 text-sm font-medium text-secondary-foreground"
           >
             <Download size={14} aria-hidden="true" />
-            Install from file or URL
+            {t("plugins.page.installFromFileOrUrl")}
           </button>
         </div>
-        <div role="tablist" aria-label="Plugins" className="-ml-3 flex h-9 gap-1 overflow-x-auto">
+        <div role="tablist" aria-label={t("plugins.page.title")} className="-ms-3 flex h-9 gap-1 overflow-x-auto">
           <TabButton idPrefix="plugins-tab" controls="plugins-panel" id="browse" selected={current === "browse"} onSelect={onTabChange}>
-            Browse
+            {t("plugins.page.browse")}
           </TabButton>
           <TabButton idPrefix="plugins-tab" controls="plugins-panel" id="installed" selected={current === "installed"} onSelect={onTabChange}>
-            Installed
+            {t("plugins.page.installed")}
             {updateCount > 0 && (
               <span className="inline-grid h-[18px] min-w-[18px] place-items-center rounded-full bg-primary/15 px-1.5 text-2xs font-semibold text-primary">
-                {updateCount} {updateCount === 1 ? "update" : "updates"}
+                {t("plugins.page.updates", { count: updateCount })}
               </span>
             )}
           </TabButton>
           {customThemes && (
             <TabButton idPrefix="plugins-tab" controls="plugins-panel" id="themes" selected={current === "themes"} onSelect={onTabChange}>
-              Themes
+              {t("plugins.page.themes")}
               {themeUpdateCount > 0 && (
                 <span className="inline-grid h-[18px] min-w-[18px] place-items-center rounded-full bg-primary/15 px-1.5 text-2xs font-semibold text-primary">
-                  {themeUpdateCount} {themeUpdateCount === 1 ? "update" : "updates"}
+                  {t("plugins.page.updates", { count: themeUpdateCount })}
                 </span>
               )}
             </TabButton>
           )}
           <TabButton idPrefix="plugins-tab" controls="plugins-panel" id="repositories" selected={current === "repositories"} onSelect={onTabChange}>
-            Repositories
+            {t("plugins.page.repositories")}
             {catalog.repos.length > 0 && <span className="font-normal text-muted-foreground">{catalog.repos.length}</span>}
           </TabButton>
         </div>

@@ -161,7 +161,8 @@ describe("Shard shortcuts", () => {
     unmount();
     render(<Shard />);
 
-    fireEvent.click(screen.getAllByRole("button", { name: /json viewer/i })[0]);
+    // The restart reopens the JSON Viewer tab, so its "Close JSON Viewer" button also matches /json viewer/i. Use the exact name.
+    fireEvent.click(screen.getAllByRole("button", { name: "JSON Viewer" })[0]);
     await waitFor(() => {
       expect(screen.getByText("JSON Input")).toBeInTheDocument();
     });

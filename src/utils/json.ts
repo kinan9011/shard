@@ -3,6 +3,7 @@
  */
 
 import { LosslessNumber } from './json-repair';
+import { t } from '@/i18n';
 
 export interface JsonNode {
   key: string;
@@ -31,7 +32,7 @@ export function parseJson(input: string): JsonParseResult {
   } catch (error) {
     return {
       success: false,
-      error: `Invalid JSON: ${(error as Error).message}`,
+      error: t('json.util.invalid', { message: (error as Error).message }),
     };
   }
 }
@@ -408,7 +409,7 @@ export function runJsonQuery(
   path: string
 ): { ok: true; found: boolean; value: unknown } | { ok: false; error: string } {
   const tokens = tokenizePath(path);
-  if (!tokens) return { ok: false, error: 'Invalid query syntax.' };
+  if (!tokens) return { ok: false, error: t('json.util.invalidQuery') };
 
   let current: unknown[] = [data];
   let multiple = false;
@@ -546,10 +547,10 @@ export function renderJsonView(value: unknown, mode: JsonViewMode, indent: numbe
     case 'xml':
       return { ok: true, text: jsonValueToXml(value), kind: 'xml' };
     case 'query': {
-      if (!query.trim()) return { ok: false, message: 'Enter a query.' };
+      if (!query.trim()) return { ok: false, message: t('json.util.enterQuery') };
       const result = runJsonQuery(value, query);
       if (result.ok === false) return { ok: false, message: result.error };
-      if (!result.found) return { ok: false, message: 'No match for this query.' };
+      if (!result.found) return { ok: false, message: t('json.util.noMatch') };
       return { ok: true, text: stringifyJson(result.value, indent), kind: 'json' };
     }
     default:

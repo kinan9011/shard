@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/i18n";
 import type { FontsApi } from "@/hooks/useFonts";
 import { BUILT_IN_FONTS, FIELD_SIZE_MAX, FIELD_SIZE_MIN, ZOOM_STEPS, sanitizeFamily } from "@/utils/fonts";
 import { ActionButton, Row, Segmented } from "./Row";
@@ -16,6 +17,7 @@ function FontPicker({ label, value, onChange, custom, defaultLabel }: {
   custom: string[];
   defaultLabel: string;
 }) {
+  const t = useT();
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState("");
   const [invalid, setInvalid] = useState(false);
@@ -43,32 +45,33 @@ function FontPicker({ label, value, onChange, custom, defaultLabel }: {
         }}
       >
         <option value="">{defaultLabel}</option>
-        {BUILT_IN_FONTS.map((font) => <option key={font.family} value={font.family}>{font.label}</option>)}
+        {BUILT_IN_FONTS.map((font) => <option key={font.family} value={font.family}>{font.labelKey ? t(font.labelKey) : font.label}</option>)}
         {custom.map((family) => <option key={family} value={family}>{family}</option>)}
-        {value && !listed.has(value) && <option value={value}>{value} (installed)</option>}
-        <option value={TYPE_NEW}>Installed font…</option>
+        {value && !listed.has(value) && <option value={value}>{t("settings.fonts.installedSuffix", { font: value })}</option>}
+        <option value={TYPE_NEW}>{t("settings.fonts.installedFont")}</option>
       </select>
       {typing && (
         <div className="flex items-center gap-2">
           <input
-            aria-label={`${label}: name of an installed font`}
+            aria-label={t("settings.fonts.installedName", { label })}
             aria-invalid={invalid}
             autoFocus
             className="h-[30px] w-[180px] rounded-md border border-input bg-transparent px-2.5 text-sm"
-            placeholder="e.g. Fira Code"
+            placeholder={t("settings.fonts.installedPlaceholder")}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => event.key === "Enter" && use()}
           />
-          <ActionButton onClick={use}>Use</ActionButton>
+          <ActionButton onClick={use}>{t("settings.fonts.use")}</ActionButton>
         </div>
       )}
-      {typing && invalid && <span role="alert" className="text-xs text-destructive">Use letters, numbers, spaces, - _ . only.</span>}
+      {typing && invalid && <span role="alert" className="text-xs text-destructive">{t("settings.fonts.invalidName")}</span>}
     </div>
   );
 }
 
 export function FontSettings({ fonts }: { fonts: FontsApi }) {
+  const t = useT();
   const { prefs, custom, setPrefs } = fonts;
   const input = useRef<HTMLInputElement>(null);
 
@@ -76,7 +79,7 @@ export function FontSettings({ fonts }: { fonts: FontsApi }) {
     if (!file) return;
     try {
       const family = await fonts.addFont(file);
-      toast.success(`Added ${family}.`);
+      toast.success(t("settings.fonts.added", { family }));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
     }
@@ -84,37 +87,37 @@ export function FontSettings({ fonts }: { fonts: FontsApi }) {
 
   return (
     <>
-      <Row title="Interface font" hint="The font of menus, sidebar, tabs and labels.">
-        <FontPicker label="Interface font" value={prefs.ui} onChange={(ui) => setPrefs({ ui })} custom={custom} defaultLabel="Default (Inter)" />
+      <Row title={t("settings.fonts.ui")} hint={t("settings.fonts.uiHint")}>
+        <FontPicker label={t("settings.fonts.ui")} value={prefs.ui} onChange={(ui) => setPrefs({ ui })} custom={custom} defaultLabel={t("settings.fonts.default", { font: "Inter" })} />
       </Row>
-      <Row title="Interface size" hint="Zooms the whole app: text, icons and spacing together.">
+      <Row title={t("settings.fonts.zoom")} hint={t("settings.fonts.zoomHint")}>
         <Segmented
-          label="Interface size"
+          label={t("settings.fonts.zoom")}
           value={String(prefs.zoom)}
           onChange={(zoom) => setPrefs({ zoom: Number(zoom) })}
           options={ZOOM_STEPS.map((step) => [String(step), `${Math.round(step * 100)}%`] as const)}
         />
       </Row>
-      <Row title="Field font" hint="The font of the text you type and read in inputs, editors and results.">
-        <FontPicker label="Field font" value={prefs.field} onChange={(field) => setPrefs({ field })} custom={custom} defaultLabel="Default (JetBrains Mono)" />
+      <Row title={t("settings.fonts.field")} hint={t("settings.fonts.fieldHint")}>
+        <FontPicker label={t("settings.fonts.field")} value={prefs.field} onChange={(field) => setPrefs({ field })} custom={custom} defaultLabel={t("settings.fonts.default", { font: "JetBrains Mono" })} />
       </Row>
-      <Row title="Field text size" hint="The size of that text, in pixels.">
-        <select aria-label="Field text size" className={SELECT} value={prefs.fieldSize} onChange={(event) => setPrefs({ fieldSize: Number(event.target.value) })}>
-          {SIZES.map((size) => <option key={size} value={size}>{size} px</option>)}
+      <Row title={t("settings.fonts.fieldSize")} hint={t("settings.fonts.fieldSizeHint")}>
+        <select aria-label={t("settings.fonts.fieldSize")} className={SELECT} value={prefs.fieldSize} onChange={(event) => setPrefs({ fieldSize: Number(event.target.value) })}>
+          {SIZES.map((size) => <option key={size} value={size}>{t("settings.fonts.sizePx", { size })}</option>)}
         </select>
       </Row>
-      <Row title="Your fonts" hint="Add .ttf, .otf, .woff or .woff2 files. They are kept in the app and work offline.">
+      <Row title={t("settings.fonts.yours")} hint={t("settings.fonts.yoursHint")}>
         <div className="flex flex-col items-start gap-2 sm:items-end">
           {custom.map((family) => (
             <div key={family} className="flex items-center gap-3 text-sm">
               <span style={{ fontFamily: `"${family}"` }}>{family}</span>
               <button
                 type="button"
-                aria-label={`Remove ${family}`}
+                aria-label={t("settings.fonts.remove", { family })}
                 className="text-xs text-muted-foreground underline hover:text-foreground"
                 onClick={() => void fonts.removeFont(family).catch((error) => toast.error(error instanceof Error ? error.message : String(error)))}
               >
-                Remove
+                {t("settings.fonts.removeButton")}
               </button>
             </div>
           ))}
@@ -122,7 +125,7 @@ export function FontSettings({ fonts }: { fonts: FontsApi }) {
             ref={input}
             type="file"
             accept=".ttf,.otf,.woff,.woff2"
-            aria-label="Font file"
+            aria-label={t("settings.fonts.fileLabel")}
             className="sr-only"
             tabIndex={-1}
             onChange={(event) => {
@@ -130,7 +133,7 @@ export function FontSettings({ fonts }: { fonts: FontsApi }) {
               event.target.value = "";
             }}
           />
-          <ActionButton onClick={() => input.current?.click()}>Add font file…</ActionButton>
+          <ActionButton onClick={() => input.current?.click()}>{t("settings.fonts.addFile")}</ActionButton>
         </div>
       </Row>
     </>

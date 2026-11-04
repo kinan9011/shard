@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { t } from "@/i18n";
 import { themeCatalog, type ThemeCatalogEntry } from "@/lib/desktop";
 import { repoCatalog, type CatalogEntry } from "@/plugins/api";
 
@@ -33,12 +34,12 @@ export function buildInstallables(listed: Listed, installedPluginIds: ReadonlySe
     // The same plugin listed by two repositories shows once.
     if (installedPluginIds.has(entry.id) || seen.has(`plugin:${entry.id}`)) continue;
     seen.add(`plugin:${entry.id}`);
-    out.push({ id: `plugin:${entry.repo}/${entry.id}`, kind: "plugin", name: entry.name, category: entry.category ?? "Plugin", keywords: [entry.description].filter(Boolean), subtitle: `Plugin · ${entry.repoName}`, run: () => actions.installPlugin(entry) });
+    out.push({ id: `plugin:${entry.repo}/${entry.id}`, kind: "plugin", name: entry.name, category: entry.category ?? "Plugin", keywords: [entry.description].filter(Boolean), subtitle: t("shell.palette.subtitlePlugin", { repo: entry.repoName }), run: () => actions.installPlugin(entry) });
   }
   for (const entry of listed.themes) {
     if (installedThemeIds.has(entry.id) || seen.has(`theme:${entry.id}`)) continue;
     seen.add(`theme:${entry.id}`);
-    out.push({ id: `theme:${entry.repo}/${entry.id}`, kind: "theme", name: entry.name, category: "Theme", keywords: [entry.description].filter(Boolean), subtitle: `Theme · ${entry.repoName}`, run: () => actions.installTheme(entry) });
+    out.push({ id: `theme:${entry.repo}/${entry.id}`, kind: "theme", name: entry.name, category: "Theme", keywords: [entry.description].filter(Boolean), subtitle: t("shell.palette.subtitleTheme", { repo: entry.repoName }), run: () => actions.installTheme(entry) });
   }
   return out;
 }

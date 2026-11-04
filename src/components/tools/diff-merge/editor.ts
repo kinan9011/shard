@@ -1,3 +1,4 @@
+import { getLocale, t as tr } from "@/i18n";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { HighlightStyle, bracketMatching, syntaxHighlighting } from "@codemirror/language";
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
@@ -75,17 +76,21 @@ const FOLD_ICON =
   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>';
 
 export class FoldWidget extends WidgetType {
+  /** The language the label was built in, so a language change redraws it. */
+  private readonly locale = getLocale();
   constructor(readonly run: CollapsedRun) {
     super();
   }
   eq(other: FoldWidget) {
-    return other.run.hidden === this.run.hidden && other.run.a.from === this.run.a.from && other.run.b.from === this.run.b.from;
+    return other.locale === this.locale && other.run.hidden === this.run.hidden && other.run.a.from === this.run.a.from && other.run.b.from === this.run.b.from;
   }
   toDOM() {
     const el = document.createElement("div");
     el.className = "dm-fold";
     el.setAttribute("role", "button");
-    el.innerHTML = `${FOLD_ICON}<span class="dm-fold-label">${this.run.hidden} unchanged lines</span><span>Click to expand</span>`;
+    el.innerHTML = `${FOLD_ICON}<span class="dm-fold-label"></span><span></span>`;
+    el.querySelector(".dm-fold-label")!.textContent = tr("diffMerge.fold.unchanged", { count: this.run.hidden });
+    el.lastElementChild!.textContent = tr("diffMerge.fold.expand");
     el.addEventListener("click", () =>
       el.dispatchEvent(new CustomEvent(EXPAND_EVENT, { bubbles: true, detail: this.run.a.from })),
     );
@@ -207,6 +212,8 @@ export function paneExtensions(side: "a" | "b", placeholderText: string): Extens
     highlightSelectionMatches(),
     keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
     placeholder(placeholderText),
+    // The editor is left to right, but a line of Arabic or Hebrew text inside it reads right to left.
+    EditorView.perLineTextDirection.of(true),
     syntaxHighlighting(dmHighlightStyle),
     languageConf.of([]),
     wrapConf.of([]),
