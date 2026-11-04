@@ -13,6 +13,12 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock("@/plugins/api", () => api);
 
+const desktopMock = vi.hoisted(() => ({ reset: null as null | (() => Promise<boolean>), close: vi.fn(async () => {}) }));
+vi.mock("@/lib/desktop", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/lib/desktop")>();
+  return { ...real, resetAppData: () => (desktopMock.reset ? desktopMock.reset() : real.resetAppData()), closeAfterReset: desktopMock.close };
+});
+
 import Shard from "@/app/Shard";
 import { resetPlugins } from "@/plugins/usePlugins";
 
@@ -154,6 +160,23 @@ describe("Settings sections", () => {
     expect(localStorage.length).toBe(0);
     expect(reload).toHaveBeenCalledOnce();
     vi.unstubAllGlobals();
+  });
+
+  it("on a desktop, a reset says Shard will close and closes it only when asked", async () => {
+    desktopMock.reset = async () => true;
+    desktopMock.close.mockClear();
+    render(<Shard />);
+    openSection("General");
+    fireEvent.click(within(main()).getByRole("button", { name: "Reset…" }));
+    fireEvent.click(within(main()).getByRole("button", { name: "Remove all data" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "Shard was reset" });
+    expect(within(dialog).getByText(/Shard will close now/)).toBeInTheDocument();
+    expect(desktopMock.close).not.toHaveBeenCalled();
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(screen.getByRole("alertdialog", { name: "Shard was reset" })).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close Shard" }));
+    expect(desktopMock.close).toHaveBeenCalledOnce();
+    desktopMock.reset = null;
   });
 
   it("lists the shortcuts with their keys", () => {

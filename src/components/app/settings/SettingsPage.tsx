@@ -5,7 +5,8 @@ import { useT } from "@/i18n";
 import { LanguageSelect } from "@/components/app/LanguageSelect";
 import { exportBackup } from "@/lib/settingsBackup";
 import { Switch } from "@/components/ui/switch";
-import { resetAppData, type UpdateState } from "@/lib/desktop";
+import { closeAfterReset, resetAppData, type UpdateState } from "@/lib/desktop";
+import { useDialogFocus } from "@/components/app/useDialogFocus";
 import { COLOR_SCHEMES, schemeName, type Layout, type OpenToolsIn, type SidebarCategoryMode, type ThemePreference } from "@/utils/theme";
 import type { GlobalShortcut } from "@/utils/global-shortcut";
 import type { ShortcutActionId, ShortcutBinding, ShortcutBindings } from "@/utils/shortcuts";
@@ -199,7 +200,11 @@ function General(p: Props) {
 function ResetRow({ native }: { native: boolean }) {
   const t = useT();
   const [confirming, setConfirming] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const reset = () => resetAppData().then(setClosing, (error) => toast.error(t("settings.reset.failed", { message: error instanceof Error ? error.message : String(error) })));
   return (
+    <>
+    {closing && <ResetDoneDialog />}
     <Row
       title={t("settings.reset.title")}
       hint={
@@ -212,12 +217,35 @@ function ResetRow({ native }: { native: boolean }) {
         <div className="flex gap-2">
           <ActionButton onClick={() => void exportBackup(native).then((saved) => saved && toast.success(t("settings.backup.exported")), (error) => toast.error(t("settings.backup.exportFailed"), { description: String(error) }))}>{t("settings.reset.exportFirst")}</ActionButton>
           <ActionButton onClick={() => setConfirming(false)}>{t("common.cancel")}</ActionButton>
-          <ActionButton onClick={() => resetAppData().catch((error) => toast.error(t("settings.reset.failed", { message: error instanceof Error ? error.message : String(error) })))} className="text-destructive">{t("settings.reset.removeAll")}</ActionButton>
+          <ActionButton onClick={() => void reset()} className="text-destructive">{t("settings.reset.removeAll")}</ActionButton>
         </div>
       ) : (
         <ActionButton onClick={() => setConfirming(true)}>{t("settings.reset.button")}</ActionButton>
       )}
     </Row>
+    </>
+  );
+}
+
+/** Tells that the reset is done and Shard closes. It cannot be dismissed: the app has no data left to run on. */
+function ResetDoneDialog() {
+  const t = useT();
+  const ref = useDialogFocus(true, () => {});
+  const title = t("settings.reset.doneTitle");
+  return (
+    <div className="modal-backdrop fixed inset-0 z-[75] flex items-center justify-center p-4">
+      <div ref={ref} role="alertdialog" aria-modal="true" aria-label={title} className="modal-surface flex w-[400px] max-w-full flex-col">
+        <div className="flex flex-col gap-1 px-5 pb-4 pt-5">
+          <h2 className="text-base font-semibold text-foreground">{title}</h2>
+          <p className="text-sm text-muted-foreground">{t("settings.reset.doneBody")}</p>
+        </div>
+        <div className="flex justify-end gap-2 border-t border-border px-5 py-3">
+          <button type="button" onClick={() => void closeAfterReset()} className="inline-flex h-7 items-center whitespace-nowrap rounded-md border border-primary-solid bg-primary-solid px-3 text-sm font-medium text-primary-solid-foreground">
+            {t("settings.reset.close")}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

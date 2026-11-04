@@ -418,14 +418,26 @@ describe("folder bridge", () => {
     expect(tauri.invoke).not.toHaveBeenCalled();
   });
 
-  it("resets in order: files first, then the webview's storage, then a restart", async () => {
+  it("resets in order: files first, then the webview's storage, and leaves the app open for a message", async () => {
     localStorage.setItem("shard-pinned", "[]");
     const order: string[] = [];
     tauri.invoke.mockImplementation(async (command: string) => void order.push(`invoke:${command}:${localStorage.length}`));
-    tauri.relaunch.mockImplementation(async () => void order.push(`relaunch:${localStorage.length}`));
+    tauri.relaunch.mockClear();
     const d = await loadDesktop();
-    await d.resetAppData();
-    expect(order).toEqual(["invoke:reset_app_data:1", "relaunch:0"]);
+    await expect(d.resetAppData()).resolves.toBe(true);
+    expect(order).toEqual(["invoke:reset_app_data:1"]);
+    expect(tauri.relaunch).not.toHaveBeenCalled();
+  });
+
+  it("closes the app after a reset, with the storage cleared again", async () => {
+    localStorage.setItem("late-write", "1");
+    const order: string[] = [];
+    tauri.invoke.mockImplementation(async (command: string) => void order.push(`invoke:${command}:${localStorage.length}`));
+    tauri.relaunch.mockClear();
+    const d = await loadDesktop();
+    await d.closeAfterReset();
+    expect(order).toEqual(["invoke:quit_now:0"]);
+    expect(tauri.relaunch).not.toHaveBeenCalled();
   });
 
   it("a reset that fails clears nothing and does not restart", async () => {

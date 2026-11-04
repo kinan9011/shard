@@ -41,12 +41,15 @@ const dict: Dict = {
 
   // Reset
   "settings.reset.title": "Shard をリセット",
-  "settings.reset.hintConfirm": "この操作は元に戻せません。すべての設定、プラグイン、テーマ、リポジトリ、キャッシュ、バックアップが削除され、Shard が再起動します。",
-  "settings.reset.hint": "すべての設定、プラグイン、テーマ、リポジトリ、キャッシュ、バックアップを削除します。Shard は新規インストール直後の状態で再起動します。",
+  "settings.reset.hintConfirm": "この操作は元に戻せません。すべての設定、プラグイン、テーマ、リポジトリ、キャッシュ、バックアップが削除され、Shard が終了します。",
+  "settings.reset.hint": "すべての設定、プラグイン、テーマ、リポジトリ、キャッシュ、バックアップを削除します。Shard は終了し、次に開くと新規インストール直後の状態で起動します。",
   "settings.reset.exportFirst": "先に設定をエクスポート…",
   "settings.reset.removeAll": "すべてのデータを削除",
   "settings.reset.button": "リセット…",
   "settings.reset.failed": "リセットに失敗しました: {message}",
+  "settings.reset.doneTitle": "Shard をリセットしました",
+  "settings.reset.doneBody": "すべてのデータを削除しました。Shard を終了します。もう一度開くと、最初から設定できます。",
+  "settings.reset.close": "Shard を終了",
 
   // Built-in tools and plugins
   "settings.tools.hint": "使わないツールをオフにします。サイドバー、ホーム、検索から非表示になり、ここでいつでもオンに戻せます。",
@@ -256,7 +259,7 @@ const dict: Dict = {
 
   // First-run wizard
   "wizard.steps": "セットアップの手順",
-  "wizard.step.layout": "レイアウト",
+  "wizard.step.layout": "外観",
   "wizard.step.starter": "スターターツールを選択",
   "wizard.step.pin": "ツールをホームにピン留め",
   "wizard.welcomeTitle": "ようこそ",
@@ -286,6 +289,7 @@ const dict: Dict = {
   "wizard.loading": "プラグインを読み込み中…",
   "wizard.oneByOne": "プラグインを個別に選択",
   "wizard.skip": "スキップ",
+  "wizard.back": "戻る",
   "wizard.install": "インストールして続行",
   "wizard.offlineTitle": "Shard 公式リポジトリに接続できませんでした",
   "wizard.offlineHint": "プラグインは後から「プラグイン」で追加できます。内蔵ツールはプラグインなしでも動作します。",

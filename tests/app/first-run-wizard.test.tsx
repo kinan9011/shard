@@ -112,7 +112,7 @@ describe("first-run wizard", () => {
     expect(within(group).getByText("Default")).toBeInTheDocument();
     expect(screen.getByText("Set up the tools you need. You can change everything later in Settings.")).toBeInTheDocument();
     const steps = within(screen.getByRole("list", { name: "Setup steps" }));
-    expect(steps.getByText("Layout").closest("li")).toHaveAttribute("aria-current", "step");
+    expect(steps.getByText("Appearance").closest("li")).toHaveAttribute("aria-current", "step");
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(await screen.findByRole("heading", { name: "Pick your starter tools" })).toBeInTheDocument();
     expect(screen.getByText("Set up the tools you need. You can change everything later in Plugins.")).toBeInTheDocument();
@@ -131,7 +131,7 @@ describe("first-run wizard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(await screen.findByRole("heading", { name: "Pick your starter tools" })).toBeInTheDocument();
     const steps = within(screen.getByRole("list", { name: "Setup steps" }));
-    expect(["Layout", "Pick starter tools", "Pin tools to Home"].every((label) => steps.getByText(label))).toBe(true);
+    expect(["Appearance", "Pick starter tools", "Pin tools to Home"].every((label) => steps.getByText(label))).toBe(true);
     expect(await screen.findByRole("checkbox", { name: "OpenAPI Explorer" })).toBeInTheDocument();
     for (const category of ["Development", "Formatters", "Security & time"]) expect(screen.getByRole("region", { name: category })).toBeInTheDocument();
     expect(screen.getByText(CORE_NAMES.join(", "))).toBeInTheDocument();
@@ -249,6 +249,40 @@ async function chooseLauncher() {
   fireEvent.click(await screen.findByRole("radio", { name: /Launcher/ }));
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 }
+
+describe("first-run wizard: Back and appearance", () => {
+  it("sets the theme on step 1 and applies it at once", async () => {
+    render(<Shard />);
+    const group = await screen.findByRole("group", { name: "Theme" });
+    fireEvent.click(within(group).getByRole("button", { name: "Dark" }));
+    expect(localStorage.getItem("shard-theme-preference")).toBe("dark");
+    expect(within(group).getByRole("button", { name: "Dark" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("Language")).toBeInTheDocument();
+  });
+
+  it("Back from step 2 returns to step 1 with the layout kept, and from step 3 to step 2", async () => {
+    render(<Shard />);
+    expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("radio", { name: /Sidebar/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByRole("heading", { name: "Pick your starter tools" });
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("radio", { name: /Sidebar/ })).toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Skip" }));
+    await screen.findByRole("heading", { name: "Pin tools to Home" });
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("heading", { name: "Pick your starter tools" })).toBeInTheDocument();
+  });
+
+  it("Back from the Launcher bundles screen returns to step 1", async () => {
+    api.repoBundles.mockResolvedValue(bundles);
+    await chooseLauncher();
+    await screen.findByRole("heading", { name: "Welcome to Shard" });
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("radio", { name: /Launcher/ })).toBeChecked();
+  });
+});
 
 describe("first run in the Launcher layout (08 B)", () => {
   it("picking Launcher on step 1 applies it right away and is kept after the wizard", async () => {

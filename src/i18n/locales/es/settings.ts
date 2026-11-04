@@ -41,12 +41,15 @@ const dict: Dict = {
 
   // Reset
   "settings.reset.title": "Restablecer Shard",
-  "settings.reset.hintConfirm": "Esta acción no se puede deshacer. Se eliminan todos los ajustes, complementos, temas, repositorios, cachés y copias de seguridad, y luego Shard se reinicia.",
-  "settings.reset.hint": "Elimina todos los ajustes, complementos, temas, repositorios, cachés y copias de seguridad. Shard se reinicia como si acabara de instalarse.",
+  "settings.reset.hintConfirm": "Esta acción no se puede deshacer. Se eliminan todos los ajustes, complementos, temas, repositorios, cachés y copias de seguridad, y luego Shard se cierra.",
+  "settings.reset.hint": "Elimina todos los ajustes, complementos, temas, repositorios, cachés y copias de seguridad. Shard se cierra y, al abrirlo de nuevo, empieza como si acabara de instalarse.",
   "settings.reset.exportFirst": "Exportar la configuración primero…",
   "settings.reset.removeAll": "Eliminar todos los datos",
   "settings.reset.button": "Restablecer…",
   "settings.reset.failed": "Error al restablecer: {message}",
+  "settings.reset.doneTitle": "Shard se ha restablecido",
+  "settings.reset.doneBody": "Se han eliminado todos los datos. Shard se cerrará ahora. Ábrelo de nuevo para configurarlo desde cero.",
+  "settings.reset.close": "Cerrar Shard",
 
   // Built-in tools and plugins
   "settings.tools.hint": "Desactiva las herramientas que no uses. Desaparecen de la barra lateral, del inicio y de la búsqueda, y puedes volver a activarlas aquí.",
@@ -262,7 +265,7 @@ const dict: Dict = {
 
   // First-run wizard
   "wizard.steps": "Pasos de configuración",
-  "wizard.step.layout": "Diseño",
+  "wizard.step.layout": "Apariencia",
   "wizard.step.starter": "Elegir herramientas iniciales",
   "wizard.step.pin": "Fijar herramientas en el inicio",
   "wizard.welcomeTitle": "Te damos la bienvenida",
@@ -300,6 +303,7 @@ const dict: Dict = {
   "wizard.loading": "Cargando complementos…",
   "wizard.oneByOne": "Elegir los complementos uno por uno",
   "wizard.skip": "Omitir",
+  "wizard.back": "Atrás",
   "wizard.install": "Instalar y continuar",
   "wizard.offlineTitle": "No se pudo conectar con Shard Official",
   "wizard.offlineHint": "Puedes añadir complementos más tarde desde Complementos. Las herramientas integradas funcionan sin ellos.",

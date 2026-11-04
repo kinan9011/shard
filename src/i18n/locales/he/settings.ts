@@ -41,12 +41,15 @@ const dict: Dict = {
 
   // Reset
   "settings.reset.title": "איפוס Shard",
-  "settings.reset.hintConfirm": "לא ניתן לבטל פעולה זו. כל ההגדרות, התוספים, ערכות הנושא, המאגרים, המטמונים והגיבויים יוסרו, ולאחר מכן Shard יופעל מחדש.",
-  "settings.reset.hint": "הסרת כל ההגדרות, התוספים, ערכות הנושא, המאגרים, המטמונים והגיבויים. Shard יופעל מחדש כאילו הותקן זה עתה.",
+  "settings.reset.hintConfirm": "לא ניתן לבטל פעולה זו. כל ההגדרות, התוספים, ערכות הנושא, המאגרים, המטמונים והגיבויים יוסרו, ולאחר מכן Shard ייסגר.",
+  "settings.reset.hint": "הסרת כל ההגדרות, התוספים, ערכות הנושא, המאגרים, המטמונים והגיבויים. Shard ייסגר, ובפתיחה הבאה יתחיל כאילו הותקן זה עתה.",
   "settings.reset.exportFirst": "ייצוא הגדרות קודם…",
   "settings.reset.removeAll": "הסר את כל הנתונים",
   "settings.reset.button": "איפוס…",
   "settings.reset.failed": "האיפוס נכשל: {message}",
+  "settings.reset.doneTitle": "Shard אופס",
+  "settings.reset.doneBody": "כל הנתונים הוסרו. Shard ייסגר עכשיו. פתחו אותו שוב כדי להגדיר אותו מההתחלה.",
+  "settings.reset.close": "סגור את Shard",
 
   // Built-in tools and plugins
   "settings.tools.hint": "כבה כלים שאינך משתמש בהם. הם ייעלמו מסרגל הצד, מדף הבית ומהחיפוש, ואפשר להפעיל אותם שוב כאן.",
@@ -262,7 +265,7 @@ const dict: Dict = {
 
   // First-run wizard
   "wizard.steps": "שלבי ההגדרה",
-  "wizard.step.layout": "פריסה",
+  "wizard.step.layout": "מראה",
   "wizard.step.starter": "בחירת כלים להתחלה",
   "wizard.step.pin": "הצמדת כלים לדף הבית",
   "wizard.welcomeTitle": "ברוכים הבאים",
@@ -300,6 +303,7 @@ const dict: Dict = {
   "wizard.loading": "טוען תוספים…",
   "wizard.oneByOne": "בחירת תוספים אחד אחד",
   "wizard.skip": "דלג",
+  "wizard.back": "הקודם",
   "wizard.install": "התקן והמשך",
   "wizard.offlineTitle": "לא ניתן להתחבר ל-Shard Official",
   "wizard.offlineHint": "אפשר להוסיף תוספים מאוחר יותר מתוך התוספים. הכלים המובנים פועלים גם בלעדיהם.",

@@ -40,12 +40,15 @@ export default {
 
   // Reset
   "settings.reset.title": "Reset Shard",
-  "settings.reset.hintConfirm": "This can't be undone. All settings, plugins, themes, repositories, caches and backups are removed, then Shard restarts.",
-  "settings.reset.hint": "Remove all settings, plugins, themes, repositories, caches and backups. Shard restarts as if newly installed.",
+  "settings.reset.hintConfirm": "This can't be undone. All settings, plugins, themes, repositories, caches and backups are removed, then Shard closes.",
+  "settings.reset.hint": "Remove all settings, plugins, themes, repositories, caches and backups. Shard closes, and starts as if newly installed when you open it again.",
   "settings.reset.exportFirst": "Export settings first…",
   "settings.reset.removeAll": "Remove all data",
   "settings.reset.button": "Reset…",
   "settings.reset.failed": "Reset failed: {message}",
+  "settings.reset.doneTitle": "Shard was reset",
+  "settings.reset.doneBody": "All data was removed. Shard will close now. Open it again to set it up from scratch.",
+  "settings.reset.close": "Close Shard",
 
   // Built-in tools and plugins
   "settings.tools.hint": "Turn off the tools you don't use. They disappear from the sidebar, Home and search, and you can turn them back on here.",
@@ -258,7 +261,7 @@ export default {
 
   // First-run wizard
   "wizard.steps": "Setup steps",
-  "wizard.step.layout": "Layout",
+  "wizard.step.layout": "Appearance",
   "wizard.step.starter": "Pick starter tools",
   "wizard.step.pin": "Pin tools to Home",
   "wizard.welcomeTitle": "Welcome",
@@ -292,6 +295,7 @@ export default {
   "wizard.loading": "Loading plugins…",
   "wizard.oneByOne": "Choose plugins one by one",
   "wizard.skip": "Skip",
+  "wizard.back": "Back",
   "wizard.install": "Install and continue",
   "wizard.offlineTitle": "Couldn't reach Shard Official",
   "wizard.offlineHint": "You can add plugins later from Plugins. The built-in tools work without them.",

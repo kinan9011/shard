@@ -20,7 +20,8 @@ Shard builds on DevTools and changes the shape of the app:
 | Extensibility | None | Plugins with a manifest, permissions, and a sandbox |
 | Plugin sources | n/a | Repositories, zip files, folders, and GitHub URLs, with SHA-256 checks |
 | Diff | Text Compare | Text Compare, plus Diff & Merge with folder compare |
-| Onboarding | n/a | First-run setup with Sidebar or Launcher layout |
+| Onboarding | n/a | First-run setup with language, theme, and Sidebar or Launcher layout |
+| Languages | English | English, Arabic, German, Spanish, French, Hebrew, Japanese, and Chinese, with right-to-left layout |
 | Integration | n/a | `shard://` links for Raycast, Alfred, and scripts |
 
 ## Screenshots
@@ -31,12 +32,14 @@ Shard builds on DevTools and changes the shape of the app:
 | ![Diff & Merge side by side](assets/screenshots/diff-merge.png) | ![Plugins page with Browse, Installed, and Repositories](assets/screenshots/plugins.png) |
 | ![Plugin permission prompt before install](assets/screenshots/plugin-permissions.png) | ![Command palette searching for a tool](assets/screenshots/command-palette.png) |
 | ![First-run setup, layout step](assets/screenshots/first-run.png) | ![Launcher layout](assets/screenshots/launcher.png) |
+| ![First-run setup, choosing the language and theme](assets/screenshots/first-run-language.png) | |
 
 ## Features
 
 - **Private by design.** Tools work offline. No account, no API key, no analytics, no telemetry.
 - **Tabs, search, and pins.** Keep tools open with their inputs, search with the command palette, and pin up to 12 tools to Home.
 - **Paste to find a tool.** Paste a JWT, JSON, URL, UUID, timestamp, cron expression, certificate, or cURL command and Shard suggests the right tool.
+- **Your language.** Shard speaks English, Arabic, German, Spanish, French, Hebrew, Japanese, and Chinese, and lays out right to left for Arabic and Hebrew. Choose it in the first-run setup or in Settings → General, and plugins follow it.
 - **Native desktop feel.** Menu bar or tray icon, a global shortcut, `shard://` deep links, light and dark themes.
 - **Plugins you control.** Every plugin lists its permissions before install and runs in a sandbox.
 - **Automatic updates.** Optional, with an option to install on your schedule.

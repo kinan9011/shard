@@ -8,6 +8,7 @@ import { BatchPermissionDialog } from "@/components/plugins/BatchPermissionDialo
 import { PermissionDialog } from "@/components/plugins/PermissionDialog";
 import { PickerBody } from "@/components/app/PinnedEditor";
 import { LayoutChoice } from "@/components/app/settings/LayoutChoice";
+import { Segmented } from "@/components/app/settings/Row";
 import { CORE_NAMES } from "@/app/firstRun";
 import { ALL_TOOLS } from "@/app/toolRegistry";
 import { toolName } from "@/app/toolNames";
@@ -23,7 +24,7 @@ import type { PluginBundle } from "@/plugins/types";
 import { searchTools } from "@/utils/tool-search";
 import { BrandMark } from "@/components/app/BrandMark";
 import { cn } from "@/lib/utils";
-import type { Layout } from "@/utils/theme";
+import type { Layout, ThemePreference } from "@/utils/theme";
 
 const OTHER = "Other";
 const message = (failure: unknown) => (failure instanceof Error ? failure.message : String(failure));
@@ -42,6 +43,9 @@ interface FirstRunWizardProps {
   /** The layout setting: step 1 changes it, and it applies at once. */
   layout: Layout;
   onLayout: (layout: Layout) => void;
+  /** The theme setting: step 1 changes it, and it applies at once. */
+  preference: ThemePreference;
+  onPreference: (preference: ThemePreference) => void;
   /** Pins a tool. False when the limit stopped it (a toast says so). */
   onPin: (id: string) => boolean;
   onUnpin: (id: string) => void;
@@ -130,7 +134,7 @@ function BundleCard({ bundle, checked, onToggle }: { bundle: BundleCardData; che
 }
 
 /** First run: screen 2a (Layout), 08 A (starter tools), 08 B (bundles, Launcher layout) and the pin step. */
-export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPin, onUnpin, onPinInstalled, onOpenPlugin, onFinish }: FirstRunWizardProps) {
+export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, preference, onPreference, onPin, onUnpin, onPinInstalled, onOpenPlugin, onFinish }: FirstRunWizardProps) {
   const t = useT();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   // The Launcher offers bundles first; "Choose plugins one by one" (or a failed install) switches to the list.
@@ -335,6 +339,7 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
           <span className="flex-1 text-muted-foreground" role="status">
             {footerStatus ?? t(bytes > 0 ? "wizard.bundlesStatusSize" : "wizard.bundlesStatus", { bundles: t("wizard.bundleCount", { count: chosenBundles.length }), plugins: pluginCount, size: formatSize(bytes) })}
           </span>
+          <Button type="button" variant="ghost" size="sm" className="h-[30px] px-3 text-sm text-muted-foreground" disabled={installing} onClick={() => setStep(1)}>{t("wizard.back")}</Button>
           <Button type="button" variant="ghost" size="sm" className="h-[30px] px-3 text-sm text-muted-foreground" disabled={installing} onClick={() => setStep(3)}>{t("wizard.skip")}</Button>
           <Button type="button" size="sm" className="h-[30px] px-3 text-sm" disabled={chosen.length === 0 || installing} onClick={installAndContinue}>{t("wizard.install")}</Button>
         </div>
@@ -366,9 +371,20 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
         {step === 1 ? (
           <>
             <div className="flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto px-4 pt-6 sm:px-12 sm:pt-10">
-              <div className="flex items-center gap-3">
-                <label htmlFor="wizard-language" className="font-medium">{t("language.label")}</label>
-                <LanguageSelect id="wizard-language" />
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <label htmlFor="wizard-language" className="w-24 shrink-0 font-medium">{t("language.label")}</label>
+                  <LanguageSelect id="wizard-language" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-24 shrink-0 font-medium">{t("settings.appearance.theme")}</span>
+                  <Segmented
+                    label={t("settings.appearance.theme")}
+                    value={preference}
+                    onChange={onPreference}
+                    options={[["system", t("settings.theme.system")], ["light", t("settings.theme.light")], ["dark", t("settings.theme.dark")]]}
+                  />
+                </div>
               </div>
               <div className="flex flex-col gap-1">
                 <h2 className="text-xl font-semibold">{t("wizard.step1.title")}</h2>
@@ -442,6 +458,7 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
               <span className="flex-1 text-muted-foreground" role="status">
                 {footerStatus ?? (bytes > 0 ? t("wizard.step2.selectedSize", { count: chosen.length, size: formatSize(bytes) }) : t("wizard.step2.selected", { count: chosen.length }))}
               </span>
+              <Button type="button" variant="ghost" size="sm" className="h-[30px] px-3 text-sm text-muted-foreground" disabled={installing} onClick={() => setStep(1)}>{t("wizard.back")}</Button>
               <Button type="button" variant="ghost" size="sm" className="h-[30px] px-3 text-sm text-muted-foreground" disabled={installing} onClick={() => setStep(3)}>{t("wizard.skip")}</Button>
               <Button type="button" size="sm" className="h-[30px] px-3 text-sm" disabled={chosen.length === 0 || installing} onClick={installAndContinue}>{t("wizard.install")}</Button>
             </div>
@@ -459,6 +476,7 @@ export function FirstRunWizard({ tools, pinned, platform, layout, onLayout, onPi
             </div>
             <div className="flex items-center gap-2.5 border-t border-border px-10 py-3.5">
               <span className="flex-1 text-muted-foreground">{t("wizard.step3.status")}</span>
+              <Button type="button" variant="ghost" size="sm" className="h-[30px] px-3 text-sm text-muted-foreground" disabled={installing} onClick={() => setStep(2)}>{t("wizard.back")}</Button>
               <Button type="button" size="sm" className="h-[30px] px-3 text-sm" onClick={onFinish}>{t("wizard.done")}</Button>
             </div>
           </>

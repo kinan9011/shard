@@ -988,6 +988,8 @@ const Shard = () => {
         platform={platform}
         layout={layout}
         onLayout={setLayout}
+        preference={themePreference}
+        onPreference={setThemePreference}
         onPin={pinTool}
         onUnpin={unpinTool}
         onPinInstalled={(id) => pinInstalledRef.current(id)}

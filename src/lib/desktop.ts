@@ -573,8 +573,8 @@ export async function openThemesFolder(): Promise<void> {
   await invoke("theme_open_dir");
 }
 
-/** Wipes all Shard data and restarts. The browser preview clears its storage and reloads. */
-export async function resetAppData(): Promise<void> {
+/** Wipes all Shard data. Resolves true on a desktop, where the app is left open: show a message, then call `closeAfterReset`. The browser preview and a phone reload instead and resolve false. */
+export async function resetAppData(): Promise<boolean> {
   if (isTauri()) {
     // Files first: if this fails nothing has been cleared and the caller can say why.
     await invoke("reset_app_data");
@@ -588,12 +588,20 @@ export async function resetAppData(): Promise<void> {
   } catch {
     /* no IndexedDB here */
   }
-  // A phone has no restart command: reloading the webview starts the app over from the empty storage.
-  if (isTauri() && !isMobileApp()) {
-    await relaunch();
-  } else {
+  // A desktop app stays open for the caller to say so and then call closeAfterReset(). A phone and the browser
+  // have no close command: reloading starts the app over from the empty storage.
+  if (!isTauri() || isMobileApp()) {
     location.reload();
+    return false;
   }
+  return true;
+}
+
+/** Closes the desktop app after a reset. Storage is cleared again, in case something wrote to it since the reset. */
+export async function closeAfterReset(): Promise<void> {
+  localStorage.clear();
+  sessionStorage.clear();
+  await invoke("quit_now");
 }
 
 /** Opens http(s) and mailto links in the system browser instead of the app window. */
