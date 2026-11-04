@@ -1,7 +1,6 @@
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useToolActive } from "@/hooks/useToolActive";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { usePersistedInput } from "@/hooks/usePersistedInput";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -139,7 +138,8 @@ export function JwtDecoder() {
   const [mode, setMode] = useState<Mode>("decode");
 
   // Decode
-  const [input, setInput] = usePersistedInput("jwt-token");
+  // Not usePersistedInput: a pasted token is a credential and must not be written to disk.
+  const [input, setInput] = useState("");
   const [secret, setSecret] = useState("");
   const [secretIsBase64, setSecretIsBase64] = useState(false);
   const [publicKey, setPublicKey] = useState("");

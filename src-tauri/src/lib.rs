@@ -481,8 +481,14 @@ pub fn run() {
             // Keep the app running in the dock when the window closes on macOS.
             #[cfg(target_os = "macos")]
             if let tauri::WindowEvent::CloseRequested { api, .. } = _event {
-                api.prevent_close();
-                let _ = _window.hide();
+                if QUITTING.load(std::sync::atomic::Ordering::SeqCst) {
+                    // A reset or a quit is under way: closing the window must end the app, not hide it.
+                    use tauri::Manager;
+                    _window.app_handle().exit(0);
+                } else {
+                    api.prevent_close();
+                    let _ = _window.hide();
+                }
             }
         })
         .build(tauri::generate_context!())

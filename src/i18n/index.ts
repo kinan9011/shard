@@ -90,12 +90,18 @@ function commit(id: LocaleId) {
   for (const callback of applied) callback(id, info(id).dir);
 }
 
+/** The newest language request. A load that finishes after a newer request must not override it. */
+let latest = 0;
+
 /** Resolves when the saved language is loaded and applied. Direction is set at once, so the layout does not flip later. */
 export const ready: Promise<void> = (() => {
   const id = resolveLocale(pref);
   applyDocument(id);
   if (id === "en") return Promise.resolve();
-  return load(id).then(() => commit(id));
+  const ticket = ++latest;
+  return load(id).then(() => {
+    if (ticket === latest) commit(id);
+  });
 })();
 
 export function getLanguagePref(): LanguagePref {
@@ -117,9 +123,10 @@ export async function setLanguage(next: LanguagePref): Promise<void> {
     // Not saved, still applied for this session.
   }
   const id = resolveLocale(next);
+  const ticket = ++latest;
   applyDocument(id);
   await load(id);
-  commit(id);
+  if (ticket === latest) commit(id);
 }
 
 /** Calls back after each language change, and once now. For the tray and the plugin frames, which are not React. */

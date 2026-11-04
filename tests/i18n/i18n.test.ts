@@ -37,6 +37,15 @@ describe("language", () => {
     expect(t("common.cancel")).toBe("Cancel");
   });
 
+  it("keeps the newest choice when an older language finishes loading later", async () => {
+    const slow = setLanguage("de");
+    const fast = setLanguage("en");
+    await Promise.all([slow, fast]);
+    expect(getLocale()).toBe("en");
+    expect(document.documentElement).toHaveAttribute("lang", "en");
+    expect(getLanguagePref()).toBe("en");
+  });
+
   it("follows the system when asked", async () => {
     await setLanguage("system");
     expect(getLanguagePref()).toBe("system");

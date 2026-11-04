@@ -56,10 +56,23 @@ describe("field direction", () => {
     const field = screen.getByLabelText("prose");
     field.focus();
     fireEvent.keyDown(field, { code: "ShiftRight", key: "Shift", ctrlKey: true });
+    fireEvent.keyUp(field, { code: "ShiftRight", key: "Shift", ctrlKey: true });
     expect(field).toHaveAttribute("dir", "rtl");
     expect(screen.getByRole("button", { name: /Text direction/ })).toHaveAttribute("data-dir-mode", "rtl");
     fireEvent.keyDown(field, { code: "ShiftLeft", key: "Shift", ctrlKey: true });
+    fireEvent.keyUp(field, { code: "ShiftLeft", key: "Shift", ctrlKey: true });
     expect(field).toHaveAttribute("dir", "ltr");
+  });
+
+  it("does not act when another key is pressed in between, like Ctrl+Shift+Z", () => {
+    render(<Harness />);
+    const field = screen.getByLabelText("prose");
+    field.focus();
+    fireEvent.keyDown(field, { code: "ShiftRight", key: "Shift", ctrlKey: true });
+    fireEvent.keyDown(field, { code: "KeyZ", key: "Z", ctrlKey: true, shiftKey: true });
+    fireEvent.keyUp(field, { code: "KeyZ", key: "Z", ctrlKey: true, shiftKey: true });
+    fireEvent.keyUp(field, { code: "ShiftRight", key: "Shift", ctrlKey: true });
+    expect(field).toHaveAttribute("dir", "auto");
   });
 
   it("leaves code fields alone", () => {
@@ -67,6 +80,7 @@ describe("field direction", () => {
     const code = screen.getByLabelText("code");
     code.focus();
     fireEvent.keyDown(code, { code: "ShiftRight", key: "Shift", ctrlKey: true });
+    fireEvent.keyUp(code, { code: "ShiftRight", key: "Shift", ctrlKey: true });
     expect(code).toHaveAttribute("dir", "ltr");
   });
 
@@ -75,6 +89,7 @@ describe("field direction", () => {
     const field = screen.getByLabelText("plain");
     field.focus();
     fireEvent.keyDown(field, { code: "ShiftRight", key: "Shift" });
+    fireEvent.keyUp(field, { code: "ShiftRight", key: "Shift" });
     expect(field).toHaveAttribute("dir", "auto");
   });
 });
